@@ -452,7 +452,7 @@ function runSearch() {
             </div>
 
             <div class="result-action">
-                2 PATHS
+                3 INTERPRETATIONS
             </div>
 
         </div>
