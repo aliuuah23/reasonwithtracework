@@ -121,8 +121,12 @@
     }
 
     .feature {
-        padding: 24px 20px 24px 0;
+        padding: 30px 32px;
         border-right: 1px solid #aaa294;
+    }
+
+    .feature:first-child {
+        padding-left: 0;
     }
 
     .feature:last-child {
@@ -336,6 +340,7 @@
         .feature {
             border-right: none;
             border-bottom: 1px solid #aaa294;
+            padding: 30px 0;
         }
 
         .result {
@@ -362,7 +367,10 @@
 <main>
 
 <section id="home" class="page active">
-    <div class="eyebrow">Architectural Design Reasoning / Prototype 01</div>
+
+    <div class="eyebrow">
+        Architectural Design Reasoning / Prototype 01
+    </div>
 
     <h1>Give reasoning traction.</h1>
 
@@ -381,34 +389,44 @@
         <div class="feature">
             <div class="number">01</div>
             <h3>EXPLORE</h3>
-            <p>Search terms, concepts and related architectural ideas.</p>
+            <p>
+                Search terms, concepts and related architectural ideas.
+            </p>
         </div>
 
         <div class="feature">
             <div class="number">02</div>
             <h3>REASON</h3>
-            <p>Build visible chains between interpretation and design decisions.</p>
+            <p>
+                Build visible chains between interpretation and design decisions.
+            </p>
         </div>
 
         <div class="feature">
             <div class="number">03</div>
             <h3>GROUND</h3>
-            <p>Connect reasoning to readings, precedents and cases.</p>
+            <p>
+                Connect reasoning to readings, precedents and cases.
+            </p>
         </div>
 
         <div class="feature">
             <div class="number">04</div>
             <h3>DISCUSS</h3>
-            <p>Question, defend, revise or branch a design decision.</p>
+            <p>
+                Question, defend, revise or branch a design decision.
+            </p>
         </div>
 
     </div>
+
 </section>
 
 
 <section id="explore" class="page">
 
     <div class="eyebrow">01 / Explore</div>
+
     <h2>What are you trying to understand?</h2>
 
     <p class="intro">
@@ -417,16 +435,50 @@
     </p>
 
     <div class="search-wrap">
-        <input id="searchInput" placeholder="Try: privacy, gathering, flexibility...">
+        <input
+            id="searchInput"
+            placeholder="Try: Privacy, Gathering, Flexibility..."
+        >
         <button onclick="runSearch()">SEARCH</button>
     </div>
 
     <div class="tags">
-        <div class="tag" onclick="quickSearch('privacy')">privacy</div>
-        <div class="tag" onclick="quickSearch('gathering')">gathering</div>
-        <div class="tag" onclick="quickSearch('flexibility')">flexibility</div>
-        <div class="tag" onclick="quickSearch('shelter')">shelter</div>
-        <div class="tag" onclick="quickSearch('threshold')">threshold</div>
+
+        <div
+            class="tag"
+            onclick="quickSearch('Privacy')"
+        >
+            Privacy
+        </div>
+
+        <div
+            class="tag"
+            onclick="quickSearch('Gathering')"
+        >
+            Gathering
+        </div>
+
+        <div
+            class="tag"
+            onclick="quickSearch('Flexibility')"
+        >
+            Flexibility
+        </div>
+
+        <div
+            class="tag"
+            onclick="quickSearch('Shelter')"
+        >
+            Shelter
+        </div>
+
+        <div
+            class="tag"
+            onclick="quickSearch('Threshold')"
+        >
+            Threshold
+        </div>
+
     </div>
 
     <div id="results"></div>
@@ -437,6 +489,7 @@
 <section id="workspace" class="page">
 
     <div class="eyebrow">02 / Reason</div>
+
     <h2>Current reasoning path</h2>
 
     <p class="intro">
@@ -452,25 +505,33 @@
                 Students need privacy
             </div>
 
-            <div class="arrow">→</div>
+            <div class="arrow">
+                →
+            </div>
 
             <div class="node">
                 Privacy
             </div>
 
-            <div class="arrow">→</div>
+            <div class="arrow">
+                →
+            </div>
 
             <div class="node branch">
                 Visual separation
             </div>
 
-            <div class="arrow">→</div>
+            <div class="arrow">
+                →
+            </div>
 
             <div class="node">
                 Orientation + screening
             </div>
 
-            <div class="arrow">→</div>
+            <div class="arrow">
+                →
+            </div>
 
             <div class="node">
                 Partially screened study clusters
@@ -486,6 +547,7 @@
 <section id="library" class="page">
 
     <div class="eyebrow">03 / Ground</div>
+
     <h2>Ground the reasoning.</h2>
 
     <p class="intro">
@@ -496,39 +558,53 @@
     <div class="library-grid">
 
         <div class="card">
+
             <small>Concept</small>
+
             <h3>Threshold</h3>
+
             <p>
                 A spatial condition mediating between territories,
                 programmes or degrees of access.
             </p>
+
         </div>
 
         <div class="card">
+
             <small>Reading</small>
+
             <h3>Meaning + Interpretation</h3>
+
             <p>
                 References supporting how meaning is formed,
                 interpreted and translated.
             </p>
+
         </div>
 
         <div class="card">
+
             <small>Case Study</small>
+
             <h3>Shared Learning Space</h3>
+
             <p>
                 Precedents demonstrating different relationships
                 between privacy and collective occupation.
             </p>
+
         </div>
 
     </div>
+
 </section>
 
 
 <section id="studio" class="page">
 
     <div class="eyebrow">04 / Discuss</div>
+
     <h2>Question the reasoning, not only the outcome.</h2>
 
     <p class="intro">
@@ -539,12 +615,14 @@
     <div class="review-box">
 
         <div class="comment">
+
             <div class="comment-name">
                 TUTOR / 10:42
             </div>
 
             <div class="comment-text">
-                Why has “privacy” been interpreted as physical separation?
+
+                Why has “Privacy” been interpreted as physical separation?
                 Could orientation achieve the same goal without increasing enclosure?
 
                 <div class="actions">
@@ -552,18 +630,24 @@
                     <button>REVISE</button>
                     <button>BRANCH</button>
                 </div>
+
             </div>
+
         </div>
 
         <div class="comment">
+
             <div class="comment-name">
                 STUDENT / 10:47
             </div>
 
             <div class="comment-text">
+
                 The intention is visual privacy rather than complete isolation.
                 I would test orientation as an alternative branch.
+
             </div>
+
         </div>
 
     </div>
@@ -571,6 +655,7 @@
 </section>
 
 </main>
+
 
 <footer>
     <span>TRACEWORK / WORKING PROTOTYPE</span>
@@ -588,7 +673,10 @@ function showPage(pageName) {
         page.classList.remove("active");
     });
 
-    document.getElementById(pageName).classList.add("active");
+    document
+        .getElementById(pageName)
+        .classList
+        .add("active");
 
     window.scrollTo(0, 0);
 }
@@ -596,7 +684,9 @@ function showPage(pageName) {
 
 function quickSearch(term) {
 
-    document.getElementById("searchInput").value = term;
+    document
+        .getElementById("searchInput")
+        .value = term;
 
     runSearch();
 }
@@ -609,58 +699,107 @@ function runSearch() {
         .value
         .trim();
 
-    const term = input || "privacy";
+    const term = input || "Privacy";
 
     document.getElementById("results").innerHTML = `
 
         <div class="result">
-            <div class="result-type">Concept</div>
+
+            <div class="result-type">
+                Concept
+            </div>
+
             <div>
-                <div class="result-title">${term}</div>
+
+                <div class="result-title">
+                    ${term}
+                </div>
+
                 <div class="result-note">
                     Explore interpretations and related spatial concepts.
                 </div>
+
             </div>
-            <div>EXPLORE →</div>
+
+            <div>
+                EXPLORE →
+            </div>
+
         </div>
 
+
         <div class="result">
-            <div class="result-type">Related</div>
+
+            <div class="result-type">
+                Related
+            </div>
+
             <div>
+
                 <div class="result-title">
-                    threshold / separation / orientation / enclosure
+                    Threshold / Separation / Orientation / Enclosure
                 </div>
+
                 <div class="result-note">
                     Possible conceptual directions rather than prescribed solutions.
                 </div>
+
             </div>
-            <div>4 LINKS</div>
+
+            <div>
+                4 LINKS
+            </div>
+
         </div>
 
+
         <div class="result">
-            <div class="result-type">Case Study</div>
+
+            <div class="result-type">
+                Case Study
+            </div>
+
             <div>
+
                 <div class="result-title">
                     Spatial precedent related to ${term}
                 </div>
+
                 <div class="result-note">
                     Compare how another project translated a similar concern.
                 </div>
+
             </div>
-            <div>VIEW →</div>
+
+            <div>
+                VIEW →
+            </div>
+
         </div>
 
+
         <div class="result">
-            <div class="result-type">Reading</div>
+
+            <div class="result-type">
+                Reading
+            </div>
+
             <div>
+
                 <div class="result-title">
-                    Interpretation + architectural reasoning
+                    Interpretation + Architectural Reasoning
                 </div>
+
                 <div class="result-note">
                     Reference material connected to this concept.
                 </div>
+
             </div>
-            <div>READ →</div>
+
+            <div>
+                READ →
+            </div>
+
         </div>
 
     `;
