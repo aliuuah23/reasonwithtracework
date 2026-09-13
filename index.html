@@ -3,376 +3,504 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>TRACEWORK</title>
 
 <style>
-    * {
-        box-sizing: border-box;
-    }
 
-    body {
-        margin: 0;
-        background: #f1eadb;
-        color: #25231f;
-        font-family: "Courier New", Courier, monospace;
-    }
+* {
+    box-sizing: border-box;
+}
+
+html {
+    background: #f1eadb;
+}
+
+body {
+    margin: 0;
+    background: #f1eadb;
+    color: #25231f;
+    font-family: "Courier New", Courier, monospace;
+}
+
+
+/* ------------------------------------------------
+   HEADER
+------------------------------------------------ */
+
+header {
+    width: 100%;
+    border-bottom: 1px solid #777064;
+    padding: 18px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f1eadb;
+
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.logo {
+    font-size: 17px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+nav {
+    display: flex;
+    gap: 26px;
+    font-size: 11px;
+}
+
+nav button {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    color: #25231f;
+    cursor: pointer;
+}
+
+nav button:hover {
+    text-decoration: underline;
+}
+
+
+/* ------------------------------------------------
+   GLOBAL
+------------------------------------------------ */
+
+main {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page {
+    display: none;
+    padding: 48px 0 58px;
+    min-height: 76vh;
+}
+
+.page.active {
+    display: block;
+}
+
+.eyebrow {
+    margin-bottom: 25px;
+    font-size: 10px;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin: 0 0 28px;
+    max-width: 800px;
+
+    font-size: clamp(42px, 5vw, 68px);
+    line-height: 1.04;
+    font-weight: normal;
+}
+
+h2 {
+    margin: 0 0 22px;
+    font-size: 30px;
+    line-height: 1.15;
+    font-weight: normal;
+}
+
+p {
+    line-height: 1.65;
+}
+
+.intro {
+    max-width: 680px;
+    margin: 0;
+    font-size: 14px;
+}
+
+
+/* ------------------------------------------------
+   HOME
+------------------------------------------------ */
+
+.primary {
+    margin-top: 30px;
+    padding: 14px 21px;
+
+    border: 1px solid #25231f;
+    background: #25231f;
+    color: #f1eadb;
+
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.primary:hover {
+    background: transparent;
+    color: #25231f;
+}
+
+
+/* IMPORTANT:
+   DIVIDERS ARE NOW LEFT BORDERS.
+   THIS GUARANTEES SPACE BETWEEN LINE + TEXT.
+*/
+
+.features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    margin-top: 52px;
+
+    border-top: 1px solid #777064;
+}
+
+.feature {
+    min-height: 210px;
+    padding-top: 28px;
+    padding-right: 28px;
+    padding-bottom: 30px;
+}
+
+/* First column */
+
+.feature:first-child {
+    padding-left: 0;
+}
+
+/* Columns 2–4 */
+
+.feature + .feature {
+    border-left: 1px solid #aaa294;
+    padding-left: 40px !important;
+}
+
+.number {
+    margin-bottom: 25px;
+    font-size: 10px;
+}
+
+.feature h3 {
+    margin: 0 0 15px;
+    font-size: 15px;
+    font-weight: normal;
+}
+
+.feature p {
+    max-width: 210px;
+    margin: 0;
+
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+
+/* ------------------------------------------------
+   EXPLORE
+------------------------------------------------ */
+
+.search-wrap {
+    display: flex;
+
+    width: 100%;
+    max-width: 800px;
+
+    margin-top: 34px;
+
+    border: 1px solid #504c45;
+}
+
+#searchInput {
+    flex: 1;
+
+    padding: 17px;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.search-wrap button {
+    padding: 0 25px;
+
+    border: none;
+    border-left: 1px solid #504c45;
+
+    background: #25231f;
+    color: #f1eadb;
+
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin-top: 18px;
+}
+
+.tag {
+    padding: 7px 12px;
+
+    border: 1px solid #908779;
+    border-radius: 20px;
+
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.tag:hover {
+    background: #ded3bf;
+}
+
+#results {
+    margin-top: 42px;
+}
+
+.result {
+    display: grid;
+    grid-template-columns: 140px 1fr 120px;
+    gap: 20px;
+
+    padding: 21px 0;
+
+    border-top: 1px solid #aaa294;
+}
+
+.result-type {
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.result-title {
+    font-size: 15px;
+}
+
+.result-note {
+    margin-top: 6px;
+
+    color: #625d55;
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* ------------------------------------------------
+   REASON
+------------------------------------------------ */
+
+.workspace {
+    min-height: 410px;
+
+    margin-top: 34px;
+    padding: 40px;
+
+    border: 1px solid #777064;
+}
+
+.chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+
+    margin-top: 82px;
+}
+
+.node {
+    padding: 16px 20px;
+
+    border: 1px solid #504c45;
+    border-radius: 30px;
+
+    background: #ece3d2;
+
+    font-size: 12px;
+}
+
+.node.branch {
+    background: #d8c9a8;
+}
+
+.arrow {
+    font-size: 20px;
+}
+
+
+/* ------------------------------------------------
+   GROUND
+------------------------------------------------ */
+
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+
+    margin-top: 34px;
+}
+
+.card {
+    min-height: 190px;
+
+    padding: 23px;
+
+    border: 1px solid #8d8579;
+}
+
+.card small {
+    text-transform: uppercase;
+}
+
+.card h3 {
+    margin: 29px 0 12px;
+
+    font-size: 18px;
+    font-weight: normal;
+}
+
+.card p {
+    margin: 0;
+
+    font-size: 11px;
+}
+
+
+/* ------------------------------------------------
+   DISCUSS
+------------------------------------------------ */
+
+.review-box {
+    margin-top: 34px;
+
+    border-top: 1px solid #777064;
+}
+
+.comment {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+
+    padding: 26px 0;
+
+    border-bottom: 1px solid #aaa294;
+}
+
+.comment-name {
+    font-size: 11px;
+}
+
+.comment-text {
+    max-width: 680px;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+
+    margin-top: 17px;
+}
+
+.actions button {
+    padding: 7px 12px;
+
+    border: 1px solid #777064;
+
+    background: transparent;
+
+    font-family: inherit;
+    font-size: 10px;
+
+    cursor: pointer;
+}
+
+
+/* ------------------------------------------------
+   FOOTER
+------------------------------------------------ */
+
+footer {
+    display: flex;
+    justify-content: space-between;
+
+    width: 90%;
+    max-width: 1200px;
+
+    margin: auto;
+    padding: 22px 0;
+
+    border-top: 1px solid #777064;
+
+    font-size: 10px;
+}
+
+
+/* ------------------------------------------------
+   MOBILE
+------------------------------------------------ */
+
+@media (max-width: 800px) {
 
     header {
-        border-bottom: 1px solid #777064;
-        padding: 18px 5%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f1eadb;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    .logo {
-        font-size: 17px;
-        font-weight: bold;
-        letter-spacing: 1px;
+        padding: 16px 4%;
     }
 
     nav {
-        display: flex;
-        gap: 26px;
-        font-size: 11px;
+        gap: 10px;
+        font-size: 9px;
     }
 
-    nav button {
-        border: none;
-        background: none;
-        font-family: inherit;
-        cursor: pointer;
-        color: #25231f;
-    }
-
-    nav button:hover {
-        text-decoration: underline;
-    }
-
-    main {
+    main,
+    footer {
         width: 92%;
-        max-width: 1250px;
-        margin: auto;
-    }
-
-    .page {
-        display: none;
-        padding: 42px 0 55px;
-    }
-
-    .page.active {
-        display: block;
-    }
-
-    .eyebrow {
-        font-size: 10px;
-        letter-spacing: 1.6px;
-        text-transform: uppercase;
-        margin-bottom: 24px;
-    }
-
-    h1 {
-        font-size: clamp(42px, 5vw, 68px);
-        max-width: 780px;
-        line-height: 1.02;
-        font-weight: normal;
-        margin: 0 0 24px;
-    }
-
-    h2 {
-        font-size: 30px;
-        font-weight: normal;
-        margin: 0 0 22px;
-    }
-
-    p {
-        line-height: 1.6;
-    }
-
-    .intro {
-        max-width: 670px;
-        font-size: 14px;
-        margin: 0;
-    }
-
-    .primary {
-        margin-top: 26px;
-        padding: 13px 20px;
-        border: 1px solid #25231f;
-        background: #25231f;
-        color: #f1eadb;
-        font-family: inherit;
-        cursor: pointer;
-    }
-
-    .primary:hover {
-        background: transparent;
-        color: #25231f;
     }
 
     .features {
-        border-top: 1px solid #777064;
-        margin-top: 48px;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: 1fr;
     }
 
-    .feature {
-        padding: 26px 28px 28px;
-        border-right: 1px solid #aaa294;
-        min-height: 205px;
-    }
+    .feature,
+    .feature:first-child,
+    .feature + .feature {
+        min-height: auto;
 
-    .feature:first-child {
-        padding-left: 0;
-    }
+        padding: 27px 0 !important;
 
-    .feature:last-child {
-        border-right: none;
-    }
-
-    .number {
-        font-size: 10px;
-        margin-bottom: 22px;
-    }
-
-    .feature h3 {
-        font-size: 15px;
-        font-weight: normal;
-        margin: 0 0 14px;
-    }
-
-    .feature p {
-        font-size: 11px;
-        line-height: 1.55;
-        max-width: 220px;
-        margin: 0;
-    }
-
-    .search-wrap {
-        margin-top: 32px;
-        display: flex;
-        max-width: 800px;
-        border: 1px solid #504c45;
-    }
-
-    #searchInput {
-        flex: 1;
-        padding: 17px;
-        background: transparent;
-        border: none;
-        outline: none;
-        font-family: inherit;
-        font-size: 14px;
-    }
-
-    .search-wrap button {
-        border: none;
-        border-left: 1px solid #504c45;
-        background: #25231f;
-        color: #f1eadb;
-        padding: 0 24px;
-        font-family: inherit;
-        cursor: pointer;
-    }
-
-    .tags {
-        margin-top: 18px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .tag {
-        border: 1px solid #908779;
-        padding: 7px 11px;
-        border-radius: 20px;
-        font-size: 10px;
-        cursor: pointer;
-    }
-
-    .tag:hover {
-        background: #ded3bf;
-    }
-
-    #results {
-        margin-top: 40px;
-    }
-
-    .result {
-        border-top: 1px solid #aaa294;
-        padding: 20px 0;
-        display: grid;
-        grid-template-columns: 140px 1fr 110px;
-        gap: 20px;
-    }
-
-    .result-type {
-        font-size: 10px;
-        text-transform: uppercase;
-    }
-
-    .result-title {
-        font-size: 15px;
-    }
-
-    .result-note {
-        font-size: 11px;
-        color: #625d55;
-        margin-top: 6px;
-    }
-
-    .workspace {
-        margin-top: 34px;
-        border: 1px solid #777064;
-        min-height: 410px;
-        padding: 40px;
-        position: relative;
-    }
-
-    .chain {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
-        margin-top: 85px;
-    }
-
-    .node {
-        padding: 16px 20px;
-        border: 1px solid #504c45;
-        border-radius: 30px;
-        background: #ece3d2;
-        font-size: 12px;
-    }
-
-    .arrow {
-        font-size: 20px;
-    }
-
-    .branch {
-        background: #d8c9a8;
+        border-left: none;
+        border-bottom: 1px solid #aaa294;
     }
 
     .library-grid {
-        margin-top: 34px;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
+        grid-template-columns: 1fr;
     }
 
-    .card {
-        border: 1px solid #8d8579;
-        padding: 22px;
-        min-height: 185px;
-    }
-
-    .card small {
-        text-transform: uppercase;
-    }
-
-    .card h3 {
-        font-size: 18px;
-        font-weight: normal;
-        margin-top: 28px;
-    }
-
-    .card p {
-        font-size: 11px;
-    }
-
-    .review-box {
-        border-top: 1px solid #777064;
-        margin-top: 34px;
+    .result {
+        grid-template-columns: 1fr;
     }
 
     .comment {
-        padding: 25px 0;
-        border-bottom: 1px solid #aaa294;
-        display: grid;
-        grid-template-columns: 150px 1fr;
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
 
-    .comment-name {
-        font-size: 11px;
-    }
+}
 
-    .comment-text {
-        max-width: 650px;
-        font-size: 13px;
-    }
-
-    .actions {
-        margin-top: 15px;
-        display: flex;
-        gap: 10px;
-    }
-
-    .actions button {
-        padding: 7px 12px;
-        background: transparent;
-        border: 1px solid #777064;
-        font-family: inherit;
-        font-size: 10px;
-        cursor: pointer;
-    }
-
-    footer {
-        width: 92%;
-        max-width: 1250px;
-        margin: auto;
-        padding: 22px 0;
-        border-top: 1px solid #777064;
-        font-size: 10px;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    @media (max-width: 800px) {
-
-        header {
-            padding: 16px 4%;
-        }
-
-        nav {
-            gap: 10px;
-            font-size: 9px;
-        }
-
-        main,
-        footer {
-            width: 92%;
-        }
-
-        .features,
-        .library-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .feature {
-            border-right: none;
-            border-bottom: 1px solid #aaa294;
-            padding: 26px 0;
-            min-height: auto;
-        }
-
-        .result {
-            grid-template-columns: 1fr;
-        }
-
-        .comment {
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-    }
 </style>
 </head>
 
+
 <body>
+
 
 <header>
 
@@ -381,19 +509,41 @@
     </div>
 
     <nav>
-        <button onclick="showPage('home')">HOME</button>
-        <button onclick="showPage('explore')">EXPLORE</button>
-        <button onclick="showPage('workspace')">REASON</button>
-        <button onclick="showPage('library')">GROUND</button>
-        <button onclick="showPage('studio')">DISCUSS</button>
+
+        <button onclick="showPage('home')">
+            HOME
+        </button>
+
+        <button onclick="showPage('explore')">
+            EXPLORE
+        </button>
+
+        <button onclick="showPage('workspace')">
+            REASON
+        </button>
+
+        <button onclick="showPage('library')">
+            GROUND
+        </button>
+
+        <button onclick="showPage('studio')">
+            DISCUSS
+        </button>
+
     </nav>
 
 </header>
 
+
 <main>
 
 
-<section id="home" class="page active">
+<!-- HOME -->
+
+<section
+    id="home"
+    class="page active"
+>
 
     <div class="eyebrow">
         Architectural Design Reasoning / Prototype 01
@@ -418,6 +568,7 @@
 
 
     <div class="features">
+
 
         <div class="feature">
 
@@ -486,13 +637,19 @@
 
         </div>
 
+
     </div>
 
 </section>
 
 
 
-<section id="explore" class="page">
+<!-- EXPLORE -->
+
+<section
+    id="explore"
+    class="page"
+>
 
     <div class="eyebrow">
         01 / Explore
@@ -561,13 +718,19 @@
 
     </div>
 
+
     <div id="results"></div>
 
 </section>
 
 
 
-<section id="workspace" class="page">
+<!-- REASON -->
+
+<section
+    id="workspace"
+    class="page"
+>
 
     <div class="eyebrow">
         02 / Reason
@@ -631,7 +794,12 @@
 
 
 
-<section id="library" class="page">
+<!-- GROUND -->
+
+<section
+    id="library"
+    class="page"
+>
 
     <div class="eyebrow">
         03 / Ground
@@ -648,6 +816,7 @@
 
 
     <div class="library-grid">
+
 
         <div class="card">
 
@@ -702,13 +871,19 @@
 
         </div>
 
+
     </div>
 
 </section>
 
 
 
-<section id="studio" class="page">
+<!-- DISCUSS -->
+
+<section
+    id="studio"
+    class="page"
+>
 
     <div class="eyebrow">
         04 / Discuss
@@ -725,6 +900,7 @@
 
 
     <div class="review-box">
+
 
         <div class="comment">
 
@@ -773,6 +949,7 @@
 
         </div>
 
+
     </div>
 
 </section>
@@ -798,7 +975,8 @@
 
 function showPage(pageName) {
 
-    const pages = document.querySelectorAll(".page");
+    const pages =
+        document.querySelectorAll(".page");
 
     pages.forEach(page => {
         page.classList.remove("active");
@@ -825,14 +1003,20 @@ function quickSearch(term) {
 
 function runSearch() {
 
-    const input = document
-        .getElementById("searchInput")
-        .value
-        .trim();
+    const input =
+        document
+            .getElementById("searchInput")
+            .value
+            .trim();
 
-    const term = input || "Privacy";
+    const term =
+        input || "Privacy";
 
-    document.getElementById("results").innerHTML = `
+
+    document
+        .getElementById("results")
+        .innerHTML = `
+
 
         <div class="result">
 
@@ -933,10 +1117,12 @@ function runSearch() {
 
         </div>
 
+
     `;
 }
 
 </script>
+
 
 </body>
 </html>
