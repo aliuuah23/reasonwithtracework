@@ -7,18 +7,9 @@ const conceptData = {
         spatialB: "Graduated Threshold + Partial Visibility",
 
         mapPrimary: [
-            {
-                label: "Visual Separation",
-                type: "interpretation"
-            },
-            {
-                label: "Controlled Exposure",
-                type: "interpretation"
-            },
-            {
-                label: "Acoustic Privacy",
-                type: "interpretation"
-            }
+            { label: "Visual Separation", type: "interpretation" },
+            { label: "Controlled Exposure", type: "interpretation" },
+            { label: "Acoustic Privacy", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -36,7 +27,22 @@ const conceptData = {
             "Learning Spaces Using Layered Privacy Rather Than Total Enclosure",
 
         conceptNote:
-            "Privacy can describe visual, acoustic, territorial or social conditions."
+            "Privacy can describe visual, acoustic, territorial or social conditions.",
+
+        conceptDetail:
+            "Privacy does not automatically mean complete enclosure. In architectural reasoning, it may refer to controlling visibility, sound, proximity, access or degrees of exposure.",
+
+        readingDetail:
+            "This reading direction asks how a broad linguistic term such as Privacy becomes interpreted before it is translated into a spatial decision. It encourages the designer to separate the word from the first solution that comes to mind.",
+
+        caseDetail:
+            "A useful precedent would compare learning environments that create privacy through orientation, screening, distance or thresholds rather than simply enclosing users with walls.",
+
+        whyMatters:
+            "The same word can produce very different spatial consequences depending on what the designer believes the word requires.",
+
+        related:
+            "Threshold · Orientation · Screening · Territory · Exposure"
     },
 
 
@@ -47,18 +53,9 @@ const conceptData = {
         spatialB: "Distributed Meeting Edges",
 
         mapPrimary: [
-            {
-                label: "Collective Focus",
-                type: "interpretation"
-            },
-            {
-                label: "Informal Encounter",
-                type: "interpretation"
-            },
-            {
-                label: "Shared Activity",
-                type: "interpretation"
-            }
+            { label: "Collective Focus", type: "interpretation" },
+            { label: "Informal Encounter", type: "interpretation" },
+            { label: "Shared Activity", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -70,13 +67,28 @@ const conceptData = {
             "Pause"
         ],
 
-        reading: "Collective Use + Patterns of Occupation",
+        reading: "Collective Use + Patterns Of Occupation",
 
         caseStudy:
             "Shared Spaces Organised Around Formal And Informal Gathering",
 
         conceptNote:
-            "Gathering can imply concentration, encounter, visibility or shared activity."
+            "Gathering can imply concentration, encounter, visibility or shared activity.",
+
+        conceptDetail:
+            "Gathering may describe organised collective activity, casual encounter, observation, temporary congregation or sustained shared occupation.",
+
+        readingDetail:
+            "This reading direction examines how patterns of occupation and social interaction can influence spatial organisation without assuming that gathering always requires one central room.",
+
+        caseDetail:
+            "A useful precedent would compare centralised gathering spaces with distributed edges, circulation intersections and informal meeting zones.",
+
+        whyMatters:
+            "Different understandings of Gathering can lead to radically different relationships between circulation, programme and shared space.",
+
+        related:
+            "Centrality · Encounter · Visibility · Circulation · Pause"
     },
 
 
@@ -87,18 +99,9 @@ const conceptData = {
         spatialB: "Zoned Overlap + Loose Boundaries",
 
         mapPrimary: [
-            {
-                label: "Reconfigurable Use",
-                type: "interpretation"
-            },
-            {
-                label: "Simultaneous Uses",
-                type: "interpretation"
-            },
-            {
-                label: "Temporal Change",
-                type: "interpretation"
-            }
+            { label: "Reconfigurable Use", type: "interpretation" },
+            { label: "Simultaneous Uses", type: "interpretation" },
+            { label: "Temporal Change", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -116,7 +119,22 @@ const conceptData = {
             "Learning Environments Supporting Multiple Modes Of Occupation",
 
         conceptNote:
-            "Flexibility may refer to physical change, temporal change or programme overlap."
+            "Flexibility may refer to physical change, temporal change or programme overlap.",
+
+        conceptDetail:
+            "Flexibility can describe spaces that physically transform, spaces that tolerate different activities without changing, or spaces whose use changes over time.",
+
+        readingDetail:
+            "This reading direction distinguishes physical reconfiguration from broader adaptability, helping the designer identify what kind of change is actually required.",
+
+        caseDetail:
+            "A useful precedent would compare movable systems with spaces that remain physically stable but support several programmes through loose organisation.",
+
+        whyMatters:
+            "Treating Flexibility as a single idea can cause designers to jump immediately to movable walls or furniture even when another form of adaptability may be more appropriate.",
+
+        related:
+            "Adaptability · Overlap · Zoning · Change · Programme"
     },
 
 
@@ -127,18 +145,9 @@ const conceptData = {
         spatialB: "Lower Scale + Enclosed Edge",
 
         mapPrimary: [
-            {
-                label: "Weather Protection",
-                type: "interpretation"
-            },
-            {
-                label: "Psychological Refuge",
-                type: "interpretation"
-            },
-            {
-                label: "Environmental Buffer",
-                type: "interpretation"
-            }
+            { label: "Weather Protection", type: "interpretation" },
+            { label: "Psychological Refuge", type: "interpretation" },
+            { label: "Environmental Buffer", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -156,7 +165,22 @@ const conceptData = {
             "Pavilions Balancing Climatic Shelter With Openness",
 
         conceptNote:
-            "Shelter can operate environmentally, spatially and perceptually."
+            "Shelter can operate environmentally, spatially and perceptually.",
+
+        conceptDetail:
+            "Shelter may refer to climatic protection, perceived safety, enclosure, shade, refuge or simply a transition away from an exposed condition.",
+
+        readingDetail:
+            "This reading direction separates measurable environmental protection from the perceptual experience of feeling sheltered.",
+
+        caseDetail:
+            "A useful precedent would compare pavilions that provide climatic protection while maintaining different degrees of visual and spatial openness.",
+
+        whyMatters:
+            "A designer may satisfy climatic shelter without producing psychological refuge, or produce refuge without completely enclosing the space.",
+
+        related:
+            "Shade · Refuge · Edge · Climate · Enclosure"
     },
 
 
@@ -167,18 +191,9 @@ const conceptData = {
         spatialB: "Porous Edge + Pause Zone",
 
         mapPrimary: [
-            {
-                label: "Transition",
-                type: "interpretation"
-            },
-            {
-                label: "Negotiated Boundary",
-                type: "interpretation"
-            },
-            {
-                label: "Pause",
-                type: "interpretation"
-            }
+            { label: "Transition", type: "interpretation" },
+            { label: "Negotiated Boundary", type: "interpretation" },
+            { label: "Pause", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -196,7 +211,22 @@ const conceptData = {
             "Projects Using Transitional Zones Between Public And Private Space",
 
         conceptNote:
-            "Thresholds can separate, connect, delay or negotiate spatial territories."
+            "Thresholds can separate, connect, delay or negotiate spatial territories.",
+
+        conceptDetail:
+            "A threshold is not necessarily a door or line. It may be a spatial interval that changes access, atmosphere, visibility, programme or behavioural expectation.",
+
+        readingDetail:
+            "This reading direction examines boundaries as spatial relationships rather than simple divisions between two fixed zones.",
+
+        caseDetail:
+            "A useful precedent would compare projects where transition is produced through layering, changes in scale, porosity, programme or occupation.",
+
+        whyMatters:
+            "Thinking of Threshold as an interval rather than a line produces a much wider range of spatial consequences.",
+
+        related:
+            "Boundary · Access · Porosity · Transition · Territory"
     }
 
 };
@@ -213,12 +243,11 @@ let selectedSpatialDirection = null;
 
 function showPage(pageName) {
 
-    const pages =
-        document.querySelectorAll(".page");
-
-    pages.forEach(page => {
-        page.classList.remove("active");
-    });
+    document
+        .querySelectorAll(".page")
+        .forEach(page => {
+            page.classList.remove("active");
+        });
 
     document
         .getElementById(pageName)
@@ -243,9 +272,7 @@ function handleSearchKey(event) {
 
 function quickSearch(term) {
 
-    document
-        .getElementById("searchInput")
-        .value = term;
+    document.getElementById("searchInput").value = term;
 
     runSearch();
 }
@@ -253,24 +280,18 @@ function quickSearch(term) {
 
 function searchFromMap(term) {
 
-    document
-        .getElementById("searchInput")
-        .value = term;
+    document.getElementById("searchInput").value = term;
 
     runSearch();
 
     setTimeout(() => {
 
-        const results =
-            document.getElementById("results");
-
-        if (results) {
-
-            results.scrollIntoView({
+        document
+            .getElementById("results")
+            .scrollIntoView({
                 behavior: "smooth",
                 block: "start"
             });
-        }
 
     }, 50);
 }
@@ -282,11 +303,7 @@ function capitaliseTerm(term) {
         return "";
     }
 
-    return term
-        .charAt(0)
-        .toUpperCase() +
-        term
-        .slice(1);
+    return term.charAt(0).toUpperCase() + term.slice(1);
 }
 
 
@@ -302,20 +319,16 @@ function runSearch() {
         input = "Privacy";
     }
 
-    const formattedTerm =
-        capitaliseTerm(input);
+    const formattedTerm = capitaliseTerm(input);
 
     const matchingKey =
-        Object
-            .keys(conceptData)
-            .find(
-                key =>
-                    key.toLowerCase() ===
-                    formattedTerm.toLowerCase()
-            );
+        Object.keys(conceptData).find(
+            key =>
+                key.toLowerCase() ===
+                formattedTerm.toLowerCase()
+        );
 
-    const term =
-        matchingKey || formattedTerm;
+    const term = matchingKey || formattedTerm;
 
     const data =
         matchingKey
@@ -323,10 +336,7 @@ function runSearch() {
             : createGenericConcept(term);
 
 
-    document
-        .getElementById("results")
-        .innerHTML = `
-
+    document.getElementById("results").innerHTML = `
 
         <div class="search-summary">
             Results For: ${term}
@@ -456,12 +466,8 @@ function runSearch() {
 
 function renderConceptMap(term, data) {
 
-    const primary =
-        data.mapPrimary || [];
-
-    const secondary =
-        data.mapSecondary || [];
-
+    const primary = data.mapPrimary || [];
+    const secondary = data.mapSecondary || [];
 
     const primaryHtml =
         primary
@@ -485,9 +491,7 @@ function renderConceptMap(term, data) {
     const secondaryGroups = [
 
         secondary.slice(0, 2),
-
         secondary.slice(2, 4),
-
         secondary.slice(4, 6)
 
     ];
@@ -562,7 +566,6 @@ function renderConceptMap(term, data) {
 
             <div class="concept-map">
 
-
                 <div class="map-center-row">
 
                     <div class="map-center-node">
@@ -573,16 +576,12 @@ function renderConceptMap(term, data) {
 
 
                 <div class="map-branch-row">
-
                     ${primaryHtml}
-
                 </div>
 
 
                 <div class="map-subrow">
-
                     ${secondaryHtml}
-
                 </div>
 
 
@@ -590,7 +589,6 @@ function renderConceptMap(term, data) {
                     Click any node to continue exploring from that concept.
                     The map does not represent a prescribed sequence.
                 </div>
-
 
             </div>
 
@@ -601,7 +599,7 @@ function renderConceptMap(term, data) {
 
 
 /* =========================================================
-   GENERIC SEARCH DATA
+   GENERIC CONCEPT
 ========================================================= */
 
 function createGenericConcept(term) {
@@ -621,22 +619,9 @@ function createGenericConcept(term) {
             "Spatial Strategy B",
 
         mapPrimary: [
-
-            {
-                label: "Interpretation A",
-                type: "interpretation"
-            },
-
-            {
-                label: "Interpretation B",
-                type: "interpretation"
-            },
-
-            {
-                label: "Contextual Reading",
-                type: "interpretation"
-            }
-
+            { label: "Interpretation A", type: "interpretation" },
+            { label: "Interpretation B", type: "interpretation" },
+            { label: "Contextual Reading", type: "interpretation" }
         ],
 
         mapSecondary: [
@@ -655,8 +640,22 @@ function createGenericConcept(term) {
             "Comparable Spatial Precedent",
 
         conceptNote:
-            `${term} can be unpacked through multiple interpretations, associations and spatial consequences.`
+            `${term} can be unpacked through multiple interpretations, associations and spatial consequences.`,
 
+        conceptDetail:
+            `${term} remains open until the designer identifies what the term is being taken to mean within a particular context.`,
+
+        readingDetail:
+            "Relevant readings would help clarify the assumptions, interpretations and concepts shaping this reasoning path.",
+
+        caseDetail:
+            "Relevant precedents would allow the designer to compare several spatial responses to a similar concern.",
+
+        whyMatters:
+            "Making this interpretation explicit allows another designer or tutor to inspect how the term is being translated.",
+
+        related:
+            "Threshold · Orientation · Boundary · Programme · Atmosphere"
     };
 }
 
@@ -676,13 +675,11 @@ function escapeForFunction(text) {
 function getConceptData(term) {
 
     const matchingKey =
-        Object
-            .keys(conceptData)
-            .find(
-                key =>
-                    key.toLowerCase() ===
-                    term.toLowerCase()
-            );
+        Object.keys(conceptData).find(
+            key =>
+                key.toLowerCase() ===
+                term.toLowerCase()
+        );
 
     if (matchingKey) {
         return conceptData[matchingKey];
@@ -698,11 +695,9 @@ function getConceptData(term) {
 
 function addToReasoning(term) {
 
-    activeConcept =
-        capitaliseTerm(term);
+    activeConcept = capitaliseTerm(term);
 
     selectedInterpretation = null;
-
     selectedSpatialDirection = null;
 
     renderReasonWorkspace();
@@ -712,20 +707,16 @@ function addToReasoning(term) {
 
 
 /* =========================================================
-   REASON WORKSPACE
+   REASON
 ========================================================= */
 
 function renderReasonWorkspace() {
 
     const workspace =
-        document.getElementById(
-            "reasonWorkspace"
-        );
+        document.getElementById("reasonWorkspace");
 
     const status =
-        document.getElementById(
-            "reasonStatus"
-        );
+        document.getElementById("reasonStatus");
 
 
     if (!activeConcept) {
@@ -749,8 +740,7 @@ function renderReasonWorkspace() {
     }
 
 
-    const data =
-        getConceptData(activeConcept);
+    const data = getConceptData(activeConcept);
 
 
     status.innerHTML = `
@@ -847,7 +837,6 @@ function renderReasonWorkspace() {
 
             </div>
 
-
         </div>
 
 
@@ -866,17 +855,12 @@ function choosePath(
     spatialDirection
 ) {
 
-    selectedInterpretation =
-        interpretation;
-
-    selectedSpatialDirection =
-        spatialDirection;
+    selectedInterpretation = interpretation;
+    selectedSpatialDirection = spatialDirection;
 
 
     document
-        .getElementById(
-            "selectedPathArea"
-        )
+        .getElementById("selectedPathArea")
         .innerHTML = `
 
         <div class="selected-path">
@@ -931,14 +915,11 @@ function choosePath(
 
 function groundCurrentPath() {
 
-    const data =
-        getConceptData(activeConcept);
+    const data = getConceptData(activeConcept);
 
 
     document
-        .getElementById(
-            "groundContext"
-        )
+        .getElementById("groundContext")
         .innerHTML = `
 
         <strong>Current Reasoning Trace:</strong>
@@ -953,9 +934,7 @@ function groundCurrentPath() {
 
 
     document
-        .getElementById(
-            "groundCards"
-        )
+        .getElementById("groundCards")
         .innerHTML = `
 
 
@@ -972,6 +951,14 @@ function groundCurrentPath() {
             <p>
                 ${data.conceptNote}
             </p>
+
+            <button
+                class="secondary"
+                style="margin-top: 22px;"
+                onclick="openGroundDetail('concept')"
+            >
+                OPEN →
+            </button>
 
         </div>
 
@@ -991,6 +978,14 @@ function groundCurrentPath() {
                 is adequately grounded rather than assumed.
             </p>
 
+            <button
+                class="secondary"
+                style="margin-top: 22px;"
+                onclick="openGroundDetail('reading')"
+            >
+                OPEN →
+            </button>
+
         </div>
 
 
@@ -1009,7 +1004,24 @@ function groundCurrentPath() {
                 different spatial consequences from similar concerns.
             </p>
 
+            <button
+                class="secondary"
+                style="margin-top: 22px;"
+                onclick="openGroundDetail('case')"
+            >
+                OPEN →
+            </button>
+
         </div>
+
+
+        <div
+            id="groundDetailPanel"
+            style="
+                grid-column: 1 / -1;
+                margin-top: 6px;
+            "
+        ></div>
 
 
         <div
@@ -1036,6 +1048,158 @@ function groundCurrentPath() {
 
 
 /* =========================================================
+   GROUND DETAIL PANEL
+========================================================= */
+
+function openGroundDetail(type) {
+
+    const data = getConceptData(activeConcept);
+
+    let label = "";
+    let title = "";
+    let description = "";
+    let lowerLabel = "";
+    let lowerContent = "";
+
+
+    if (type === "concept") {
+
+        label = "Concept / Working Definition";
+
+        title = activeConcept;
+
+        description = data.conceptDetail;
+
+        lowerLabel = "Related Concepts";
+
+        lowerContent = data.related;
+    }
+
+
+    if (type === "reading") {
+
+        label = "Reading / Student View";
+
+        title = data.reading;
+
+        description = data.readingDetail;
+
+        lowerLabel = "Why This Matters";
+
+        lowerContent = data.whyMatters;
+    }
+
+
+    if (type === "case") {
+
+        label = "Case Study / Design Question";
+
+        title = data.caseStudy;
+
+        description = data.caseDetail;
+
+        lowerLabel = "Question To Ask";
+
+        lowerContent =
+            `How does this precedent interpret “${activeConcept}”, and how is that interpretation different from your current reasoning path?`;
+    }
+
+
+    document
+        .getElementById("groundDetailPanel")
+        .innerHTML = `
+
+        <div
+            class="card"
+            style="
+                min-height: 0;
+                padding: 28px;
+            "
+        >
+
+            <small>
+                ${label}
+            </small>
+
+
+            <h3
+                style="
+                    margin-top: 20px;
+                    font-size: 20px;
+                "
+            >
+                ${title}
+            </h3>
+
+
+            <p
+                style="
+                    max-width: 800px;
+                    font-size: 12px;
+                    line-height: 1.7;
+                "
+            >
+                ${description}
+            </p>
+
+
+            <div
+                style="
+                    border-top: 1px solid #aaa294;
+                    margin-top: 24px;
+                    padding-top: 20px;
+                "
+            >
+
+                <small>
+                    ${lowerLabel}
+                </small>
+
+
+                <p
+                    style="
+                        max-width: 800px;
+                        margin-bottom: 0;
+                        font-size: 11px;
+                    "
+                >
+                    ${lowerContent}
+                </p>
+
+            </div>
+
+
+            <button
+                class="secondary"
+                style="margin-top: 24px;"
+                onclick="closeGroundDetail()"
+            >
+                CLOSE
+            </button>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById("groundDetailPanel")
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "nearest"
+        });
+}
+
+
+function closeGroundDetail() {
+
+    document
+        .getElementById("groundDetailPanel")
+        .innerHTML = "";
+}
+
+
+/* =========================================================
    DISCUSS
 ========================================================= */
 
@@ -1058,9 +1222,7 @@ function updateDiscussion() {
 
 
     document
-        .getElementById(
-            "tutorComment"
-        )
+        .getElementById("tutorComment")
         .innerHTML = `
 
         Why does
@@ -1091,9 +1253,7 @@ function updateDiscussion() {
 
 
     document
-        .getElementById(
-            "studentComment"
-        )
+        .getElementById("studentComment")
         .innerHTML = `
 
         ${activeConcept}
@@ -1109,9 +1269,7 @@ function updateDiscussion() {
 function discussionAction(action) {
 
     const student =
-        document.getElementById(
-            "studentComment"
-        );
+        document.getElementById("studentComment");
 
 
     if (action === "Defend") {
