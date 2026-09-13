@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reasoning Space</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #f1eadb;
+        color: #25231f;
+        font-family: "Courier New", Courier, monospace;
+    }
+
+    header {
+        border-bottom: 1px solid #777064;
+        padding: 22px 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f1eadb;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .logo {
+        font-size: 18px;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    nav {
+        display: flex;
+        gap: 28px;
+        font-size: 12px;
+    }
+
+    nav button {
+        border: none;
+        background: none;
+        font-family: inherit;
+        cursor: pointer;
+        color: #25231f;
+    }
+
+    nav button:hover {
+        text-decoration: underline;
+    }
+
+    main {
+        width: 90%;
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    .page {
+        display: none;
+        min-height: 78vh;
+        padding: 70px 0;
+    }
+
+    .page.active {
+        display: block;
+    }
+
+    .eyebrow {
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        font-size: clamp(38px, 6vw, 76px);
+        max-width: 900px;
+        line-height: 1.02;
+        font-weight: normal;
+        margin: 0 0 30px;
+    }
+
+    h2 {
+        font-size: 30px;
+        font-weight: normal;
+    }
+
+    p {
+        line-height: 1.65;
+    }
+
+    .intro {
+        max-width: 650px;
+        font-size: 15px;
+    }
+
+    .primary {
+        margin-top: 30px;
+        padding: 13px 20px;
+        border: 1px solid #25231f;
+        background: #25231f;
+        color: #f1eadb;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .primary:hover {
+        background: transparent;
+        color: #25231f;
+    }
+
+    .features {
+        border-top: 1px solid #777064;
+        margin-top: 70px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .feature {
+        padding: 24px 20px 24px 0;
+        border-right: 1px solid #aaa294;
+    }
+
+    .feature:last-child {
+        border-right: none;
+    }
+
+    .number {
+        font-size: 11px;
+        margin-bottom: 30px;
+    }
+
+    .feature h3 {
+        font-size: 15px;
+        font-weight: normal;
+    }
+
+    .feature p {
+        font-size: 11px;
+        max-width: 210px;
+    }
+
+    .search-wrap {
+        margin-top: 35px;
+        display: flex;
+        max-width: 800px;
+        border: 1px solid #504c45;
+    }
+
+    #searchInput {
+        flex: 1;
+        padding: 17px;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+    }
+
+    .search-wrap button {
+        border: none;
+        border-left: 1px solid #504c45;
+        background: #25231f;
+        color: #f1eadb;
+        padding: 0 24px;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .tags {
+        margin-top: 18px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        border: 1px solid #908779;
+        padding: 7px 11px;
+        border-radius: 20px;
+        font-size: 10px;
+        cursor: pointer;
+    }
+
+    .tag:hover {
+        background: #ded3bf;
+    }
+
+    #results {
+        margin-top: 45px;
+    }
+
+    .result {
+        border-top: 1px solid #aaa294;
+        padding: 20px 0;
+        display: grid;
+        grid-template-columns: 140px 1fr 110px;
+        gap: 20px;
+    }
+
+    .result-type {
+        font-size: 10px;
+        text-transform: uppercase;
+    }
+
+    .result-title {
+        font-size: 15px;
+    }
+
+    .result-note {
+        font-size: 11px;
+        color: #625d55;
+    }
+
+    .workspace {
+        margin-top: 40px;
+        border: 1px solid #777064;
+        min-height: 450px;
+        padding: 40px;
+        position: relative;
+    }
+
+    .chain {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 100px;
+    }
+
+    .node {
+        padding: 16px 20px;
+        border: 1px solid #504c45;
+        border-radius: 30px;
+        background: #ece3d2;
+        font-size: 12px;
+    }
+
+    .arrow {
+        font-size: 20px;
+    }
+
+    .branch {
+        background: #d8c9a8;
+    }
+
+    .library-grid {
+        margin-top: 40px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .card {
+        border: 1px solid #8d8579;
+        padding: 22px;
+        min-height: 190px;
+    }
+
+    .card small {
+        text-transform: uppercase;
+    }
+
+    .card h3 {
+        font-size: 18px;
+        font-weight: normal;
+        margin-top: 30px;
+    }
+
+    .card p {
+        font-size: 11px;
+    }
+
+    .review-box {
+        border-top: 1px solid #777064;
+        margin-top: 40px;
+    }
+
+    .comment {
+        padding: 25px 0;
+        border-bottom: 1px solid #aaa294;
+        display: grid;
+        grid-template-columns: 150px 1fr;
+    }
+
+    .comment-name {
+        font-size: 11px;
+    }
+
+    .comment-text {
+        max-width: 650px;
+        font-size: 13px;
+    }
+
+    .actions {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .actions button {
+        padding: 7px 12px;
+        background: transparent;
+        border: 1px solid #777064;
+        font-family: inherit;
+        font-size: 10px;
+        cursor: pointer;
+    }
+
+    footer {
+        width: 90%;
+        max-width: 1200px;
+        margin: auto;
+        padding: 25px 0;
+        border-top: 1px solid #777064;
+        font-size: 10px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    @media (max-width: 800px) {
+        nav {
+            gap: 10px;
+            font-size: 9px;
+        }
+
+        .features,
+        .library-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .feature {
+            border-right: none;
+            border-bottom: 1px solid #aaa294;
+        }
+
+        .result {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">REASONING SPACE</div>
+
+    <nav>
+        <button onclick="showPage('home')">HOME</button>
+        <button onclick="showPage('explore')">EXPLORE</button>
+        <button onclick="showPage('workspace')">WORKSPACE</button>
+        <button onclick="showPage('library')">LIBRARY</button>
+        <button onclick="showPage('studio')">STUDIO</button>
+    </nav>
+</header>
+
+<main>
+
+<section id="home" class="page active">
+    <div class="eyebrow">Architectural Reasoning Intermediary / Prototype 01</div>
+
+    <h1>Make the thinking behind design visible.</h1>
+
+    <p class="intro">
+        Explore architectural concepts, trace interpretations,
+        connect references and build explicit reasoning paths
+        between language and spatial decisions.
+    </p>
+
+    <button class="primary" onclick="showPage('explore')">
+        START EXPLORING →
+    </button>
+
+    <div class="features">
+
+        <div class="feature">
+            <div class="number">01</div>
+            <h3>EXPLORE</h3>
+            <p>Search terms, concepts and related architectural ideas.</p>
+        </div>
+
+        <div class="feature">
+            <div class="number">02</div>
+            <h3>BUILD</h3>
+            <p>Turn interpretations into visible reasoning chains.</p>
+        </div>
+
+        <div class="feature">
+            <div class="number">03</div>
+            <h3>GROUND</h3>
+            <p>Connect reasoning to readings, precedents and cases.</p>
+        </div>
+
+        <div class="feature">
+            <div class="number">04</div>
+            <h3>DISCUSS</h3>
+            <p>Question, defend, revise or branch a design decision.</p>
+        </div>
+
+    </div>
+</section>
+
+
+<section id="explore" class="page">
+
+    <div class="eyebrow">01 / Explore</div>
+    <h2>What are you trying to understand?</h2>
+
+    <p class="intro">
+        Start with a word, phrase, brief condition or design concern.
+        Explore how it might be interpreted spatially.
+    </p>
+
+    <div class="search-wrap">
+        <input id="searchInput" placeholder="Try: privacy, gathering, flexibility...">
+        <button onclick="runSearch()">SEARCH</button>
+    </div>
+
+    <div class="tags">
+        <div class="tag" onclick="quickSearch('privacy')">privacy</div>
+        <div class="tag" onclick="quickSearch('gathering')">gathering</div>
+        <div class="tag" onclick="quickSearch('flexibility')">flexibility</div>
+        <div class="tag" onclick="quickSearch('shelter')">shelter</div>
+        <div class="tag" onclick="quickSearch('threshold')">threshold</div>
+    </div>
+
+    <div id="results"></div>
+
+</section>
+
+
+<section id="workspace" class="page">
+
+    <div class="eyebrow">02 / Reasoning Workspace</div>
+    <h2>Current reasoning path</h2>
+
+    <p class="intro">
+        A reasoning path records how a linguistic condition develops
+        through interpretation and toward a spatial consequence.
+    </p>
+
+    <div class="workspace">
+
+        <div class="chain">
+
+            <div class="node">
+                Students need privacy
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node">
+                Privacy
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node branch">
+                Visual separation
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node">
+                Orientation + screening
+            </div>
+
+            <div class="arrow">→</div>
+
+            <div class="node">
+                Partially screened study clusters
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section id="library" class="page">
+
+    <div class="eyebrow">03 / Library</div>
+    <h2>Ground the reasoning.</h2>
+
+    <p class="intro">
+        Concepts can connect to references, architectural precedents
+        and spatial examples rather than remaining isolated words.
+    </p>
+
+    <div class="library-grid">
+
+        <div class="card">
+            <small>Concept</small>
+            <h3>Threshold</h3>
+            <p>
+                A spatial condition mediating between territories,
+                programmes or degrees of access.
+            </p>
+        </div>
+
+        <div class="card">
+            <small>Reading</small>
+            <h3>Meaning + Interpretation</h3>
+            <p>
+                References supporting how meaning is formed,
+                interpreted and translated.
+            </p>
+        </div>
+
+        <div class="card">
+            <small>Case Study</small>
+            <h3>Shared Learning Space</h3>
+            <p>
+                Precedents demonstrating different relationships
+                between privacy and collective occupation.
+            </p>
+        </div>
+
+    </div>
+</section>
+
+
+<section id="studio" class="page">
+
+    <div class="eyebrow">04 / Studio Review</div>
+    <h2>Question the reasoning, not only the outcome.</h2>
+
+    <p class="intro">
+        Tutors and peers can respond directly to points in a reasoning
+        path, making critique traceable to the decision being questioned.
+    </p>
+
+    <div class="review-box">
+
+        <div class="comment">
+            <div class="comment-name">
+                TUTOR / 10:42
+            </div>
+
+            <div class="comment-text">
+                Why has “privacy” been interpreted as physical separation?
+                Could orientation achieve the same goal without increasing enclosure?
+
+                <div class="actions">
+                    <button>DEFEND</button>
+                    <button>REVISE</button>
+                    <button>BRANCH</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="comment">
+            <div class="comment-name">
+                STUDENT / 10:47
+            </div>
+
+            <div class="comment-text">
+                The intention is visual privacy rather than complete isolation.
+                I would test orientation as an alternative branch.
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+<footer>
+    <span>REASONING SPACE / WORKING PROTOTYPE</span>
+    <span>ARCHITECTURAL DESIGN INTERMEDIARY</span>
+</footer>
+
+
+<script>
+
+function showPage(pageName) {
+
+    const pages = document.querySelectorAll(".page");
+
+    pages.forEach(page => {
+        page.classList.remove("active");
+    });
+
+    document.getElementById(pageName).classList.add("active");
+
+    window.scrollTo(0, 0);
+}
+
+
+function quickSearch(term) {
+
+    document.getElementById("searchInput").value = term;
+
+    runSearch();
+}
+
+
+function runSearch() {
+
+    const input = document
+        .getElementById("searchInput")
+        .value
+        .trim();
+
+    const term = input || "privacy";
+
+    document.getElementById("results").innerHTML = `
+
+        <div class="result">
+            <div class="result-type">Concept</div>
+            <div>
+                <div class="result-title">${term}</div>
+                <div class="result-note">
+                    Explore interpretations and related spatial concepts.
+                </div>
+            </div>
+            <div>EXPLORE →</div>
+        </div>
+
+        <div class="result">
+            <div class="result-type">Related</div>
+            <div>
+                <div class="result-title">
+                    threshold / separation / orientation / enclosure
+                </div>
+                <div class="result-note">
+                    Possible conceptual directions rather than prescribed solutions.
+                </div>
+            </div>
+            <div>4 LINKS</div>
+        </div>
+
+        <div class="result">
+            <div class="result-type">Case Study</div>
+            <div>
+                <div class="result-title">
+                    Spatial precedent related to ${term}
+                </div>
+                <div class="result-note">
+                    Compare how another project translated a similar concern.
+                </div>
+            </div>
+            <div>VIEW →</div>
+        </div>
+
+        <div class="result">
+            <div class="result-type">Reading</div>
+            <div>
+                <div class="result-title">
+                    Interpretation + architectural reasoning
+                </div>
+                <div class="result-note">
+                    Reference material connected to this concept.
+                </div>
+            </div>
+            <div>READ →</div>
+        </div>
+
+    `;
+}
+
+</script>
+
+</body>
+</html>
