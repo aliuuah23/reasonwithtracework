@@ -52,10 +52,15 @@ const conceptData = {
 
 };
 
+
 let activeConcept = null;
 let selectedInterpretation = null;
 let selectedSpatialDirection = null;
 
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
 function showPage(pageName) {
 
@@ -73,6 +78,10 @@ function showPage(pageName) {
     window.scrollTo(0, 0);
 }
 
+
+/* =========================================================
+   SEARCH
+========================================================= */
 
 function handleSearchKey(event) {
 
@@ -253,6 +262,10 @@ function runSearch() {
 }
 
 
+/* =========================================================
+   HELPERS
+========================================================= */
+
 function escapeForFunction(text) {
 
     return text
@@ -287,6 +300,10 @@ function getConceptData(term) {
 }
 
 
+/* =========================================================
+   ADD TO REASONING
+========================================================= */
+
 function addToReasoning(term) {
 
     activeConcept = capitaliseTerm(term);
@@ -299,6 +316,10 @@ function addToReasoning(term) {
     showPage("workspace");
 }
 
+
+/* =========================================================
+   REASON WORKSPACE
+========================================================= */
 
 function renderReasonWorkspace() {
 
@@ -421,6 +442,10 @@ function renderReasonWorkspace() {
 }
 
 
+/* =========================================================
+   SELECT PATH
+========================================================= */
+
 function choosePath(
     interpretation,
     spatialDirection
@@ -476,6 +501,10 @@ function choosePath(
     updateDiscussion();
 }
 
+
+/* =========================================================
+   GROUND
+========================================================= */
 
 function groundCurrentPath() {
 
@@ -546,11 +575,38 @@ function groundCurrentPath() {
             </p>
 
         </div>
+
+        <div style="grid-column: 1 / -1; margin-top: 8px;">
+
+            <button
+                class="primary"
+                onclick="goToDiscussion()"
+            >
+                DISCUSS THIS REASONING →
+            </button>
+
+        </div>
     `;
 
     showPage("library");
 }
 
+
+/* =========================================================
+   GO TO DISCUSSION
+========================================================= */
+
+function goToDiscussion() {
+
+    updateDiscussion();
+
+    showPage("studio");
+}
+
+
+/* =========================================================
+   DISCUSSION
+========================================================= */
 
 function updateDiscussion() {
 
