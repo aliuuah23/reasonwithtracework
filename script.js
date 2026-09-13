@@ -256,12 +256,63 @@ function showPage(pageName) {
         .classList
         .add("active");
 
+
     if (pageName === "studio") {
+
         setupDiscussionInput();
+
         renderDiscussionComments();
     }
 
+
+    renderMyTrace();
+
     window.scrollTo(0, 0);
+}
+
+
+/* =========================================================
+   TEXT HELPERS
+========================================================= */
+
+function capitaliseTerm(term) {
+
+    if (!term) {
+        return "";
+    }
+
+    return term.charAt(0).toUpperCase() + term.slice(1);
+}
+
+
+function capitaliseSentence(text) {
+
+    const trimmed = text.trim();
+
+    if (!trimmed) {
+        return "";
+    }
+
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+
+function escapeForFunction(text) {
+
+    return text
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+}
+
+
+function escapeHtml(text) {
+
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
@@ -304,28 +355,6 @@ function searchFromMap(term) {
 }
 
 
-function capitaliseTerm(term) {
-
-    if (!term) {
-        return "";
-    }
-
-    return term.charAt(0).toUpperCase() + term.slice(1);
-}
-
-
-function capitaliseSentence(text) {
-
-    const trimmed = text.trim();
-
-    if (!trimmed) {
-        return "";
-    }
-
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-}
-
-
 function runSearch() {
 
     let input =
@@ -338,7 +367,9 @@ function runSearch() {
         input = "Privacy";
     }
 
-    const formattedTerm = capitaliseTerm(input);
+    const formattedTerm =
+        capitaliseTerm(input);
+
 
     const matchingKey =
         Object.keys(conceptData).find(
@@ -347,7 +378,10 @@ function runSearch() {
                 formattedTerm.toLowerCase()
         );
 
-    const term = matchingKey || formattedTerm;
+
+    const term =
+        matchingKey || formattedTerm;
+
 
     const data =
         matchingKey
@@ -355,7 +389,9 @@ function runSearch() {
             : createGenericConcept(term);
 
 
-    document.getElementById("results").innerHTML = `
+    document
+        .getElementById("results")
+        .innerHTML = `
 
         <div class="search-summary">
             Results For: ${term}
@@ -485,8 +521,12 @@ function runSearch() {
 
 function renderConceptMap(term, data) {
 
-    const primary = data.mapPrimary || [];
-    const secondary = data.mapSecondary || [];
+    const primary =
+        data.mapPrimary || [];
+
+    const secondary =
+        data.mapSecondary || [];
+
 
     const primaryHtml =
         primary
@@ -510,7 +550,9 @@ function renderConceptMap(term, data) {
     const secondaryGroups = [
 
         secondary.slice(0, 2),
+
         secondary.slice(2, 4),
+
         secondary.slice(4, 6)
 
     ];
@@ -544,6 +586,7 @@ function renderConceptMap(term, data) {
     return `
 
         <div class="map-section">
+
 
             <div class="map-heading">
 
@@ -605,8 +648,10 @@ function renderConceptMap(term, data) {
 
 
                 <div class="map-hint">
+
                     Click any node to continue exploring from that concept.
                     The map does not represent a prescribed sequence.
+
                 </div>
 
             </div>
@@ -679,29 +724,6 @@ function createGenericConcept(term) {
 }
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function escapeForFunction(text) {
-
-    return text
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'");
-}
-
-
-function escapeHtml(text) {
-
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
 function getConceptData(term) {
 
     const matchingKey =
@@ -725,10 +747,15 @@ function getConceptData(term) {
 
 function addToReasoning(term) {
 
-    activeConcept = capitaliseTerm(term);
+    activeConcept =
+        capitaliseTerm(term);
 
     selectedInterpretation = null;
+
     selectedSpatialDirection = null;
+
+
+    removeMyTrace();
 
     renderReasonWorkspace();
 
@@ -737,7 +764,7 @@ function addToReasoning(term) {
 
 
 /* =========================================================
-   REASON
+   REASON WORKSPACE
 ========================================================= */
 
 function renderReasonWorkspace() {
@@ -770,7 +797,8 @@ function renderReasonWorkspace() {
     }
 
 
-    const data = getConceptData(activeConcept);
+    const data =
+        getConceptData(activeConcept);
 
 
     status.innerHTML = `
@@ -885,8 +913,11 @@ function choosePath(
     spatialDirection
 ) {
 
-    selectedInterpretation = interpretation;
-    selectedSpatialDirection = spatialDirection;
+    selectedInterpretation =
+        interpretation;
+
+    selectedSpatialDirection =
+        spatialDirection;
 
 
     document
@@ -936,6 +967,225 @@ function choosePath(
 
 
     updateDiscussion();
+
+    renderMyTrace();
+}
+
+
+/* =========================================================
+   MY TRACE
+========================================================= */
+
+function renderMyTrace() {
+
+    if (
+        !activeConcept ||
+        !selectedInterpretation ||
+        !selectedSpatialDirection
+    ) {
+
+        removeMyTrace();
+
+        return;
+    }
+
+
+    let panel =
+        document.getElementById("myTracePanel");
+
+
+    if (!panel) {
+
+        panel =
+            document.createElement("div");
+
+        panel.id =
+            "myTracePanel";
+
+        document.body.appendChild(panel);
+    }
+
+
+    panel.innerHTML = `
+
+        <div
+            style="
+                position: fixed;
+                right: 24px;
+                bottom: 24px;
+                z-index: 1000;
+
+                width: 330px;
+                max-width: calc(100vw - 48px);
+
+                padding: 20px;
+
+                border: 1px solid #504c45;
+
+                background: #ece3d2;
+
+                box-shadow: 5px 5px 0 rgba(37, 35, 31, 0.10);
+
+                color: #25231f;
+
+                font-family: 'Courier New', Courier, monospace;
+            "
+        >
+
+            <div
+                style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+
+                    margin-bottom: 18px;
+                "
+            >
+
+                <div
+                    style="
+                        font-size: 10px;
+                        letter-spacing: 1.2px;
+                    "
+                >
+                    MY TRACE
+                </div>
+
+
+                <div
+                    style="
+                        font-size: 9px;
+                        color: #625d55;
+                    "
+                >
+                    ACTIVE PATH
+                </div>
+
+            </div>
+
+
+            <div
+                style="
+                    font-size: 11px;
+                    line-height: 1.7;
+                "
+            >
+
+                <strong style="font-weight: normal;">
+                    ${activeConcept}
+                </strong>
+
+                <br>
+
+                ↓
+
+                <br>
+
+                ${selectedInterpretation}
+
+                <br>
+
+                ↓
+
+                <br>
+
+                ${selectedSpatialDirection}
+
+            </div>
+
+
+            <div
+                style="
+                    display: flex;
+                    gap: 7px;
+                    flex-wrap: wrap;
+
+                    margin-top: 20px;
+                    padding-top: 16px;
+
+                    border-top: 1px solid #aaa294;
+                "
+            >
+
+                <button
+                    onclick="reviseMyTrace()"
+                    style="
+                        padding: 7px 9px;
+
+                        border: 1px solid #777064;
+
+                        background: transparent;
+
+                        font-family: inherit;
+                        font-size: 9px;
+
+                        cursor: pointer;
+                    "
+                >
+                    REVISE
+                </button>
+
+
+                <button
+                    onclick="groundCurrentPath()"
+                    style="
+                        padding: 7px 9px;
+
+                        border: 1px solid #777064;
+
+                        background: transparent;
+
+                        font-family: inherit;
+                        font-size: 9px;
+
+                        cursor: pointer;
+                    "
+                >
+                    GROUND
+                </button>
+
+
+                <button
+                    onclick="goToDiscussion()"
+                    style="
+                        padding: 7px 9px;
+
+                        border: 1px solid #25231f;
+
+                        background: #25231f;
+                        color: #f1eadb;
+
+                        font-family: inherit;
+                        font-size: 9px;
+
+                        cursor: pointer;
+                    "
+                >
+                    DISCUSS
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+function removeMyTrace() {
+
+    const panel =
+        document.getElementById("myTracePanel");
+
+    if (panel) {
+        panel.remove();
+    }
+}
+
+
+function reviseMyTrace() {
+
+    showPage("workspace");
 }
 
 
@@ -945,7 +1195,17 @@ function choosePath(
 
 function groundCurrentPath() {
 
-    const data = getConceptData(activeConcept);
+    if (
+        !activeConcept ||
+        !selectedInterpretation ||
+        !selectedSpatialDirection
+    ) {
+        return;
+    }
+
+
+    const data =
+        getConceptData(activeConcept);
 
 
     document
@@ -1074,6 +1334,8 @@ function groundCurrentPath() {
 
 
     showPage("library");
+
+    renderMyTrace();
 }
 
 
@@ -1083,7 +1345,9 @@ function groundCurrentPath() {
 
 function openGroundDetail(type) {
 
-    const data = getConceptData(activeConcept);
+    const data =
+        getConceptData(activeConcept);
+
 
     let label = "";
     let title = "";
@@ -1094,30 +1358,55 @@ function openGroundDetail(type) {
 
     if (type === "concept") {
 
-        label = "Concept / Working Definition";
-        title = activeConcept;
-        description = data.conceptDetail;
-        lowerLabel = "Related Concepts";
-        lowerContent = data.related;
+        label =
+            "Concept / Working Definition";
+
+        title =
+            activeConcept;
+
+        description =
+            data.conceptDetail;
+
+        lowerLabel =
+            "Related Concepts";
+
+        lowerContent =
+            data.related;
     }
 
 
     if (type === "reading") {
 
-        label = "Reading / Student View";
-        title = data.reading;
-        description = data.readingDetail;
-        lowerLabel = "Why This Matters";
-        lowerContent = data.whyMatters;
+        label =
+            "Reading / Student View";
+
+        title =
+            data.reading;
+
+        description =
+            data.readingDetail;
+
+        lowerLabel =
+            "Why This Matters";
+
+        lowerContent =
+            data.whyMatters;
     }
 
 
     if (type === "case") {
 
-        label = "Case Study / Design Question";
-        title = data.caseStudy;
-        description = data.caseDetail;
-        lowerLabel = "Question To Ask";
+        label =
+            "Case Study / Design Question";
+
+        title =
+            data.caseStudy;
+
+        description =
+            data.caseDetail;
+
+        lowerLabel =
+            "Question To Ask";
 
         lowerContent =
             `How does this precedent interpret “${activeConcept}”, and how is that interpretation different from your current reasoning path?`;
@@ -1227,6 +1516,8 @@ function goToDiscussion() {
     updateDiscussion();
 
     showPage("studio");
+
+    renderMyTrace();
 }
 
 
@@ -1236,7 +1527,9 @@ function updateDiscussion() {
         !activeConcept ||
         !selectedInterpretation
     ) {
+
         setupDiscussionInput();
+
         return;
     }
 
@@ -1286,6 +1579,7 @@ function updateDiscussion() {
 
 
     setupDiscussionInput();
+
     renderDiscussionComments();
 }
 
@@ -1297,7 +1591,10 @@ function updateDiscussion() {
 function setupDiscussionInput() {
 
     const reviewBox =
-        document.querySelector("#studio .review-box");
+        document.querySelector(
+            "#studio .review-box"
+        );
+
 
     if (!reviewBox) {
         return;
@@ -1379,6 +1676,7 @@ function setupDiscussionInput() {
 
 
                 <div>
+
                     <button
                         class="primary"
                         style="margin-top: 14px;"
@@ -1386,6 +1684,7 @@ function setupDiscussionInput() {
                     >
                         ADD COMMENT →
                     </button>
+
                 </div>
 
             </div>
@@ -1398,7 +1697,7 @@ function setupDiscussionInput() {
 
 
 /* =========================================================
-   ADD DISCUSSION COMMENT
+   ADD COMMENT
 ========================================================= */
 
 function addDiscussionComment() {
@@ -1407,6 +1706,7 @@ function addDiscussionComment() {
         document.getElementById(
             "discussionInput"
         );
+
 
     if (!input) {
         return;
@@ -1425,8 +1725,13 @@ function addDiscussionComment() {
 
 
     discussionComments.push({
-        author: "STUDENT / NEW COMMENT",
-        text: comment
+
+        author:
+            "STUDENT / NEW COMMENT",
+
+        text:
+            comment
+
     });
 
 
@@ -1438,7 +1743,7 @@ function addDiscussionComment() {
 
 
 /* =========================================================
-   RENDER DISCUSSION COMMENTS
+   RENDER COMMENTS
 ========================================================= */
 
 function renderDiscussionComments() {
@@ -1447,6 +1752,7 @@ function renderDiscussionComments() {
         document.getElementById(
             "discussionCommentList"
         );
+
 
     if (!list) {
         return;
