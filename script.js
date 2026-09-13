@@ -79,7 +79,7 @@ const conceptData = {
             "Gathering may describe organised collective activity, casual encounter, observation, temporary congregation or sustained shared occupation.",
 
         readingDetail:
-            "This reading direction examines how patterns of occupation and social interaction can influence spatial organisation without assuming that gathering always requires one central room.",
+            "This reading direction examines how patterns of occupation and social interaction can influence spatial organisation without assuming that Gathering always requires one central room.",
 
         caseDetail:
             "A useful precedent would compare centralised gathering spaces with distributed edges, circulation intersections and informal meeting zones.",
@@ -214,7 +214,7 @@ const conceptData = {
             "Thresholds can separate, connect, delay or negotiate spatial territories.",
 
         conceptDetail:
-            "A threshold is not necessarily a door or line. It may be a spatial interval that changes access, atmosphere, visibility, programme or behavioural expectation.",
+            "A Threshold is not necessarily a door or line. It may be a spatial interval that changes access, atmosphere, visibility, programme or behavioural expectation.",
 
         readingDetail:
             "This reading direction examines boundaries as spatial relationships rather than simple divisions between two fixed zones.",
@@ -236,6 +236,8 @@ let activeConcept = null;
 let selectedInterpretation = null;
 let selectedSpatialDirection = null;
 
+let discussionComments = [];
+
 
 /* =========================================================
    NAVIGATION
@@ -253,6 +255,11 @@ function showPage(pageName) {
         .getElementById(pageName)
         .classList
         .add("active");
+
+    if (pageName === "studio") {
+        setupDiscussionInput();
+        renderDiscussionComments();
+    }
 
     window.scrollTo(0, 0);
 }
@@ -304,6 +311,18 @@ function capitaliseTerm(term) {
     }
 
     return term.charAt(0).toUpperCase() + term.slice(1);
+}
+
+
+function capitaliseSentence(text) {
+
+    const trimmed = text.trim();
+
+    if (!trimmed) {
+        return "";
+    }
+
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
 
@@ -669,6 +688,17 @@ function escapeForFunction(text) {
     return text
         .replace(/\\/g, "\\\\")
         .replace(/'/g, "\\'");
+}
+
+
+function escapeHtml(text) {
+
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
@@ -1065,13 +1095,9 @@ function openGroundDetail(type) {
     if (type === "concept") {
 
         label = "Concept / Working Definition";
-
         title = activeConcept;
-
         description = data.conceptDetail;
-
         lowerLabel = "Related Concepts";
-
         lowerContent = data.related;
     }
 
@@ -1079,13 +1105,9 @@ function openGroundDetail(type) {
     if (type === "reading") {
 
         label = "Reading / Student View";
-
         title = data.reading;
-
         description = data.readingDetail;
-
         lowerLabel = "Why This Matters";
-
         lowerContent = data.whyMatters;
     }
 
@@ -1093,11 +1115,8 @@ function openGroundDetail(type) {
     if (type === "case") {
 
         label = "Case Study / Design Question";
-
         title = data.caseStudy;
-
         description = data.caseDetail;
-
         lowerLabel = "Question To Ask";
 
         lowerContent =
@@ -1217,6 +1236,7 @@ function updateDiscussion() {
         !activeConcept ||
         !selectedInterpretation
     ) {
+        setupDiscussionInput();
         return;
     }
 
@@ -1263,13 +1283,217 @@ function updateDiscussion() {
         ${selectedSpatialDirection}
 
     `;
+
+
+    setupDiscussionInput();
+    renderDiscussionComments();
 }
 
+
+/* =========================================================
+   DISCUSSION INPUT
+========================================================= */
+
+function setupDiscussionInput() {
+
+    const reviewBox =
+        document.querySelector("#studio .review-box");
+
+    if (!reviewBox) {
+        return;
+    }
+
+
+    if (
+        document.getElementById(
+            "discussionExtras"
+        )
+    ) {
+        return;
+    }
+
+
+    reviewBox.insertAdjacentHTML(
+        "beforeend",
+        `
+
+        <div id="discussionExtras">
+
+            <div
+                id="discussionCommentList"
+            ></div>
+
+
+            <div
+                style="
+                    margin-top: 34px;
+                    padding-top: 28px;
+                    border-top: 1px solid #777064;
+                "
+            >
+
+                <div
+                    style="
+                        margin-bottom: 12px;
+                        font-size: 10px;
+                        letter-spacing: 1px;
+                        text-transform: uppercase;
+                    "
+                >
+                    Add To The Discussion
+                </div>
+
+
+                <div
+                    style="
+                        max-width: 760px;
+                        margin-bottom: 12px;
+                        color: #625d55;
+                        font-size: 11px;
+                        line-height: 1.6;
+                    "
+                >
+                    Question, challenge, defend or propose an alternative
+                    interpretation of the reasoning path.
+                </div>
+
+
+                <textarea
+                    id="discussionInput"
+                    placeholder="Add A Question Or Challenge..."
+                    style="
+                        width: 100%;
+                        max-width: 760px;
+                        min-height: 110px;
+                        padding: 16px;
+                        resize: vertical;
+                        border: 1px solid #777064;
+                        background: transparent;
+                        color: #25231f;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 12px;
+                        line-height: 1.6;
+                        outline: none;
+                    "
+                ></textarea>
+
+
+                <div>
+                    <button
+                        class="primary"
+                        style="margin-top: 14px;"
+                        onclick="addDiscussionComment()"
+                    >
+                        ADD COMMENT →
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+        `
+    );
+}
+
+
+/* =========================================================
+   ADD DISCUSSION COMMENT
+========================================================= */
+
+function addDiscussionComment() {
+
+    const input =
+        document.getElementById(
+            "discussionInput"
+        );
+
+    if (!input) {
+        return;
+    }
+
+
+    const comment =
+        capitaliseSentence(
+            input.value
+        );
+
+
+    if (!comment) {
+        return;
+    }
+
+
+    discussionComments.push({
+        author: "STUDENT / NEW COMMENT",
+        text: comment
+    });
+
+
+    input.value = "";
+
+
+    renderDiscussionComments();
+}
+
+
+/* =========================================================
+   RENDER DISCUSSION COMMENTS
+========================================================= */
+
+function renderDiscussionComments() {
+
+    const list =
+        document.getElementById(
+            "discussionCommentList"
+        );
+
+    if (!list) {
+        return;
+    }
+
+
+    if (
+        discussionComments.length === 0
+    ) {
+
+        list.innerHTML = "";
+
+        return;
+    }
+
+
+    list.innerHTML =
+        discussionComments
+            .map(comment => `
+
+                <div class="comment">
+
+                    <div class="comment-name">
+                        ${comment.author}
+                    </div>
+
+                    <div class="comment-text">
+                        ${escapeHtml(comment.text)}
+                    </div>
+
+                </div>
+
+            `)
+            .join("");
+}
+
+
+/* =========================================================
+   DISCUSSION ACTIONS
+========================================================= */
 
 function discussionAction(action) {
 
     const student =
-        document.getElementById("studentComment");
+        document.getElementById(
+            "studentComment"
+        );
 
 
     if (action === "Defend") {
