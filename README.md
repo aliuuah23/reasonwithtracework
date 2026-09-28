@@ -1,2 +1,2 @@
 # reasoning-space
-rototype intermediary for architectural reasoning and learning
+Prototype intermediary for architectural reasoning and learning
