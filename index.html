@@ -22,7 +22,7 @@
       <button class="nav-link active" data-view="workspace">Workspace</button>
       <button class="nav-link" data-view="pathways">Pathway Bank</button>
       <button class="nav-link" data-view="trace">My Trace</button>
-      <a class="nav-link" href="about.html">About</a>
+      <a class="nav-link" id="aboutLink" href="about.html">About</a>
     </nav>
     <div class="topbar-actions">
       <span class="save-status" id="saveStatus"><span class="status-dot"></span> Saved locally</span>
@@ -46,6 +46,8 @@
           <button class="primary-button" id="startTracingButton">Start tracing <span>→</span></button>
         </div>
       </div>
+
+      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Accounts can replace local storage later.</span></div><div class="project-grid" id="projectShelf"></div></section>
 
       <div class="landing-proof" aria-label="TRACEWORK workflow">
         <span>Language</span><i></i><span>Interpretation</span><i></i><span>Grounding</span><i></i><span>Spatial consequence</span><i></i><span>Evaluation</span><i></i><span>Goal</span>
@@ -93,9 +95,9 @@
               </div>
             </div>
             <div class="toolbar-actions">
-              <button class="tool-button" id="branchButton" disabled>⑂ Branch</button>
+              <button class="tool-button" id="branchButton" disabled>⑂ Fork</button>
               <button class="tool-button" id="compareButton" disabled>⇆ Compare</button>
-              <button class="tool-button" id="fitButton">⌗ Fit</button>
+              <div class="zoom-control" aria-label="Canvas zoom"><button class="tool-button zoom-button" id="zoomOutButton" aria-label="Zoom out">−</button><span id="zoomLabel">100%</span><button class="tool-button zoom-button" id="zoomInButton" aria-label="Zoom in">＋</button></div><button class="tool-button" id="fitButton">⌗ Fit</button>
             </div>
           </div>
 
@@ -106,15 +108,17 @@
           </div>
 
           <div class="graph-viewport hidden" id="graphViewport">
-            <div class="graph-surface" id="graphSurface">
-              <svg class="graph-edges" id="graphEdges" aria-hidden="true"></svg>
-              <div class="graph-nodes" id="graphNodes"></div>
+            <div class="graph-stage" id="graphStage">
+              <div class="graph-surface" id="graphSurface">
+                <svg class="graph-edges" id="graphEdges" aria-hidden="true"></svg>
+                <div class="graph-nodes" id="graphNodes"></div>
+              </div>
             </div>
           </div>
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Drag nodes · Click to inspect · Branch to test alternatives</span>
+            <span class="canvas-hint">Drag canvas to pan · Zoom ± · Drag nodes · Click to inspect · Fork from any step</span>
           </div>
         </section>
 
@@ -147,6 +151,7 @@
           </div>
           <div class="trace-actions">
             <button class="secondary-button" id="exportJsonButton">Export project</button>
+            <button class="secondary-button danger-subtle" id="resetLocalDataButton">Reset local data</button>
           </div>
         </div>
         <div class="trace-dashboard" id="traceDashboard"></div>

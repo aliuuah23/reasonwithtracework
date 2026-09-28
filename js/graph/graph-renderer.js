@@ -1,13 +1,15 @@
 import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
 
-export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMove}){
+export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMove,getScale=()=>1}){
   const laid=autoLayout(nodes);
   const positions=new Map(laid.map(n=>[n.id,{...n}]));
   const size=surfaceSize(laid);
 
   els.surface.style.width=`${size.width}px`;
   els.surface.style.height=`${size.height}px`;
+  els.surface.dataset.worldWidth=String(size.width);
+  els.surface.dataset.worldHeight=String(size.height);
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges)).join('');
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId)).join('');
@@ -33,7 +35,8 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
         if(pos){ pos.x=x; pos.y=y; }
         redrawEdges();
       },
-      onMove:onNodeMove
+      onMove:onNodeMove,
+      getScale
     });
   });
 }
@@ -77,7 +80,7 @@ function isOnActivePath(edge,activeNodeId,edges){
   return path.has(edge.id);
 }
 
-function bindDrag(el,{bounds,onLiveMove,onMove}){
+function bindDrag(el,{bounds,onLiveMove,onMove,getScale}){
   let start=null,origin=null,moved=false;
 
   el.addEventListener('pointerdown',e=>{
@@ -91,7 +94,8 @@ function bindDrag(el,{bounds,onLiveMove,onMove}){
 
   el.addEventListener('pointermove',e=>{
     if(!start || e.pointerId!==start.pointerId)return;
-    const dx=e.clientX-start.x,dy=e.clientY-start.y;
+    const scale=Math.max(.01,Number(getScale?.()||1));
+    const dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
     if(Math.abs(dx)+Math.abs(dy)<=4 && !moved)return;
 
     moved=true;

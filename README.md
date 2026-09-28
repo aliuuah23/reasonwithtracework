@@ -35,3 +35,8 @@ This build is static and has no package/dependency step. Commit the repository a
 ## Prototype note
 
 Starter pathways are explicitly marked illustrative. They demonstrate the interface behaviour and should not be presented as empirical P01–P10 findings unless replaced with verified research data.
+
+
+## Navigation safety
+
+TRACEWORK autosaves active traces locally. Clicking the brand mark now returns to the product home through a confirmation dialog, About confirms before leaving an active trace, and My Trace includes a deliberate local-data reset control.

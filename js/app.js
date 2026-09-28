@@ -1,5 +1,5 @@
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
-import { saveProject, loadProject, clearProject, exportProject } from './core/storage.js';
+import { saveProject, loadProject, listProjects, ensureProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology } from './core/ontology.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { normaliseBrief } from './input/brief-parser.js';
@@ -8,9 +8,9 @@ import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
-import { createBranch, rejectBranch } from './reasoning/branching.js';
+import { createBranch, forkNext, nextNodeType, rejectBranch } from './reasoning/branching.js';
 import { renderGraph } from './graph/graph-renderer.js';
-import { fitGraph, focusNode, bindCanvasPan } from './graph/graph-interactions.js';
+import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js';
@@ -24,6 +24,7 @@ const els = {};
 let ontology = [];
 let pathways = [];
 let saveTimer = null;
+let canvasZoom = 1;
 
 async function init(){
   cacheEls();
@@ -32,42 +33,44 @@ async function init(){
   renderLegend(ontology);
   bindGlobalEvents();
   bindCanvasPan(els.graphViewport);
-  const saved = loadProject();
-  if(saved?.brief){
-    replaceState(saved);
-    enterApp(false);
-  } else {
-    renderEmptyInspector();
-  }
+  bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo});
+  await seedTestProject();
+  renderProjectShelf();
+  renderEmptyInspector();
   subscribe(state => {
+    if(!state.brief) return;
     setSaveStatus('Saving…',true);
     clearTimeout(saveTimer);
-    saveTimer=setTimeout(()=>{ saveProject(state); setSaveStatus('Saved locally',false); },220);
+    saveTimer=setTimeout(()=>{ saveProject(state); setSaveStatus('Saved locally',false); renderProjectShelf(); },220);
   });
 }
 
 function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),
-    briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty')
+    briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty')
   });
 }
 
 function bindGlobalEvents(){
   $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; els.briefLanding.focus(); };
   $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value);
-  $('#brandButton').onclick=()=>{ if(getState().brief)showView('workspace'); else showLanding(); };
+  $('#brandButton').onclick=()=>getState().brief?confirmReturnHome():showLanding();
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
-  $('#newProjectButton').onclick=confirmNewProject;
+  $('#newProjectButton').onclick=()=>getState().brief?confirmNewProject():els.briefLanding.focus();
+  $('#aboutLink').onclick=e=>{ if(!getState().brief)return; e.preventDefault(); confirmLeaveForAbout(); };
   $('#editBriefButton').onclick=()=>toggleBriefEditor(true,getState());
   $('#cancelBriefEdit').onclick=()=>toggleBriefEditor(false,getState());
   $('#applyBriefEdit').onclick=()=>applyEditedBrief();
   $('#addPhraseButton').onclick=manualPhrase;
-  $('#branchButton').onclick=branchActive;
+  $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
-  $('#fitButton').onclick=()=>fitGraph(els.graphViewport,els.graphSurface);
+  $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
+  $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
+  $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
   $('#pathwaySearch').addEventListener('input',e=>renderPathwayCards(e.target.value));
   $('#exportJsonButton').onclick=()=>{exportProject(getState());toast('Project exported.');};
+  $('#resetLocalDataButton').onclick=confirmResetLocalData;
 }
 
 async function startFromBrief(raw){
@@ -81,13 +84,14 @@ async function startFromBrief(raw){
 }
 
 function enterApp(autoSelect=true){
+  canvasZoom=1; updateZoomLabel();
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
   renderWorkspace();
   if(autoSelect && getState().hotspots.length) selectHotspot(getState().hotspots[0].id);
 }
 
-function showLanding(){ els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); }
+function showLanding(){ els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf(); }
 
 function showView(view){
   if(!getState().brief && view!=='workspace'){showLanding();return;}
@@ -112,7 +116,7 @@ function renderWorkspace(){
   $('#canvasTitle').textContent=state.selectedHotspotId ? `Tracing “${state.hotspots.find(h=>h.id===state.selectedHotspotId)?.text || 'language'}”` : 'Your trace';
   if(hasNodes)renderGraphState();
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  $('#branchButton').disabled=active?.type!=='interpretation' || active?.status==='rejected';
+  $('#branchButton').disabled=!active || active.type==='goal' || active.status==='rejected';
   $('#compareButton').disabled=scopedBranches.length<2;
   if(active) renderNodeInspector(active,state,nodeHandlers());
   else if(state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,hotspotHandlers()); }
@@ -124,8 +128,10 @@ function renderGraphState(){
   const scoped=scopedTrace(state);
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:id=>selectNode(id),
-    onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}})
+    onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
+    getScale:()=>canvasZoom
   });
+  applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
 }
 
 async function selectHotspot(id){
@@ -143,7 +149,7 @@ async function selectHotspot(id){
   renderWorkspace();
   const latest=getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
   await renderHotspotInspector(hotspot,hotspotHandlers(latest?.id));
-  setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`)),80);
+  setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`),canvasZoom),80);
 }
 
 function hotspotHandlers(inputNodeId=null){
@@ -182,6 +188,7 @@ function nodeHandlers(){
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
     },
     onBranch:id=>branchFrom(id),
+    onFork:id=>forkFrom(id),
     onEdit:node=>editNode(node),
     onReject:branchId=>{
       updateState(s=>rejectBranch(s,branchId)); logEvent('Path rejected','Retained in project history'); renderWorkspace(); toast('Path retained as rejected reasoning.');
@@ -189,7 +196,15 @@ function nodeHandlers(){
   };
 }
 
-function branchActive(){ const n=getState().nodes.find(x=>x.id===getState().activeNodeId); if(n?.type==='interpretation')branchFrom(n.id); }
+function forkActive(){ const n=getState().nodes.find(x=>x.id===getState().activeNodeId); if(n && n.type!=='goal')forkFrom(n.id); }
+function forkFrom(id){
+  const origin=getState().nodes.find(n=>n.id===id); if(!origin)return;
+  const type=nextNodeType(origin.type); if(!type)return;
+  const labels={interpretation:'interpretation',grounding:'grounding',consequence:'spatial consequence',evaluation:'evaluation',goal:'goal'};
+  openModal(`<h2 id="modalTitle">Fork the reasoning here.</h2><p>Create another ${labels[type]||type} from this same point. The existing route stays intact.</p><label class="field-label">${labels[type]||type}</label><textarea class="field-textarea" id="forkText" placeholder="Describe another plausible next move…"></textarea><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmFork">Create fork →</button></div>`,{
+    onOpen:m=>m.querySelector('#confirmFork').onclick=()=>{ const val=m.querySelector('#forkText').value.trim(); if(!val)return; updateState(s=>forkNext(s,id,val)); logEvent('Reasoning fork created',val); closeModal(); renderWorkspace(); }
+  });
+}
 function branchFrom(id){
   const origin=getState().nodes.find(n=>n.id===id); if(!origin)return;
   openModal(`<h2 id="modalTitle">Branch this interpretation.</h2><p>Keep the existing reading and create another possible meaning alongside it.</p><label class="field-label">Alternative interpretation</label><textarea class="field-textarea" id="branchText" placeholder="Describe another plausible reading of this language…"></textarea><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmBranch">Create branch →</button></div>`,{
@@ -247,7 +262,62 @@ function openCompare(){
   openModal(`<h2 id="modalTitle">Compare pathways.</h2><p>TRACEWORK aligns consequences and trade-offs without selecting a winner.</p><div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:11px"><strong></strong><strong>Path A</strong><strong>Path B</strong>${rows.map(r=>`<span style="color:var(--muted);text-transform:capitalize">${escapeHtml(r.type)}</span><div>${r.a?escapeHtml(r.a.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div><div>${r.b?escapeHtml(r.b.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div>`).join('')}</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div>`);
 }
 
-function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current project is saved in this browser and can be exported first. Starting over will clear the local project.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{clearProject();resetState();closeModal();els.briefLanding.value='';showLanding();};}}); }
+function confirmReturnHome(){
+  saveProject(getState());
+  openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is already saved in this browser. You can reopen it from the project shelf or My Trace.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();showLanding();}});
+}
+
+function confirmLeaveForAbout(){
+  saveProject(getState());
+  openModal(`<h2 id="modalTitle">Open About?</h2><p>Your current trace is saved locally before you leave the workspace.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmAbout">Open About</button></div>`,{onOpen:m=>m.querySelector('#confirmAbout').onclick=()=>{window.location.href='about.html';}});
+}
+
+function confirmResetLocalData(){
+  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. The built-in test project will be available again the next time TRACEWORK loads.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
+    const ok=clearAllProjects();
+    if(!ok){toast('Could not clear local data.');return;}
+    resetState();
+    closeModal();
+    els.briefLanding.value='';
+    setSaveStatus('Local data reset',false);
+    renderProjectShelf();
+    showLanding();
+    toast('Local TRACEWORK data cleared.');
+  }});
+}
+
+function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current trace stays saved in this browser. You can reopen it from the project shelf.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{saveProject(getState());resetState();closeModal();els.briefLanding.value='';showLanding();};}}); }
+
+
+async function seedTestProject(){
+  try{
+    const project=await (await fetch('./data/test-project.json')).json();
+    ensureProject(project);
+  }catch(err){ console.warn('TRACEWORK test project could not be seeded.',err); }
+}
+
+function renderProjectShelf(){
+  const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
+  if(!wrap||!root)return;
+  const projects=listProjects().slice(0,4);
+  wrap.classList.toggle('hidden',!projects.length);
+  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button></article>`).join('');
+  root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
+}
+
+function openSavedProject(id){
+  const project=loadProject(id);
+  if(!project)return;
+  replaceState(project);
+  enterApp(false);
+  if(project.selectedHotspotId) renderWorkspace();
+}
+
+function zoomTo(next){
+  canvasZoom=applyZoom(els.graphViewport,els.graphStage,els.graphSurface,next);
+  updateZoomLabel();
+}
+function updateZoomLabel(){ const label=$('#zoomLabel'); if(label)label.textContent=`${Math.round(canvasZoom*100)}%`; }
 
 
 function scopedTrace(state){

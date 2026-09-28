@@ -82,3 +82,18 @@
 .reference-list strong { font-size: 12px; color: var(--accent); margin-bottom: 5px; }
 .reference-list span { font-weight: 700; }
 .reference-list p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.graph-stage { position:relative; min-width:100%; min-height:100%; }
+.graph-surface { position:absolute; left:0; top:0; transform-origin:0 0; }
+.zoom-control { display:flex; align-items:center; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--surface); }
+.zoom-control .tool-button { border:0; border-radius:0; min-width:34px; padding-inline:9px; }
+.zoom-control span { min-width:48px; text-align:center; font-size:10px; font-weight:750; color:var(--muted); border-inline:1px solid var(--border); padding:7px 5px; }
+.project-shelf { width:min(900px,calc(100% - 40px)); margin:30px auto 0; }
+.project-shelf-head { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:12px; }
+.project-shelf-head h2 { margin:5px 0 0; font-size:17px; }
+.project-local-note { font-size:10px; color:var(--muted-2); }
+.project-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.project-card { background:rgba(255,255,255,.82); border:1px solid var(--border); border-radius:14px; padding:15px; display:flex; align-items:center; justify-content:space-between; gap:14px; box-shadow:0 5px 16px rgba(34,40,61,.035); }
+.project-card-label { display:block; font-size:9px; font-weight:800; letter-spacing:.08em; color:var(--accent); }
+.project-card h3 { margin:5px 0 4px; font-size:13px; }
+.project-card p { margin:0; color:var(--muted); font-size:10px; line-height:1.45; max-width:420px; }
+.compact-project { flex:0 0 auto; padding:8px 12px; }

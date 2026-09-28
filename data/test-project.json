@@ -1,0 +1,360 @@
+{
+  "version": 3,
+  "projectId": "tracework-test-pavilion",
+  "projectName": "My test trace \u2014 Flexible pavilion",
+  "brief": "Design a flexible pavilion for university students that supports community interaction and individual use. Add 20 more seats for peak periods without increasing the sheltered footprint, while keeping the main pedestrian route unobstructed.",
+  "hotspots": [
+    {
+      "id": "hotspot-test-1",
+      "text": "flexible",
+      "concept": "flexible",
+      "start": 9,
+      "end": 17,
+      "reason": "Can support materially different spatial readings"
+    },
+    {
+      "id": "hotspot-test-2",
+      "text": "community",
+      "concept": "community",
+      "start": 65,
+      "end": 74,
+      "reason": "May imply different social scales and relationships"
+    },
+    {
+      "id": "hotspot-test-3",
+      "text": "interaction",
+      "concept": "interaction",
+      "start": 75,
+      "end": 86,
+      "reason": "Does not specify the form or intensity of social contact"
+    },
+    {
+      "id": "hotspot-test-4",
+      "text": "individual use",
+      "concept": "individual use",
+      "start": 91,
+      "end": 105,
+      "reason": "Potential tension with collective use"
+    },
+    {
+      "id": "hotspot-test-5",
+      "text": "peak periods",
+      "concept": "peak periods",
+      "start": 129,
+      "end": 141,
+      "reason": "Introduces a temporal condition"
+    },
+    {
+      "id": "hotspot-test-6",
+      "text": "sheltered",
+      "concept": "sheltered",
+      "start": 165,
+      "end": 174,
+      "reason": "Constrains expansion of covered area"
+    },
+    {
+      "id": "hotspot-test-7",
+      "text": "unobstructed",
+      "concept": "unobstructed",
+      "start": 226,
+      "end": 238,
+      "reason": "Requires an interpretation of acceptable movement clearance"
+    }
+  ],
+  "selectedHotspotId": "hotspot-test-1",
+  "nodes": [
+    {
+      "id": "test-input-flex",
+      "type": "input",
+      "label": "flexible",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {
+        "hotspotId": "hotspot-test-1",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 220,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-int-physical",
+      "type": "interpretation",
+      "label": "Physical reconfiguration",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {
+        "who": "Individual users \u00b7 Small groups",
+        "when": "Throughout the day"
+      },
+      "status": "active",
+      "x": 360,
+      "y": 170,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-ground-user",
+      "type": "grounding",
+      "label": "Students need to shift between focused individual use and small-group activity without leaving the pavilion.",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {
+        "sourceKind": "User need"
+      },
+      "status": "active",
+      "x": 660,
+      "y": 90,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-cons-move",
+      "type": "consequence",
+      "label": "Use lightweight movable seating and tables that can be regrouped without changing the sheltered footprint.",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {
+        "tags": [
+          "furniture",
+          "configuration"
+        ]
+      },
+      "status": "active",
+      "x": 960,
+      "y": 90,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-eval-a",
+      "type": "evaluation",
+      "label": "Prioritises user control and adaptability, but requires storage discipline and clear circulation zones.",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {
+        "tags": [
+          "adaptability",
+          "circulation"
+        ]
+      },
+      "status": "active",
+      "x": 1260,
+      "y": 90,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-goal-a",
+      "type": "goal",
+      "label": "Support multiple patterns of occupation without increasing built area.",
+      "branchId": "trace-hotspot-test-1",
+      "meta": {},
+      "status": "active",
+      "x": 1560,
+      "y": 90,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-ground-peak",
+      "type": "grounding",
+      "label": "The brief explicitly requires 20 additional seats during peak periods within the same sheltered footprint.",
+      "branchId": "branch-test-peak",
+      "meta": {
+        "sourceKind": "Brief / requirement",
+        "forkedFrom": "test-int-physical",
+        "provisional": true
+      },
+      "status": "active",
+      "x": 660,
+      "y": 280,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-cons-peak",
+      "type": "consequence",
+      "label": "Create perimeter perch seating and deployable seats that appear only when demand rises.",
+      "branchId": "branch-test-peak",
+      "meta": {
+        "tags": [
+          "seating",
+          "peak periods"
+        ]
+      },
+      "status": "active",
+      "x": 960,
+      "y": 280,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-eval-b",
+      "type": "evaluation",
+      "label": "Increases peak capacity while protecting the main route, but may reduce comfort outside peak use.",
+      "branchId": "branch-test-peak",
+      "meta": {
+        "tags": [
+          "capacity",
+          "comfort"
+        ]
+      },
+      "status": "active",
+      "x": 1260,
+      "y": 280,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-goal-b",
+      "type": "goal",
+      "label": "Absorb temporary demand without sacrificing everyday circulation.",
+      "branchId": "branch-test-peak",
+      "meta": {},
+      "status": "active",
+      "x": 1560,
+      "y": 280,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-int-time",
+      "type": "interpretation",
+      "label": "Change across time rather than constant physical movement",
+      "branchId": "branch-test-time",
+      "meta": {
+        "branchedFrom": "test-int-physical",
+        "provisional": true,
+        "who": "All users",
+        "when": "Peak vs off-peak periods"
+      },
+      "status": "active",
+      "x": 360,
+      "y": 470,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-ground-time",
+      "type": "grounding",
+      "label": "Peak periods are explicitly temporary, so flexibility can be tied to occupancy cycles rather than continuous rearrangement.",
+      "branchId": "branch-test-time",
+      "meta": {
+        "sourceKind": "Brief / requirement"
+      },
+      "status": "active",
+      "x": 660,
+      "y": 470,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-cons-time",
+      "type": "consequence",
+      "label": "Keep a stable everyday layout and activate additional edge seating only during known high-demand periods.",
+      "branchId": "branch-test-time",
+      "meta": {
+        "tags": [
+          "time",
+          "seating"
+        ]
+      },
+      "status": "active",
+      "x": 960,
+      "y": 470,
+      "createdAt": "2026-09-28T16:20:00.000Z",
+      "updatedAt": "2026-09-28T16:20:00.000Z"
+    }
+  ],
+  "edges": [
+    {
+      "id": "test-edge-1",
+      "source": "test-input-flex",
+      "target": "test-int-physical",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-2",
+      "source": "test-int-physical",
+      "target": "test-ground-user",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-3",
+      "source": "test-ground-user",
+      "target": "test-cons-move",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-4",
+      "source": "test-cons-move",
+      "target": "test-eval-a",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-5",
+      "source": "test-eval-a",
+      "target": "test-goal-a",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-6",
+      "source": "test-int-physical",
+      "target": "test-ground-peak",
+      "status": "provisional"
+    },
+    {
+      "id": "test-edge-7",
+      "source": "test-ground-peak",
+      "target": "test-cons-peak",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-8",
+      "source": "test-cons-peak",
+      "target": "test-eval-b",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-9",
+      "source": "test-eval-b",
+      "target": "test-goal-b",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-10",
+      "source": "test-input-flex",
+      "target": "test-int-time",
+      "status": "provisional"
+    },
+    {
+      "id": "test-edge-11",
+      "source": "test-int-time",
+      "target": "test-ground-time",
+      "status": "active"
+    },
+    {
+      "id": "test-edge-12",
+      "source": "test-ground-time",
+      "target": "test-cons-time",
+      "status": "active"
+    }
+  ],
+  "activeNodeId": "test-int-physical",
+  "activeBranchId": "trace-hotspot-test-1",
+  "view": "workspace",
+  "history": [
+    {
+      "id": "test-event-1",
+      "action": "Test trace prepared",
+      "detail": "A persistent working project for trying TRACEWORK interactions",
+      "time": "2026-09-28T16:20:00.000Z"
+    },
+    {
+      "id": "test-event-2",
+      "action": "Reasoning fork created",
+      "detail": "Peak-period capacity developed as a parallel grounding path",
+      "time": "2026-09-28T16:20:00.000Z"
+    }
+  ],
+  "createdAt": "2026-09-28T16:20:00.000Z",
+  "updatedAt": "2026-09-28T16:20:00.000Z"
+}

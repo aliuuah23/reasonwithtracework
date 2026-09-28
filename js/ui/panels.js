@@ -28,9 +28,10 @@ export async function renderNodeInspector(node,state,handlers){
     <div class="inspector-head" style="--node-color:${colors[node.type]}"><span class="inspector-type"><i></i>${typeLabels[node.type]||node.type}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${['input','interpretation','grounding','consequence','evaluation','goal'].map(t=>`<span class="${stageDone(t,node.type)?'done':''}"></span>`).join('')}</div></div>
     ${metaMarkup(node)}
     ${next}
-    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button" id="branchFromNode">Branch</button>':''}<button class="secondary-button" id="editNode">Edit</button>${node.type!=='input'?'<button class="secondary-button" id="rejectBranch">Reject path</button>':''}</div></div>`;
+    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button" id="branchFromNode">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button" id="forkFromNode">Fork next step</button>':''}<button class="secondary-button" id="editNode">Edit</button>${node.type!=='input'?'<button class="secondary-button" id="rejectBranch">Reject path</button>':''}</div></div>`;
   bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
+  root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
   root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
   root.querySelector('#rejectBranch')?.addEventListener('click',()=>handlers.onReject(node.branchId));
 }
@@ -50,7 +51,7 @@ function nextForm(node,state){
   if(node.type==='evaluation'){
     const p=goalPrompt(); return `<div class="inspector-section"><div class="prompt-question">${p.question}</div><textarea class="field-textarea" id="nextText" placeholder="State the design aim…"></textarea><button class="primary-button compact" id="addNext">Complete pathway →</button></div>`;
   }
-  return `<div class="inspector-section"><span class="status-chip active">Pathway complete</span><p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:0">You can branch from the interpretation, compare alternatives or return to the brief and trace another phrase.</p></div>`;
+  return `<div class="inspector-section"><span class="status-chip active">Pathway complete</span><p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:0">This route is complete. You can return to any earlier node and fork another consequence, trade-off or goal.</p></div>`;
 }
 function bindNext(root,node,handlers){
   let sourceKind=''; const tags=[];
