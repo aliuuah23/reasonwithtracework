@@ -10,7 +10,7 @@ import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, rejectBranch } from './reasoning/branching.js';
 import { renderGraph } from './graph/graph-renderer.js';
-import { fitGraph, focusNode } from './graph/graph-interactions.js';
+import { fitGraph, focusNode, bindCanvasPan } from './graph/graph-interactions.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js';
@@ -31,6 +31,7 @@ async function init(){
   pathways = await loadPathways();
   renderLegend(ontology);
   bindGlobalEvents();
+  bindCanvasPan(els.graphViewport);
   const saved = loadProject();
   if(saved?.brief){
     replaceState(saved);
