@@ -1,0 +1,8 @@
+[
+  {"id":"input","label":"Input","short":"Language","color":"#64748b","prompt":"What language are you responding to?"},
+  {"id":"interpretation","label":"Interpretation","short":"Meaning","color":"#7456e8","prompt":"What do you mean by this?"},
+  {"id":"grounding","label":"Grounding","short":"Why","color":"#16847b","prompt":"What makes this interpretation plausible or relevant?"},
+  {"id":"consequence","label":"Spatial Consequence","short":"Spatial change","color":"#d17a18","prompt":"What changes spatially if you follow this reading?"},
+  {"id":"evaluation","label":"Evaluation","short":"Trade-off","color":"#bd4b77","prompt":"What does this prioritise, enable or compromise?"},
+  {"id":"goal","label":"Goal","short":"Aim","color":"#3c8f5e","prompt":"What design aim does this pathway serve?"}
+]

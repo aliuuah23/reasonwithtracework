@@ -1,0 +1,10 @@
+[
+  {"author":"Donald Schön","title":"The Reflective Practitioner","relevance":"Design as reflective action in which moves are made, read and reframed rather than executed from a fixed answer."},
+  {"author":"Klaus Krippendorff","title":"The Semantic Turn","relevance":"Design meaning is produced through interpretation and use, not embedded in objects as a single stable property."},
+  {"author":"Kees Dorst","title":"The Core of ‘Design Thinking’ and its Application","relevance":"Frames design through abductive reasoning: exploring possible working principles and value configurations."},
+  {"author":"Lev Vygotsky","title":"Thought and Language","relevance":"Supports the role of language as a cognitive medium rather than a neutral wrapper around already-formed thought."},
+  {"author":"Alexander van Lamsweerde","title":"Goal-Oriented Requirements Engineering","relevance":"Shows how requirements, goals, alternatives and conflicts can be made explicit and traceable."},
+  {"author":"Christopher Alexander","title":"Notes on the Synthesis of Form","relevance":"Provides an early account of structuring design problems through relations, requirements and fit."},
+  {"author":"Bavelas & Chovil","title":"Visible Acts of Meaning","relevance":"Supports meaning as something actively produced and negotiated in communication."},
+  {"author":"Lakoff & Johnson","title":"Metaphors We Live By","relevance":"Demonstrates how conceptual framing influences what can be understood, inferred and acted upon."}
+]

@@ -1,0 +1,23 @@
+.graph-edges { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }
+.trace-edge { fill:none; stroke:#cdd2dc; stroke-width:2; transition:.15s ease; }
+.trace-edge.active { stroke:var(--accent); stroke-width:2.4; }
+.trace-edge.provisional { stroke-dasharray:6 5; }
+.trace-edge.rejected { opacity:.32; stroke-dasharray:3 5; }
+.graph-node { position:absolute; width:230px; min-height:92px; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:0 5px 18px rgba(34,40,61,.06); cursor:grab; transition:box-shadow .15s ease,border-color .15s ease,opacity .15s ease; user-select:none; }
+.graph-node:hover { box-shadow:0 9px 24px rgba(34,40,61,.11); border-color:var(--border-strong); }
+.graph-node.selected { box-shadow:0 0 0 2px color-mix(in srgb,var(--node-color) 26%,transparent),0 9px 24px rgba(34,40,61,.10); border-color:color-mix(in srgb,var(--node-color) 50%,var(--border)); }
+.graph-node.rejected { opacity:.42; }
+.graph-node.dragging { cursor:grabbing; z-index:10; box-shadow:0 16px 32px rgba(34,40,61,.16); }
+.node-accent { position:absolute; top:12px; bottom:12px; left:0; width:3px; border-radius:0 4px 4px 0; background:var(--node-color); }
+.node-body { padding:13px 14px 13px 16px; }
+.node-type { display:flex; align-items:center; gap:6px; font-size:9px; line-height:1; text-transform:uppercase; letter-spacing:.075em; color:var(--muted); font-weight:780; }
+.node-type i { width:6px; height:6px; border-radius:50%; background:var(--node-color); }
+.node-label { margin-top:8px; font-size:13px; line-height:1.42; font-weight:680; }
+.node-foot { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:11px; font-size:9px; color:var(--muted-2); }
+.node-branch { color:var(--accent); }
+.graph-node[data-type="input"] { --node-color:var(--input); }
+.graph-node[data-type="interpretation"] { --node-color:var(--interpretation); }
+.graph-node[data-type="grounding"] { --node-color:var(--grounding); }
+.graph-node[data-type="consequence"] { --node-color:var(--consequence); }
+.graph-node[data-type="evaluation"] { --node-color:var(--evaluation); }
+.graph-node[data-type="goal"] { --node-color:var(--goal); }

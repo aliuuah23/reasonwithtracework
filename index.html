@@ -1,480 +1,165 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>TRACEWORK</title>
-
-<link rel="stylesheet" href="styles.css">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f8fb">
+  <title>TRACEWORK — Give reasoning traction.</title>
+  <meta name="description" content="TRACEWORK helps designers turn ambiguous design language into visible, traceable reasoning pathways.">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/graph.css">
+  <link rel="stylesheet" href="css/responsive.css">
 </head>
-
-
 <body>
-
-
-<header>
-
-    <div
-        class="logo"
-        onclick="showPage('home')"
-    >
-        TRACEWORK
-    </div>
-
-    <nav>
-
-        <button onclick="showPage('home')">
-            HOME
-        </button>
-
-        <button onclick="showPage('explore')">
-            EXPLORE
-        </button>
-
-        <button onclick="showPage('workspace')">
-            REASON
-        </button>
-
-        <button onclick="showPage('library')">
-            GROUND
-        </button>
-
-        <button onclick="showPage('studio')">
-            DISCUSS
-        </button>
-
-    </nav>
-
-</header>
-
-
-<main>
-
-
-<section
-    id="home"
-    class="page active"
->
-
-    <div class="eyebrow">
-        Architectural Design Reasoning / Prototype 01
-    </div>
-
-    <h1>
-        Give reasoning traction.
-    </h1>
-
-    <p class="intro">
-        Explore architectural concepts, trace interpretations,
-        ground design decisions and make the reasoning between
-        language and spatial consequence visible.
-    </p>
-
-    <button
-        class="primary"
-        onclick="showPage('explore')"
-    >
-        START EXPLORING →
+  <header class="topbar">
+    <button class="brand" id="brandButton" aria-label="TRACEWORK home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>TRACEWORK</span>
     </button>
+    <nav class="topnav" aria-label="Primary navigation">
+      <button class="nav-link active" data-view="workspace">Workspace</button>
+      <button class="nav-link" data-view="pathways">Pathway Bank</button>
+      <button class="nav-link" data-view="trace">My Trace</button>
+      <a class="nav-link" href="about.html">About</a>
+    </nav>
+    <div class="topbar-actions">
+      <span class="save-status" id="saveStatus"><span class="status-dot"></span> Saved locally</span>
+      <button class="icon-button" id="newProjectButton" title="New project" aria-label="New project">＋</button>
+    </div>
+  </header>
 
+  <main>
+    <section class="landing" id="landingView">
+      <div class="landing-copy">
+        <div class="product-kicker">Design reasoning, made visible</div>
+        <h1>Give reasoning <span>traction.</span></h1>
+        <p class="landing-lede">Turn ambiguous design language into pathways you can inspect, challenge, compare and develop — without giving up authorship.</p>
+      </div>
 
-    <div class="features">
+      <div class="start-card">
+        <label for="landingBrief">Start with a real design brief</label>
+        <textarea id="landingBrief" rows="7" placeholder="Paste a brief, requirement, design statement or project intention…"></textarea>
+        <div class="start-actions">
+          <button class="text-button" id="loadDemoButton">Try an example</button>
+          <button class="primary-button" id="startTracingButton">Start tracing <span>→</span></button>
+        </div>
+      </div>
 
-        <div class="feature">
+      <div class="landing-proof" aria-label="TRACEWORK workflow">
+        <span>Language</span><i></i><span>Interpretation</span><i></i><span>Grounding</span><i></i><span>Spatial consequence</span><i></i><span>Evaluation</span><i></i><span>Goal</span>
+      </div>
+    </section>
 
-            <div class="number">
-                01
+    <section class="app-view hidden" id="appView">
+      <div class="workspace" id="workspaceView">
+        <aside class="source-panel panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-kicker">01 · Source</span>
+              <h2>Your brief</h2>
             </div>
+            <button class="icon-button small" id="editBriefButton" title="Edit brief" aria-label="Edit brief">✎</button>
+          </div>
 
-            <h3>
-                EXPLORE
-            </h3>
-
-            <p>
-                Search terms, concepts and related architectural ideas.
-            </p>
-
-        </div>
-
-
-        <div class="feature">
-
-            <div class="number">
-                02
+          <div id="briefEditorWrap" class="brief-editor-wrap hidden">
+            <textarea id="briefEditor" rows="10"></textarea>
+            <div class="inline-actions">
+              <button class="secondary-button" id="cancelBriefEdit">Cancel</button>
+              <button class="primary-button compact" id="applyBriefEdit">Analyse brief</button>
             </div>
+          </div>
 
-            <h3>
-                REASON
-            </h3>
+          <div class="brief-document" id="briefDocument" tabindex="0"></div>
 
-            <p>
-                Compare interpretations and build visible reasoning paths.
-            </p>
-
-        </div>
-
-
-        <div class="feature">
-
-            <div class="number">
-                03
+          <div class="source-footer">
+            <div class="section-label-row">
+              <span class="section-label">Interpretive hotspots</span>
+              <span class="count-pill" id="hotspotCount">0</span>
             </div>
+            <div class="hotspot-list" id="hotspotList"></div>
+            <button class="secondary-button full" id="addPhraseButton">＋ Select another phrase</button>
+          </div>
+        </aside>
 
-            <h3>
-                GROUND
-            </h3>
-
-            <p>
-                Connect reasoning to readings, precedents and cases.
-            </p>
-
-        </div>
-
-
-        <div class="feature">
-
-            <div class="number">
-                04
+        <section class="canvas-panel panel">
+          <div class="canvas-toolbar">
+            <div>
+              <span class="panel-kicker">02 · Reasoning field</span>
+              <div class="canvas-title-row">
+                <h2 id="canvasTitle">Your trace</h2>
+                <span class="branch-count" id="branchCount">1 path</span>
+              </div>
             </div>
-
-            <h3>
-                DISCUSS
-            </h3>
-
-            <p>
-                Question, defend, revise or branch a design decision.
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<section
-    id="explore"
-    class="page"
->
-
-    <div class="eyebrow">
-        01 / Explore
-    </div>
-
-    <h2>
-        What are you trying to understand?
-    </h2>
-
-    <p class="intro">
-        Start with a word, phrase, brief condition or design concern.
-        TRACEWORK surfaces related interpretations, references and
-        spatial directions without prescribing a single answer.
-    </p>
-
-
-    <div class="search-wrap">
-
-        <input
-            id="searchInput"
-            placeholder="Try: Privacy, Gathering, Flexibility..."
-            onkeydown="handleSearchKey(event)"
-        >
-
-        <button onclick="runSearch()">
-            SEARCH
-        </button>
-
-    </div>
-
-
-    <div class="tags">
-
-        <div
-            class="tag"
-            onclick="quickSearch('Privacy')"
-        >
-            Privacy
-        </div>
-
-        <div
-            class="tag"
-            onclick="quickSearch('Gathering')"
-        >
-            Gathering
-        </div>
-
-        <div
-            class="tag"
-            onclick="quickSearch('Flexibility')"
-        >
-            Flexibility
-        </div>
-
-        <div
-            class="tag"
-            onclick="quickSearch('Shelter')"
-        >
-            Shelter
-        </div>
-
-        <div
-            class="tag"
-            onclick="quickSearch('Threshold')"
-        >
-            Threshold
-        </div>
-
-    </div>
-
-
-    <div id="results"></div>
-
-</section>
-
-
-
-<section
-    id="workspace"
-    class="page"
->
-
-    <div class="reason-header">
-
-        <div>
-
-            <div class="eyebrow">
-                02 / Reason
+            <div class="toolbar-actions">
+              <button class="tool-button" id="branchButton" disabled>⑂ Branch</button>
+              <button class="tool-button" id="compareButton" disabled>⇆ Compare</button>
+              <button class="tool-button" id="fitButton">⌗ Fit</button>
             </div>
+          </div>
 
-            <h2>
-                Compare possible reasoning paths.
-            </h2>
+          <div class="canvas-empty" id="canvasEmpty">
+            <div class="empty-glyph"><span></span><span></span><span></span></div>
+            <h3>Choose a phrase to begin.</h3>
+            <p>TRACEWORK will help you make the reasoning between language and spatial consequence visible.</p>
+          </div>
 
-        </div>
-
-        <div
-            id="reasonStatus"
-            class="reason-status"
-        >
-            Begin in Explore, then add a concept to the reasoning workspace.
-        </div>
-
-    </div>
-
-
-    <div
-        id="reasonWorkspace"
-        class="workspace"
-    >
-
-        <p class="intro">
-            No active concept yet.
-        </p>
-
-        <button
-            class="primary"
-            onclick="showPage('explore')"
-        >
-            GO TO EXPLORE →
-        </button>
-
-    </div>
-
-</section>
-
-
-
-<section
-    id="library"
-    class="page"
->
-
-    <div class="eyebrow">
-        03 / Ground
-    </div>
-
-    <h2>
-        Ground the reasoning.
-    </h2>
-
-    <p class="intro">
-        Connect an interpretation to concepts, readings and precedents
-        so the reasoning can be inspected rather than treated as obvious.
-    </p>
-
-
-    <div
-        id="groundContext"
-        class="ground-context"
-    >
-        No active reasoning path yet.
-    </div>
-
-
-    <div
-        id="groundCards"
-        class="library-grid"
-    >
-
-        <div class="card">
-
-            <small>
-                Concept
-            </small>
-
-            <h3>
-                Threshold
-            </h3>
-
-            <p>
-                A spatial condition mediating between territories,
-                programmes or degrees of access.
-            </p>
-
-        </div>
-
-
-        <div class="card">
-
-            <small>
-                Reading
-            </small>
-
-            <h3>
-                Meaning + Interpretation
-            </h3>
-
-            <p>
-                References can help expose how a term is being understood
-                before it becomes a spatial commitment.
-            </p>
-
-        </div>
-
-
-        <div class="card">
-
-            <small>
-                Case Study
-            </small>
-
-            <h3>
-                Shared Learning Space
-            </h3>
-
-            <p>
-                Compare how another project translated a similar concern
-                through spatial organisation.
-            </p>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<section
-    id="studio"
-    class="page"
->
-
-    <div class="eyebrow">
-        04 / Discuss
-    </div>
-
-    <h2>
-        Question the reasoning, not only the outcome.
-    </h2>
-
-    <p class="intro">
-        Tutors and peers can respond directly to a point in the reasoning
-        path so critique becomes attached to the decision being questioned.
-    </p>
-
-
-    <div class="review-box">
-
-        <div class="comment">
-
-            <div class="comment-name">
-                TUTOR / 10:42
+          <div class="graph-viewport hidden" id="graphViewport">
+            <div class="graph-surface" id="graphSurface">
+              <svg class="graph-edges" id="graphEdges" aria-hidden="true"></svg>
+              <div class="graph-nodes" id="graphNodes"></div>
             </div>
+          </div>
 
-            <div
-                id="tutorComment"
-                class="comment-text"
-            >
+          <div class="canvas-footer">
+            <div class="legend" id="ontologyLegend"></div>
+            <span class="canvas-hint">Drag nodes · Click to inspect · Branch to test alternatives</span>
+          </div>
+        </section>
 
-                Why has “Privacy” been interpreted as physical separation?
-                Could another spatial strategy achieve the same goal?
+        <aside class="inspector-panel panel" id="inspectorPanel">
+          <div id="inspectorContent"></div>
+        </aside>
+      </div>
 
-                <div class="actions">
-
-                    <button onclick="discussionAction('Defend')">
-                        DEFEND
-                    </button>
-
-                    <button onclick="discussionAction('Revise')">
-                        REVISE
-                    </button>
-
-                    <button onclick="discussionAction('Branch')">
-                        BRANCH
-                    </button>
-
-                </div>
-
-            </div>
-
+      <section class="subview hidden" id="pathwaysView">
+        <div class="subview-head">
+          <div>
+            <span class="panel-kicker">Pathway Bank</span>
+            <h2>See how similar language can travel differently.</h2>
+            <p>Use prior reasoning as a prompt, not an answer. Inspect a pathway before deciding whether it belongs in your project.</p>
+          </div>
+          <div class="search-field">
+            <span>⌕</span>
+            <input id="pathwaySearch" placeholder="Search a concept, e.g. flexibility">
+          </div>
         </div>
+        <div class="pathway-grid" id="pathwayGrid"></div>
+      </section>
 
-
-        <div class="comment">
-
-            <div class="comment-name">
-                STUDENT / ACTIVE PATH
-            </div>
-
-            <div
-                id="studentComment"
-                class="comment-text"
-            >
-                Select a reasoning path first to bring it into discussion.
-            </div>
-
+      <section class="subview hidden" id="traceView">
+        <div class="subview-head">
+          <div>
+            <span class="panel-kicker">My Trace</span>
+            <h2>Your project's reasoning memory.</h2>
+            <p>Chosen, alternative, unresolved and rejected paths stay visible so the design can be discussed later.</p>
+          </div>
+          <div class="trace-actions">
+            <button class="secondary-button" id="exportJsonButton">Export project</button>
+          </div>
         </div>
+        <div class="trace-dashboard" id="traceDashboard"></div>
+      </section>
+    </section>
+  </main>
 
-    </div>
+  <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+  </div>
 
-</section>
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-
-</main>
-
-
-<footer>
-
-    <span>
-        TRACEWORK / WORKING PROTOTYPE
-    </span>
-
-    <span>
-        GIVE REASONING TRACTION
-    </span>
-
-</footer>
-
-
-<script src="script.js"></script>
-
-
+  <script type="module" src="js/app.js"></script>
 </body>
-
 </html>

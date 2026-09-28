@@ -1,0 +1,62 @@
+[
+  {
+    "id":"path-flex-01","concept":"Flexibility","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"Different uses without requiring the architecture itself to move"},
+      {"type":"grounding","text":"Use patterns change more often than the physical enclosure needs to"},
+      {"type":"consequence","text":"Loose-fit zones, generous clearances and furniture-led reconfiguration"},
+      {"type":"evaluation","text":"Prioritises ease of appropriation over highly specialised rooms"},
+      {"type":"goal","text":"Support multiple modes of occupation"}
+    ]
+  },
+  {
+    "id":"path-flex-02","concept":"Flexibility","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"Physical elements can be reconfigured by users"},
+      {"type":"grounding","text":"Users need direct control over enclosure and group size"},
+      {"type":"consequence","text":"Movable partitions, modular furniture and accessible storage"},
+      {"type":"evaluation","text":"Adds operational complexity in exchange for explicit adaptability"},
+      {"type":"goal","text":"Enable user-controlled spatial change"}
+    ]
+  },
+  {
+    "id":"path-privacy-01","concept":"Privacy","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"Control exposure without complete isolation"},
+      {"type":"grounding","text":"Users still benefit from awareness of nearby activity"},
+      {"type":"consequence","text":"Offset orientation, screening and partial visual barriers"},
+      {"type":"evaluation","text":"Balances retreat with social awareness"},
+      {"type":"goal","text":"Support focused individual use within a shared setting"}
+    ]
+  },
+  {
+    "id":"path-community-01","concept":"Community","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"Increase the chance of casual encounter"},
+      {"type":"grounding","text":"Interaction is more likely around overlapping movement and pause"},
+      {"type":"consequence","text":"Shared thresholds, visible activity and places to pause along circulation"},
+      {"type":"evaluation","text":"Prioritises encounter while potentially reducing quiet separation"},
+      {"type":"goal","text":"Make informal social contact easier"}
+    ]
+  },
+  {
+    "id":"path-shelter-01","concept":"Shelter","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"Provide climatic protection while staying visually open"},
+      {"type":"grounding","text":"Users need rain and sun protection without losing campus visibility"},
+      {"type":"consequence","text":"Deep canopy with open sides and strategically protected edges"},
+      {"type":"evaluation","text":"Maintains openness but gives less protection from wind-driven rain"},
+      {"type":"goal","text":"Extend comfortable outdoor occupation"}
+    ]
+  },
+  {
+    "id":"path-threshold-01","concept":"Threshold","source":"Starter concept","status":"illustrative",
+    "steps":[
+      {"type":"interpretation","text":"A transition zone rather than a single boundary line"},
+      {"type":"grounding","text":"Changes in access and behaviour happen gradually"},
+      {"type":"consequence","text":"Layered entry, pause space and increasing degrees of enclosure"},
+      {"type":"evaluation","text":"Creates legibility and transition but consumes more spatial depth"},
+      {"type":"goal","text":"Make territorial change perceptible"}
+    ]
+  }
+]

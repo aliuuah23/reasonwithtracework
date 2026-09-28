@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About — TRACEWORK</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>TRACEWORK</span>
+    </a>
+    <nav class="topnav"><a class="nav-link" href="index.html">Open workspace</a></nav>
+  </header>
+  <main class="about-page">
+    <section class="about-hero">
+      <span class="product-kicker">About TRACEWORK</span>
+      <h1>Make the interval between words and design decisions discussable.</h1>
+      <p>TRACEWORK is a design-reasoning prototype for architects and designers. It does not decide what a design term means. It helps a designer externalise an interpretation, trace what grounds it, and see the spatial consequences that follow.</p>
+    </section>
+    <section class="about-grid">
+      <article><span>01</span><h2>The problem</h2><p>Design briefs contain language that can support multiple readings. Designers also often act as though those readings are obvious or shared. TRACEWORK makes that interpretive interval visible without trying to eliminate ambiguity.</p></article>
+      <article><span>02</span><h2>The method</h2><p>Reasoning is structured through six linked families: linguistic input, interpretation, grounding, spatial consequence, evaluation and goal. Paths can branch, remain provisional, be compared, revised or rejected.</p></article>
+      <article><span>03</span><h2>The stance</h2><p>The tool is provocative with diagnostic support. It is designed to help designers ask better questions and communicate their reasoning — not to prescribe a single correct answer.</p></article>
+    </section>
+    <section class="about-flow">
+      <div class="flow-step">Input</div><i></i><div class="flow-step">Interpretation</div><i></i><div class="flow-step">Grounding</div><i></i><div class="flow-step">Spatial consequence</div><i></i><div class="flow-step">Evaluation</div><i></i><div class="flow-step">Goal</div>
+    </section>
+    <section class="about-research">
+      <span class="product-kicker">Research foundations</span>
+      <h2>A research system underneath a usable interface.</h2>
+      <div id="referenceList" class="reference-list"></div>
+    </section>
+  </main>
+  <script type="module">
+    import { loadReferences } from './js/evidence/references.js';
+    const el = document.getElementById('referenceList');
+    loadReferences().then(items => {
+      el.innerHTML = items.map(r => `<article><strong>${r.author}</strong><span>${r.title}</span><p>${r.relevance}</p></article>`).join('');
+    });
+  </script>
+</body>
+</html>
