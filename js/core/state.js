@@ -13,6 +13,7 @@ const freshState = () => ({
   activeBranchId: 'branch-1',
   view: 'workspace',
   history: [],
+  comments: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });

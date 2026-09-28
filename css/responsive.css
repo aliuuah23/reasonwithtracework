@@ -38,3 +38,8 @@
   .project-shelf-head{align-items:flex-start;flex-direction:column;gap:5px}
   .zoom-control span{min-width:42px}
 }
+
+@media (max-width: 900px){
+  .discussion-shell { grid-template-columns:1fr; }
+  .compare-picker { grid-template-columns:1fr; }
+}

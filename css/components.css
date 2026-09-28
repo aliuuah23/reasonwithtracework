@@ -109,3 +109,21 @@
 .danger-subtle:hover { color: #8f3030; background: #fff7f7; border-color: rgba(182,66,66,.42); }
 .danger-button { border: 0; cursor: pointer; border-radius: 10px; padding: 9px 12px; font-weight: 700; font-size: 12px; background: var(--danger); color: white; }
 .danger-button:hover { background: #963535; }
+
+/* Selectable ontology/tag chips in the inspector */
+.hotspot-chip.selected { border-color:#b8b9f5; background:var(--accent-soft); color:var(--accent-dark); box-shadow:inset 0 0 0 1px rgba(91,91,214,.08); }
+.compare-picker { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }
+.compare-picker label { display:grid; gap:6px; font-size:11px; font-weight:700; color:var(--muted); }
+.compare-table { display:grid; grid-template-columns:90px 1fr 1fr; gap:9px 12px; font-size:11px; align-items:start; }
+.compare-head { display:flex; align-items:center; gap:7px; }
+.path-status { display:inline-flex; align-items:center; padding:3px 6px; border-radius:999px; border:1px solid var(--border); background:var(--surface-soft); font-size:9px; color:var(--muted); font-weight:750; text-transform:uppercase; letter-spacing:.04em; }
+.path-status.rejected { color:var(--danger); background:#fff7f7; border-color:rgba(182,66,66,.24); }
+.path-status.provisional { color:var(--accent-dark); background:var(--accent-soft); border-color:#d3d3fb; }
+.discussion-shell { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr); gap:18px; }
+.discussion-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; }
+.discussion-list { display:grid; gap:10px; margin-top:14px; }
+.discussion-item { border:1px solid var(--border); background:var(--surface-soft); border-radius:12px; padding:13px; }
+.discussion-item-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px; font-size:10px; color:var(--muted); }
+.discussion-item strong { color:var(--text); }
+.discussion-item p { margin:0; font-size:12px; line-height:1.55; color:var(--text); }
+.discussion-scope { color:var(--accent-dark); font-weight:700; }

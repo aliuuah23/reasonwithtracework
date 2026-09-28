@@ -8,7 +8,7 @@ import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
-import { createBranch, forkNext, nextNodeType, rejectBranch } from './reasoning/branching.js';
+import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
 import { renderGraph } from './graph/graph-renderer.js';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
@@ -37,6 +37,12 @@ async function init(){
   await seedTestProject();
   renderProjectShelf();
   renderEmptyInspector();
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('resume')==='1'){
+    const active=loadProject();
+    if(active){ repairSharedInputs(active); replaceState(active); enterApp(false); }
+    history.replaceState(null,'',window.location.pathname);
+  }
   subscribe(state => {
     if(!state.brief) return;
     setSaveStatus('Saving…',true);
@@ -47,7 +53,7 @@ async function init(){
 
 function cacheEls(){
   Object.assign(els,{
-    landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),
+    landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty')
   });
 }
@@ -71,6 +77,7 @@ function bindGlobalEvents(){
   $('#pathwaySearch').addEventListener('input',e=>renderPathwayCards(e.target.value));
   $('#exportJsonButton').onclick=()=>{exportProject(getState());toast('Project exported.');};
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
+  $('#addDiscussionButton').onclick=addDiscussionNote;
 }
 
 async function startFromBrief(raw){
@@ -100,9 +107,11 @@ function showView(view){
   els.workspace.classList.toggle('hidden',view!=='workspace');
   els.pathways.classList.toggle('hidden',view!=='pathways');
   els.trace.classList.toggle('hidden',view!=='trace');
+  els.discussion.classList.toggle('hidden',view!=='discussion');
   if(view==='workspace')renderWorkspace();
   if(view==='pathways')renderPathwayCards($('#pathwaySearch').value);
   if(view==='trace')renderTraceDashboard(getState());
+  if(view==='discussion')renderDiscussion();
 }
 
 function renderWorkspace(){
@@ -190,8 +199,11 @@ function nodeHandlers(){
     onBranch:id=>branchFrom(id),
     onFork:id=>forkFrom(id),
     onEdit:node=>editNode(node),
-    onReject:branchId=>{
-      updateState(s=>rejectBranch(s,branchId)); logEvent('Path rejected','Retained in project history'); renderWorkspace(); toast('Path retained as rejected reasoning.');
+    onReject:(branchId,node)=>confirmRejectBranch(branchId,node),
+    onRestore:(branchId,node)=>{
+      updateState(s=>restoreBranch(s,branchId));
+      logEvent('Path restored',node?.label||'Rejected reasoning restored');
+      renderWorkspace(); toast('Path restored.');
     }
   };
 }
@@ -248,18 +260,44 @@ function usePathway(p){
   if(!hotspot){toast('Choose a phrase in your brief first.');showView('workspace');return;}
   const input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===hotspot.id);
   if(!input){toast('Open the selected phrase in the workspace first.');return;}
+  const scoped=scopedTrace(state);
+  const laneY=Math.max(120,...scoped.nodes.filter(n=>n.type!=='input').map(n=>Number(n.y)||120))+190;
+  const xByType={interpretation:335,grounding:600,consequence:865,evaluation:1130,goal:1395};
+  const addedIds=[];
   updateState(s=>{
     const branchId=`branch-${Date.now().toString().slice(-5)}`; let source=input.id;
-    p.steps.forEach(step=>{ const n=createNode({type:step.type,label:step.text,branchId,meta:{sourcePathway:p.id,sourceLabel:p.source,provisional:true}}); s.nodes.push(n); s.edges.push(createEdge(source,n.id,{status:'provisional'})); source=n.id; });
+    p.steps.forEach(step=>{
+      const n=createNode({type:step.type,label:step.text,branchId,x:xByType[step.type]??335,y:laneY,meta:{sourcePathway:p.id,sourceLabel:p.source,sourceStatus:p.status,provisional:true}});
+      s.nodes.push(n); s.edges.push(createEdge(source,n.id,{status:'provisional'})); source=n.id; addedIds.push(n.id);
+    });
     s.activeNodeId=source;s.activeBranchId=branchId;
   });
-  logEvent('Starter pathway added',p.concept); toast('Added as a provisional branch.'); showView('workspace');
+  logEvent('Starter pathway added',`${p.concept} · ${p.source}`); toast('Added as a provisional branch.'); showView('workspace');
+  setTimeout(()=>{ const el=document.querySelector(`[data-id="${addedIds[0]}"]`); if(el)focusNode(els.graphViewport,el,canvasZoom); },90);
 }
 
 function openCompare(){
   const state=getState(); const summaries=currentBranches(state); if(summaries.length<2){toast('Create a second branch first.');return;}
-  const a=summaries[0].branchId,b=summaries[1].branchId,rows=compareBranches(state,a,b);
-  openModal(`<h2 id="modalTitle">Compare pathways.</h2><p>TRACEWORK aligns consequences and trade-offs without selecting a winner.</p><div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;font-size:11px"><strong></strong><strong>Path A</strong><strong>Path B</strong>${rows.map(r=>`<span style="color:var(--muted);text-transform:capitalize">${escapeHtml(r.type)}</span><div>${r.a?escapeHtml(r.a.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div><div>${r.b?escapeHtml(r.b.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div>`).join('')}</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div>`);
+  const options=summaries.map((b,i)=>`<option value="${escapeHtml(b.branchId)}">Path ${i+1} · ${escapeHtml(b.status)} · ${escapeHtml((b.label||'').slice(0,42))}</option>`).join('');
+  openModal(`<h2 id="modalTitle">Compare pathways.</h2><p>Choose two reasoning routes. TRACEWORK aligns their inherited reasoning, consequences and trade-offs without selecting a winner.</p>
+    <div class="compare-picker"><label>Path A<select class="field-input" id="compareA">${options}</select></label><label>Path B<select class="field-input" id="compareB">${options}</select></label></div>
+    <div id="comparePreview"></div><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div>`,{
+      onOpen:m=>{
+        const a=m.querySelector('#compareA'),b=m.querySelector('#compareB'); if(summaries[1])b.value=summaries[1].branchId;
+        const draw=()=>{
+          if(a.value===b.value){ m.querySelector('#comparePreview').innerHTML='<p style="color:var(--danger);font-size:12px">Choose two different paths.</p>'; return; }
+          const A=summaries.find(x=>x.branchId===a.value),B=summaries.find(x=>x.branchId===b.value),rows=compareBranches(getState(),a.value,b.value);
+          m.querySelector('#comparePreview').innerHTML=`<div class="compare-table"><strong></strong><div class="compare-head"><strong>Path A</strong><span class="path-status ${A.status.toLowerCase()}">${A.status}</span></div><div class="compare-head"><strong>Path B</strong><span class="path-status ${B.status.toLowerCase()}">${B.status}</span></div>${rows.map(r=>`<span style="color:var(--muted);text-transform:capitalize">${escapeHtml(r.type)}</span><div>${r.a?escapeHtml(r.a.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div><div>${r.b?escapeHtml(r.b.label):'<span style="color:var(--muted-2)">Not developed</span>'}</div>`).join('')}</div>`;
+        };
+        a.onchange=draw;b.onchange=draw;draw();
+      }
+    });
+}
+
+function confirmRejectBranch(branchId,node){
+  openModal(`<h2 id="modalTitle">Reject this path?</h2><p>The path will stay visible in the reasoning history and can be restored later. Shared source language and other branches will remain active.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep path</button><button class="danger-button" id="confirmRejectPath">Reject path</button></div>`,{onOpen:m=>m.querySelector('#confirmRejectPath').onclick=()=>{
+    updateState(s=>rejectBranch(s,branchId)); logEvent('Path rejected',node?.label||'Retained in project history'); closeModal(); renderWorkspace(); toast('Path rejected — select it to restore.');
+  }});
 }
 
 function confirmReturnHome(){
@@ -308,9 +346,25 @@ function renderProjectShelf(){
 function openSavedProject(id){
   const project=loadProject(id);
   if(!project)return;
+  repairSharedInputs(project);
   replaceState(project);
   enterApp(false);
   if(project.selectedHotspotId) renderWorkspace();
+}
+
+function renderDiscussion(){
+  const state=getState(),list=$('#discussionList'),scope=$('#discussionScope');
+  if(!list||!scope)return;
+  const active=state.nodes.find(n=>n.id===state.activeNodeId);
+  scope.innerHTML=`<option value="project">Whole project</option>${active?`<option value="node:${escapeHtml(active.id)}">Selected node · ${escapeHtml(active.type)} · ${escapeHtml(active.label.slice(0,60))}</option>`:''}`;
+  const comments=state.comments||[];
+  list.innerHTML=comments.length?comments.map(c=>{ const node=c.nodeId?state.nodes.find(n=>n.id===c.nodeId):null; return `<article class="discussion-item"><div class="discussion-item-head"><span><strong>${escapeHtml(c.author||'You')}</strong> · ${new Date(c.time).toLocaleString()}</span><span class="discussion-scope">${node?`${escapeHtml(node.type)} · ${escapeHtml(node.label.slice(0,38))}`:'Whole project'}</span></div><p>${escapeHtml(c.text)}</p></article>`; }).join(''):'<div class="empty-state-card" style="padding:28px">No discussion notes yet. Add a question, critique or rationale for another designer.</div>';
+}
+function addDiscussionNote(){
+  const text=$('#discussionText')?.value.trim(); if(!text)return;
+  const value=$('#discussionScope')?.value||'project'; const nodeId=value.startsWith('node:')?value.slice(5):null;
+  updateState(s=>{ s.comments=s.comments||[]; s.comments.unshift({id:`comment-${Date.now()}`,author:'You',text,nodeId,time:new Date().toISOString()}); });
+  logEvent('Discussion note added',text.slice(0,70)); $('#discussionText').value=''; renderDiscussion(); toast('Added to discussion.');
 }
 
 function zoomTo(next){

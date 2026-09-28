@@ -30,9 +30,35 @@ export function forkNext(state,fromNodeId,label){
 export function nextNodeType(type){ return nextType[type] || null; }
 
 export function rejectBranch(state,branchId){
-  state.nodes.filter(n=>n.branchId===branchId).forEach(n=>n.status='rejected');
-  const ids=new Set(state.nodes.filter(n=>n.branchId===branchId).map(n=>n.id));
-  state.edges.filter(e=>ids.has(e.target)||ids.has(e.source)).forEach(e=>e.status='rejected');
+  // Input nodes represent shared source language and must never be rejected simply
+  // because one downstream pathway is rejected.
+  const branchNodes=state.nodes.filter(n=>n.branchId===branchId && n.type!=='input');
+  const ids=new Set(branchNodes.map(n=>n.id));
+  branchNodes.forEach(n=>n.status='rejected');
+  // Reject only edges that ENTER a rejected node. This keeps shared ancestors and
+  // unrelated outgoing paths visually active.
+  state.edges.filter(e=>ids.has(e.target)).forEach(e=>e.status='rejected');
+}
+
+export function restoreBranch(state,branchId){
+  const branchNodes=state.nodes.filter(n=>n.branchId===branchId && n.type!=='input');
+  const ids=new Set(branchNodes.map(n=>n.id));
+  branchNodes.forEach(n=>n.status='active');
+  state.nodes.filter(n=>n.type==='input').forEach(n=>n.status='active');
+  state.edges.filter(e=>ids.has(e.target)).forEach(e=>{
+    const target=state.nodes.find(n=>n.id===e.target);
+    e.status=target?.meta?.provisional?'provisional':'active';
+  });
+}
+
+export function repairSharedInputs(state){
+  const inputIds=new Set(state.nodes.filter(n=>n.type==='input').map(n=>n.id));
+  state.nodes.filter(n=>n.type==='input').forEach(n=>n.status='active');
+  state.edges.filter(e=>inputIds.has(e.source)).forEach(e=>{
+    const target=state.nodes.find(n=>n.id===e.target);
+    if(target && target.status!=='rejected') e.status=target.meta?.provisional?'provisional':'active';
+  });
+  return state;
 }
 
 function uniqueBranchId(){ return `branch-${Date.now()}-${Math.random().toString(36).slice(2,5)}`; }

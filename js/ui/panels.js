@@ -28,16 +28,17 @@ export async function renderNodeInspector(node,state,handlers){
     <div class="inspector-head" style="--node-color:${colors[node.type]}"><span class="inspector-type"><i></i>${typeLabels[node.type]||node.type}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${['input','interpretation','grounding','consequence','evaluation','goal'].map(t=>`<span class="${stageDone(t,node.type)?'done':''}"></span>`).join('')}</div></div>
     ${metaMarkup(node)}
     ${next}
-    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button" id="branchFromNode">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button" id="forkFromNode">Fork next step</button>':''}<button class="secondary-button" id="editNode">Edit</button>${node.type!=='input'?'<button class="secondary-button" id="rejectBranch">Reject path</button>':''}</div></div>`;
+    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button" id="branchFromNode">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button" id="forkFromNode">Fork next step</button>':''}<button class="secondary-button" id="editNode">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button" id="restoreBranch">Restore path</button>':'<button class="secondary-button" id="rejectBranch">Reject path</button>'):''}</div></div>`;
   bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
   root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
   root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
-  root.querySelector('#rejectBranch')?.addEventListener('click',()=>handlers.onReject(node.branchId));
+  root.querySelector('#rejectBranch')?.addEventListener('click',()=>handlers.onReject(node.branchId,node));
+  root.querySelector('#restoreBranch')?.addEventListener('click',()=>handlers.onRestore(node.branchId,node));
 }
 
 function nextForm(node,state){
-  if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it by editing the project state or create a new branch from an earlier node.</p></div>`;
+  if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it to continue working from it, or branch from an earlier active node.</p></div>`;
   if(node.type==='input') return '';
   if(node.type==='interpretation'){
     const p=groundingPrompt(); return `<div class="inspector-section"><div class="prompt-question">${p.question}</div><div class="choice-list">${p.sources.map(x=>`<button class="choice-chip selectable" data-ground-source="${attr(x)}">${esc(x)}</button>`).join('')}</div><label class="field-label">Why does this reading matter here?</label><textarea class="field-textarea" id="nextText" placeholder="Explain the basis for this interpretation…"></textarea><button class="primary-button compact" id="addNext">Add grounding →</button></div>`;
@@ -61,6 +62,7 @@ function bindNext(root,node,handlers){
 function metaMarkup(node){
   const rows=[];
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);
+  if(node.meta?.sourceLabel)rows.push(['Pathway source',node.meta.sourceLabel]);
   if(node.meta?.tags?.length)rows.push(['Tags',node.meta.tags.join(' · ')]);
   if(node.meta?.who)rows.push(['Who',node.meta.who]);
   if(node.meta?.when)rows.push(['When',node.meta.when]);

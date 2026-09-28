@@ -22,6 +22,7 @@
       <button class="nav-link active" data-view="workspace">Workspace</button>
       <button class="nav-link" data-view="pathways">Pathway Bank</button>
       <button class="nav-link" data-view="trace">My Trace</button>
+      <button class="nav-link" data-view="discussion">Discussion</button>
       <a class="nav-link" id="aboutLink" href="about.html">About</a>
     </nav>
     <div class="topbar-actions">
@@ -132,7 +133,7 @@
           <div>
             <span class="panel-kicker">Pathway Bank</span>
             <h2>See how similar language can travel differently.</h2>
-            <p>Use prior reasoning as a prompt, not an answer. Inspect a pathway before deciding whether it belongs in your project.</p>
+            <p>Browse prior reasoning pathways to see how similar design language has been interpreted, grounded and translated spatially. Use them as prompts and precedents — never prescribed answers.</p>
           </div>
           <div class="search-field">
             <span>⌕</span>
@@ -155,6 +156,31 @@
           </div>
         </div>
         <div class="trace-dashboard" id="traceDashboard"></div>
+      </section>
+
+      <section class="subview hidden" id="discussionView">
+        <div class="subview-head">
+          <div>
+            <span class="panel-kicker">Discussion</span>
+            <h2>Make the reasoning discussable.</h2>
+            <p>Leave notes on the project or anchor a comment to the currently selected reasoning move. For this prototype, discussion is saved locally; account-based collaborators can replace this layer later.</p>
+          </div>
+        </div>
+        <div class="discussion-shell">
+          <section class="discussion-card">
+            <h3>Project discussion</h3>
+            <div class="discussion-list" id="discussionList"></div>
+          </section>
+          <aside class="discussion-card">
+            <h3>Add a note</h3>
+            <label class="field-label" for="discussionScope">Attach to</label>
+            <select class="field-input" id="discussionScope"></select>
+            <label class="field-label" for="discussionText">Comment</label>
+            <textarea class="field-textarea" id="discussionText" placeholder="Question, critique, rationale or note for another designer…"></textarea>
+            <div class="inline-actions"><button class="primary-button compact" id="addDiscussionButton">Add to discussion</button></div>
+            <p style="color:var(--muted);font-size:11px;line-height:1.55;margin-top:14px">Local prototype mode · future accounts can add names, collaborators and replies without changing the project structure.</p>
+          </aside>
+        </div>
       </section>
     </section>
   </main>
