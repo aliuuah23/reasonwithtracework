@@ -365,21 +365,49 @@ function openSavedProject(id){
 function renderDiscussion(){
   const state=getState(),list=$('#discussionList'),scope=$('#discussionScope'),preview=$('#discussionAnchorPreview');
   if(!list||!scope)return;
-  const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  scope.innerHTML=`<option value="project">Whole project</option>${active?`<option value="node:${escapeHtml(active.id)}">Selected reasoning move (${escapeHtml(typeLabels[active.type]||active.type)})</option>`:''}`;
+
+  const active=state.nodes.find(n=>n.id===state.activeNodeId && n.type!=='input');
+  const attachable=state.nodes.filter(n=>n.type!=='input');
+  const previous=scope.dataset.lastValue || scope.value || 'project';
+
+  const options=['<option value="project">Whole project</option>'];
+  if(attachable.length){
+    options.push('<optgroup label="Reasoning moves">');
+    for(const node of attachable){
+      const type=typeLabels[node.type]||node.type;
+      const label=(node.label||'Untitled reasoning move').replace(/\s+/g,' ').trim();
+      const short=label.length>72?`${label.slice(0,69)}…`:label;
+      options.push(`<option value="node:${escapeHtml(node.id)}">${escapeHtml(type)} — ${escapeHtml(short)}</option>`);
+    }
+    options.push('</optgroup>');
+  }
+  scope.innerHTML=options.join('');
+
+  const validValues=new Set(['project',...attachable.map(n=>`node:${n.id}`)]);
+  const preferred=active?`node:${active.id}`:previous;
+  scope.value=validValues.has(preferred)?preferred:'project';
+  scope.dataset.lastValue=scope.value;
+
   const updatePreview=()=>{
     if(!preview)return;
-    const isNode=scope.value.startsWith('node:')&&active;
-    preview.classList.toggle('hidden',!isNode);
-    preview.innerHTML=isNode?`<span>${escapeHtml(typeLabels[active.type]||active.type)}</span><strong>${escapeHtml(active.label)}</strong>`:'';
+    scope.dataset.lastValue=scope.value;
+    const nodeId=scope.value.startsWith('node:')?scope.value.slice(5):null;
+    const node=nodeId?state.nodes.find(n=>n.id===nodeId):null;
+    preview.classList.toggle('hidden',!node);
+    preview.innerHTML=node?`<span>${escapeHtml(typeLabels[node.type]||node.type)}</span><strong>${escapeHtml(node.label||'Untitled reasoning move')}</strong>`:'';
   };
-  scope.onchange=updatePreview; updatePreview();
+  scope.onchange=updatePreview;
+  updatePreview();
+
   const comments=state.comments||[];
   list.innerHTML=comments.length?comments.map(c=>{ const node=c.nodeId?state.nodes.find(n=>n.id===c.nodeId):null; const nodeType=node?(typeLabels[node.type]||node.type):''; return `<article class="discussion-item"><div class="discussion-item-head"><span><strong>${escapeHtml(c.author||'You')}</strong> · ${new Date(c.time).toLocaleString()}</span><span class="discussion-scope">${node?`${escapeHtml(nodeType)} · ${escapeHtml(node.label.slice(0,44))}`:'Whole project'}</span></div><p>${escapeHtml(c.text)}</p></article>`; }).join(''):'<div class="empty-state-card" style="padding:28px">No discussion notes yet. Add a question, critique or rationale for another designer.</div>';
 }
 function addDiscussionNote(){
   const text=$('#discussionText')?.value.trim(); if(!text)return;
-  const value=$('#discussionScope')?.value||'project'; const nodeId=value.startsWith('node:')?value.slice(5):null;
+  const state=getState();
+  const value=$('#discussionScope')?.value||'project';
+  const requestedNodeId=value.startsWith('node:')?value.slice(5):null;
+  const nodeId=requestedNodeId && state.nodes.some(n=>n.id===requestedNodeId)?requestedNodeId:null;
   updateState(s=>{ s.comments=s.comments||[]; s.comments.unshift({id:`comment-${Date.now()}`,author:'You',text,nodeId,time:new Date().toISOString()}); });
   logEvent('Discussion note added',text.slice(0,70)); $('#discussionText').value=''; renderDiscussion(); toast('Added to discussion.');
 }
