@@ -4,7 +4,7 @@ export function applyZoom(viewport,stage,surface,scale,{preserveCenter=true}={})
   const old=Number(surface.dataset.zoom||1);
   const naturalW=Number(surface.dataset.worldWidth||parseFloat(surface.style.width)||1100);
   const naturalH=Number(surface.dataset.worldHeight||parseFloat(surface.style.height)||700);
-  const next=clamp(scale,.45,1.6);
+  const next=clamp(scale,.35,1.6);
 
   let worldCX=0,worldCY=0;
   if(preserveCenter){
@@ -25,11 +25,12 @@ export function applyZoom(viewport,stage,surface,scale,{preserveCenter=true}={})
 }
 
 export function fitGraph(viewport,stage,surface){
-  const naturalW=Number(surface.dataset.worldWidth||parseFloat(surface.style.width)||1100);
-  const naturalH=Number(surface.dataset.worldHeight||parseFloat(surface.style.height)||700);
-  const scale=clamp(Math.min((viewport.clientWidth-70)/naturalW,(viewport.clientHeight-70)/naturalH),.45,1.12);
+  const minX=Number(surface.dataset.contentMinX||0),minY=Number(surface.dataset.contentMinY||0);
+  const maxX=Number(surface.dataset.contentMaxX||surface.dataset.worldWidth||1100),maxY=Number(surface.dataset.contentMaxY||surface.dataset.worldHeight||700);
+  const contentW=Math.max(320,maxX-minX),contentH=Math.max(220,maxY-minY);
+  const scale=clamp(Math.min((viewport.clientWidth-90)/contentW,(viewport.clientHeight-90)/contentH),.35,1.12);
   applyZoom(viewport,stage,surface,scale,{preserveCenter:false});
-  viewport.scrollTo({left:0,top:0,behavior:'smooth'});
+  viewport.scrollTo({left:Math.max(0,minX*scale-45),top:Math.max(0,minY*scale-45),behavior:'smooth'});
   return scale;
 }
 

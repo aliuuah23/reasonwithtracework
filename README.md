@@ -40,3 +40,7 @@ Starter pathways are explicitly marked illustrative. They demonstrate the interf
 ## Navigation safety
 
 TRACEWORK autosaves active traces locally. Clicking the brand mark now returns to the product home through a confirmation dialog, About confirms before leaving an active trace, and My Trace includes a deliberate local-data reset control.
+
+
+## Prototype privacy direction
+Current projects and discussion notes are browser-local. A future account layer is intended to keep traces private by default, with optional invited studios/classrooms and scoped collaborators rather than one global public feed.

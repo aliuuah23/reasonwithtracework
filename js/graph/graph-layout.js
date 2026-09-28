@@ -8,8 +8,9 @@ export function autoLayout(nodes){
     return {...n,x:70+depth*265,y:branchY.get(n.branchId)??120};
   });
 }
-export function surfaceSize(nodes){
-  const maxX=Math.max(1050,...nodes.map(n=>(n.x||0)+280));
-  const maxY=Math.max(680,...nodes.map(n=>(n.y||0)+180));
+export function surfaceSize(nodes,{right=700,bottom=980}={}){
+  const maxX=Math.max(1050,...nodes.map(n=>(n.x||0)+280))+right;
+  const maxY=Math.max(680,...nodes.map(n=>(n.y||0)+180))+bottom;
   return {width:maxX,height:maxY};
 }
+

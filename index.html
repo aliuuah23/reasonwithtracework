@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Accounts can replace local storage later.</span></div><div class="project-grid" id="projectShelf"></div></section>
+      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Local for now · future accounts can use private studios or classrooms.</span></div><div class="project-grid" id="projectShelf"></div></section>
 
       <div class="landing-proof" aria-label="TRACEWORK workflow">
         <span>Language</span><i></i><span>Interpretation</span><i></i><span>Grounding</span><i></i><span>Spatial consequence</span><i></i><span>Evaluation</span><i></i><span>Goal</span>
@@ -163,7 +163,7 @@
           <div>
             <span class="panel-kicker">Discussion</span>
             <h2>Make the reasoning discussable.</h2>
-            <p>Leave notes on the project or anchor a comment to the currently selected reasoning move. For this prototype, discussion is saved locally; account-based collaborators can replace this layer later.</p>
+            <p>Leave notes on the project or anchor a comment to the currently selected reasoning move. For this prototype, discussion is saved locally; later, accounts can keep projects private or share them inside invited studios and classrooms.</p>
           </div>
         </div>
         <div class="discussion-shell">
@@ -175,10 +175,11 @@
             <h3>Add a note</h3>
             <label class="field-label" for="discussionScope">Attach to</label>
             <select class="field-input" id="discussionScope"></select>
+            <div class="discussion-anchor-preview hidden" id="discussionAnchorPreview"></div>
             <label class="field-label" for="discussionText">Comment</label>
             <textarea class="field-textarea" id="discussionText" placeholder="Question, critique, rationale or note for another designer…"></textarea>
             <div class="inline-actions"><button class="primary-button compact" id="addDiscussionButton">Add to discussion</button></div>
-            <p style="color:var(--muted);font-size:11px;line-height:1.55;margin-top:14px">Local prototype mode · future accounts can add names, collaborators and replies without changing the project structure.</p>
+            <p style="color:var(--muted);font-size:11px;line-height:1.55;margin-top:14px">Local prototype mode · future accounts can add private studios/classrooms, named collaborators and replies without making every trace public.</p>
           </aside>
         </div>
       </section>

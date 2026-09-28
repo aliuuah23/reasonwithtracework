@@ -92,6 +92,7 @@ async function startFromBrief(raw){
 
 function enterApp(autoSelect=true){
   canvasZoom=1; updateZoomLabel();
+  els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
   renderWorkspace();
@@ -141,6 +142,14 @@ function renderGraphState(){
     getScale:()=>canvasZoom
   });
   applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
+  if(els.graphViewport.dataset.needsInitialPosition==='1'){
+    delete els.graphViewport.dataset.needsInitialPosition;
+    requestAnimationFrame(()=>{
+      const ox=Number(els.graphSurface.dataset.originX||0),oy=Number(els.graphSurface.dataset.originY||0);
+      els.graphViewport.scrollLeft=Math.max(0,(ox-90)*canvasZoom);
+      els.graphViewport.scrollTop=Math.max(0,(oy-120)*canvasZoom);
+    });
+  }
 }
 
 async function selectHotspot(id){
@@ -261,7 +270,8 @@ function usePathway(p){
   const input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===hotspot.id);
   if(!input){toast('Open the selected phrase in the workspace first.');return;}
   const scoped=scopedTrace(state);
-  const laneY=Math.max(120,...scoped.nodes.filter(n=>n.type!=='input').map(n=>Number(n.y)||120))+190;
+  const occupied=scoped.nodes.filter(n=>n.type!=='input').map(n=>Number(n.y)||120);
+  const laneY=Math.max(120,...occupied)+260;
   const xByType={interpretation:335,grounding:600,consequence:865,evaluation:1130,goal:1395};
   const addedIds=[];
   updateState(s=>{
@@ -353,12 +363,19 @@ function openSavedProject(id){
 }
 
 function renderDiscussion(){
-  const state=getState(),list=$('#discussionList'),scope=$('#discussionScope');
+  const state=getState(),list=$('#discussionList'),scope=$('#discussionScope'),preview=$('#discussionAnchorPreview');
   if(!list||!scope)return;
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  scope.innerHTML=`<option value="project">Whole project</option>${active?`<option value="node:${escapeHtml(active.id)}">Selected node · ${escapeHtml(active.type)} · ${escapeHtml(active.label.slice(0,60))}</option>`:''}`;
+  scope.innerHTML=`<option value="project">Whole project</option>${active?`<option value="node:${escapeHtml(active.id)}">Selected reasoning move (${escapeHtml(typeLabels[active.type]||active.type)})</option>`:''}`;
+  const updatePreview=()=>{
+    if(!preview)return;
+    const isNode=scope.value.startsWith('node:')&&active;
+    preview.classList.toggle('hidden',!isNode);
+    preview.innerHTML=isNode?`<span>${escapeHtml(typeLabels[active.type]||active.type)}</span><strong>${escapeHtml(active.label)}</strong>`:'';
+  };
+  scope.onchange=updatePreview; updatePreview();
   const comments=state.comments||[];
-  list.innerHTML=comments.length?comments.map(c=>{ const node=c.nodeId?state.nodes.find(n=>n.id===c.nodeId):null; return `<article class="discussion-item"><div class="discussion-item-head"><span><strong>${escapeHtml(c.author||'You')}</strong> · ${new Date(c.time).toLocaleString()}</span><span class="discussion-scope">${node?`${escapeHtml(node.type)} · ${escapeHtml(node.label.slice(0,38))}`:'Whole project'}</span></div><p>${escapeHtml(c.text)}</p></article>`; }).join(''):'<div class="empty-state-card" style="padding:28px">No discussion notes yet. Add a question, critique or rationale for another designer.</div>';
+  list.innerHTML=comments.length?comments.map(c=>{ const node=c.nodeId?state.nodes.find(n=>n.id===c.nodeId):null; const nodeType=node?(typeLabels[node.type]||node.type):''; return `<article class="discussion-item"><div class="discussion-item-head"><span><strong>${escapeHtml(c.author||'You')}</strong> · ${new Date(c.time).toLocaleString()}</span><span class="discussion-scope">${node?`${escapeHtml(nodeType)} · ${escapeHtml(node.label.slice(0,44))}`:'Whole project'}</span></div><p>${escapeHtml(c.text)}</p></article>`; }).join(''):'<div class="empty-state-card" style="padding:28px">No discussion notes yet. Add a question, critique or rationale for another designer.</div>';
 }
 function addDiscussionNote(){
   const text=$('#discussionText')?.value.trim(); if(!text)return;

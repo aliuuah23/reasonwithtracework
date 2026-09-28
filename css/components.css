@@ -127,3 +127,10 @@
 .discussion-item strong { color:var(--text); }
 .discussion-item p { margin:0; font-size:12px; line-height:1.55; color:var(--text); }
 .discussion-scope { color:var(--accent-dark); font-weight:700; }
+
+
+/* Discussion anchor clarity */
+.discussion-anchor-preview { margin:9px 0 14px; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); display:grid; gap:3px; }
+.discussion-anchor-preview span { color:var(--accent-dark); font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+.discussion-anchor-preview strong { font-size:11px; line-height:1.45; font-weight:680; color:var(--text); }
+.discussion-scope { max-width:48%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

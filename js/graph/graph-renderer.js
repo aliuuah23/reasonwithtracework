@@ -1,15 +1,29 @@
 import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
 
+const CANVAS_ORIGIN_X=360;
+const CANVAS_ORIGIN_Y=680;
+
 export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMove,getScale=()=>1}){
-  const laid=autoLayout(nodes);
+  const world=autoLayout(nodes);
+  const laid=world.map(n=>({...n,x:(Number(n.x)||0)+CANVAS_ORIGIN_X,y:(Number(n.y)||0)+CANVAS_ORIGIN_Y}));
   const positions=new Map(laid.map(n=>[n.id,{...n}]));
   const size=surfaceSize(laid);
+  const minX=Math.min(...laid.map(n=>n.x),CANVAS_ORIGIN_X);
+  const minY=Math.min(...laid.map(n=>n.y),CANVAS_ORIGIN_Y);
+  const maxX=Math.max(...laid.map(n=>n.x+230),CANVAS_ORIGIN_X+600);
+  const maxY=Math.max(...laid.map(n=>n.y+112),CANVAS_ORIGIN_Y+420);
 
   els.surface.style.width=`${size.width}px`;
   els.surface.style.height=`${size.height}px`;
   els.surface.dataset.worldWidth=String(size.width);
   els.surface.dataset.worldHeight=String(size.height);
+  els.surface.dataset.originX=String(CANVAS_ORIGIN_X);
+  els.surface.dataset.originY=String(CANVAS_ORIGIN_Y);
+  els.surface.dataset.contentMinX=String(minX);
+  els.surface.dataset.contentMinY=String(minY);
+  els.surface.dataset.contentMaxX=String(maxX);
+  els.surface.dataset.contentMaxY=String(maxY);
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges)).join('');
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId)).join('');
@@ -35,7 +49,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
         if(pos){ pos.x=x; pos.y=y; }
         redrawEdges();
       },
-      onMove:onNodeMove,
+      onMove:(id,x,y)=>onNodeMove?.(id,x-CANVAS_ORIGIN_X,y-CANVAS_ORIGIN_Y),
       getScale
     });
   });
