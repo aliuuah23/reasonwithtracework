@@ -57,3 +57,19 @@ The current workspace adds a designer-led free-input layer without changing the 
 - selected language and reasoning nodes can surface small pavilion-relevant case-study prompts for comparison rather than prescription.
 
 The classifier is currently a transparent local semantic heuristic, not an external AI service. It is designed so a later model-backed classifier can replace the inference layer without changing the interaction pattern.
+
+## Round 1.1 — stabilisation
+
+Following first-use testing, Round 1.1 keeps the established visual system while refining how the intelligent workspace explains itself:
+
+- saved traces can be deleted from the landing project shelf;
+- primary navigation is hardened so Pathway Bank, My Trace and Discussion always switch views reliably;
+- classification shows several match strengths rather than a single unexplained percentage;
+- Input is explicitly described as source/given material, while Note remains deliberately unclassified;
+- newly added nodes are focused and briefly haloed so they are easy to locate;
+- ontology-role help moves out of the inspector and onto lightweight node hover help;
+- suggested hotspots can be hidden, and designers can drag-select any exact word or phrase from the brief;
+- Trace check surfaces open ends and floating reasoning as optional prompts rather than errors;
+- case-study prompts are feature-led and link to credible project sources/image galleries.
+
+Manual graph wiring, convergence and node locking remain the core of Round 2 rather than being mixed into this stabilisation patch.

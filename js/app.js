@@ -1,5 +1,5 @@
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
-import { saveProject, loadProject, listProjects, ensureProject, clearAllProjects, exportProject } from './core/storage.js';
+import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { normaliseBrief } from './input/brief-parser.js';
@@ -28,6 +28,8 @@ let pathways = [];
 let caseStudies = [];
 let saveTimer = null;
 let canvasZoom = 1;
+let showHotspotSuggestions = true;
+let lastAddedNodeId = null;
 
 async function init(){
   cacheEls();
@@ -59,7 +61,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton')
   });
 }
 
@@ -67,13 +69,15 @@ function bindGlobalEvents(){
   $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; els.briefLanding.focus(); };
   $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value);
   $('#brandButton').onclick=()=>getState().brief?confirmReturnHome():showLanding();
-  document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',e=>{ e.preventDefault(); showView(b.dataset.view); }));
   $('#newProjectButton').onclick=()=>getState().brief?confirmNewProject():els.briefLanding.focus();
   $('#aboutLink').onclick=e=>{ if(!getState().brief)return; e.preventDefault(); confirmLeaveForAbout(); };
   $('#editBriefButton').onclick=()=>toggleBriefEditor(true,getState());
   $('#cancelBriefEdit').onclick=()=>toggleBriefEditor(false,getState());
   $('#applyBriefEdit').onclick=()=>applyEditedBrief();
   $('#addPhraseButton').onclick=manualPhrase;
+  els.toggleHotspotsButton.onclick=()=>{ showHotspotSuggestions=!showHotspotSuggestions; els.toggleHotspotsButton.textContent=showHotspotSuggestions?'Hide suggestions':'Show suggestions'; renderWorkspace(); };
+  els.traceCheckButton.onclick=openTraceCheck;
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
@@ -84,7 +88,7 @@ function bindGlobalEvents(){
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
   $('#addDiscussionButton').onclick=addDiscussionNote;
   els.freeThoughtInput.addEventListener('input',updateThoughtSuggestion);
-  els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; els.thoughtReason.textContent='Manual override · TRACEWORK will use your selected category.'; });
+  els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
   els.addFreeThoughtButton.onclick=addFreeThought;
   els.addLooseNoteButton.onclick=addLooseNote;
 }
@@ -111,27 +115,43 @@ function enterApp(autoSelect=true){
 function showLanding(){ els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf(); }
 
 function showView(view){
+  const allowed=new Set(['workspace','pathways','trace','discussion']);
+  if(!allowed.has(view)) view='workspace';
   if(!getState().brief && view!=='workspace'){showLanding();return;}
+
   patchState({view},{silent:true});
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  els.workspace.classList.toggle('hidden',view!=='workspace');
-  els.pathways.classList.toggle('hidden',view!=='pathways');
-  els.trace.classList.toggle('hidden',view!=='trace');
-  els.discussion.classList.toggle('hidden',view!=='discussion');
-  if(view==='workspace')renderWorkspace();
-  if(view==='pathways')renderPathwayCards($('#pathwaySearch').value);
-  if(view==='trace')renderTraceDashboard(getState());
-  if(view==='discussion')renderDiscussion();
+
+  const viewEls={
+    workspace:document.getElementById('workspaceView'),
+    pathways:document.getElementById('pathwaysView'),
+    trace:document.getElementById('traceView'),
+    discussion:document.getElementById('discussionView')
+  };
+  Object.entries(viewEls).forEach(([name,el])=>{
+    if(!el)return;
+    const visible=name===view;
+    el.classList.toggle('hidden',!visible);
+    el.hidden=!visible;
+  });
+
+  if(view==='workspace') renderWorkspace();
+  else if(view==='pathways') renderPathwayCards($('#pathwaySearch')?.value||'');
+  else if(view==='trace') renderTraceDashboard(getState());
+  else if(view==='discussion') renderDiscussion();
+
+  window.scrollTo({top:0,behavior:'auto'});
 }
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot});
+  renderBrief(state,{onHotspot:selectHotspot},{showSuggestions:showHotspotSuggestions});
   const hasNodes=state.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
   const scopedBranches=currentBranches(state);
   $('#branchCount').textContent=`${scopedBranches.length || 1} ${(scopedBranches.length || 1)===1?'path':'paths'}`;
+  updateTraceCheck();
   $('#canvasTitle').textContent=state.selectedHotspotId ? `Tracing “${state.hotspots.find(h=>h.id===state.selectedHotspotId)?.text || 'language'}”` : 'Your trace';
   if(hasNodes)renderGraphState();
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
@@ -159,6 +179,18 @@ function renderGraphState(){
       const ox=Number(els.graphSurface.dataset.originX||0),oy=Number(els.graphSurface.dataset.originY||0);
       els.graphViewport.scrollLeft=Math.max(0,(ox-90)*canvasZoom);
       els.graphViewport.scrollTop=Math.max(0,(oy-120)*canvasZoom);
+    });
+  }
+
+  if(lastAddedNodeId){
+    const id=lastAddedNodeId;
+    lastAddedNodeId=null;
+    requestAnimationFrame(()=>{
+      const el=document.querySelector(`[data-id="${id}"]`);
+      if(!el)return;
+      el.classList.add('just-added');
+      focusNode(els.graphViewport,el,canvasZoom);
+      setTimeout(()=>el.classList.remove('just-added'),1800);
     });
   }
 }
@@ -197,7 +229,9 @@ function captureContext(text,prompt,inputNodeId){
     <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmInterpretation">Add interpretation →</button></div>`,{
       onOpen:m=>m.querySelector('#confirmInterpretation').onclick=()=>{
         const meta={who:m.querySelector('#contextWho').value,when:m.querySelector('#contextWhen').value};
-        updateState(s=>{ const input=s.nodes.find(n=>n.id===inputNodeId); addInterpretation(s,inputNodeId,text,input?.branchId||s.activeBranchId,meta); });
+        let created=null;
+        updateState(s=>{ const input=s.nodes.find(n=>n.id===inputNodeId); created=addInterpretation(s,inputNodeId,text,input?.branchId||s.activeBranchId,meta); });
+        lastAddedNodeId=created?.id||null;
         logEvent('Interpretation added',text); closeModal(); renderWorkspace();
       }
     });
@@ -208,12 +242,14 @@ function selectNode(id){ patchState({activeNodeId:id},{silent:true}); renderWork
 function nodeHandlers(){
   return {
     onNext:(node,text,extra)=>{
+      let created=null;
       updateState(s=>{
-        if(node.type==='interpretation') addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
-        else if(node.type==='grounding') addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
-        else if(node.type==='consequence') addEvaluation(s,node.id,text,node.branchId,extra.tags||[]);
-        else if(node.type==='evaluation') addGoal(s,node.id,text,node.branchId);
+        if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
+        else if(node.type==='grounding') created=addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
+        else if(node.type==='consequence') created=addEvaluation(s,node.id,text,node.branchId,extra.tags||[]);
+        else if(node.type==='evaluation') created=addGoal(s,node.id,text,node.branchId);
       });
+      lastAddedNodeId=created?.id||null;
       const labels={interpretation:'Grounding added',grounding:'Spatial consequence added',consequence:'Evaluation added',evaluation:'Goal added'};
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
     },
@@ -237,13 +273,13 @@ function forkFrom(id){
   const type=nextNodeType(origin.type); if(!type)return;
   const labels={interpretation:'interpretation',grounding:'grounding',consequence:'spatial consequence',evaluation:'evaluation',goal:'goal'};
   openModal(`<h2 id="modalTitle">Fork the reasoning here.</h2><p>Create another ${labels[type]||type} from this same point. The existing route stays intact.</p><label class="field-label">${labels[type]||type}</label><textarea class="field-textarea" id="forkText" placeholder="Describe another plausible next move…"></textarea><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmFork">Create fork →</button></div>`,{
-    onOpen:m=>m.querySelector('#confirmFork').onclick=()=>{ const val=m.querySelector('#forkText').value.trim(); if(!val)return; updateState(s=>forkNext(s,id,val)); logEvent('Reasoning fork created',val); closeModal(); renderWorkspace(); }
+    onOpen:m=>m.querySelector('#confirmFork').onclick=()=>{ const val=m.querySelector('#forkText').value.trim(); if(!val)return; let created=null; updateState(s=>{created=forkNext(s,id,val);}); lastAddedNodeId=created?.id||null; logEvent('Reasoning fork created',val); closeModal(); renderWorkspace(); }
   });
 }
 function branchFrom(id){
   const origin=getState().nodes.find(n=>n.id===id); if(!origin)return;
   openModal(`<h2 id="modalTitle">Branch this interpretation.</h2><p>Keep the existing reading and create another possible meaning alongside it.</p><label class="field-label">Alternative interpretation</label><textarea class="field-textarea" id="branchText" placeholder="Describe another plausible reading of this language…"></textarea><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmBranch">Create branch →</button></div>`,{
-    onOpen:m=>m.querySelector('#confirmBranch').onclick=()=>{ const val=m.querySelector('#branchText').value.trim(); if(!val)return; updateState(s=>createBranch(s,id,val)); logEvent('Alternative branch created',val); closeModal(); renderWorkspace(); }
+    onOpen:m=>m.querySelector('#confirmBranch').onclick=()=>{ const val=m.querySelector('#branchText').value.trim(); if(!val)return; let created=null; updateState(s=>{created=createBranch(s,id,val);}); lastAddedNodeId=created?.id||null; logEvent('Alternative branch created',val); closeModal(); renderWorkspace(); }
   });
 }
 
@@ -262,9 +298,50 @@ async function applyEditedBrief(){
 
 function manualPhrase(){
   const brief=getState().brief;
-  openModal(`<h2 id="modalTitle">Trace another phrase.</h2><p>Enter a phrase exactly as it appears in your brief. TRACEWORK will add it as a hotspot.</p><input class="field-input" id="manualPhraseInput" placeholder="e.g. peak periods"><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmPhrase">Add phrase</button></div>`,{
-    onOpen:m=>m.querySelector('#confirmPhrase').onclick=()=>{ const phrase=m.querySelector('#manualPhraseInput').value.trim(); const start=brief.toLowerCase().indexOf(phrase.toLowerCase()); if(start<0){toast('That exact phrase is not in the brief.');return;} const h={id:`hotspot-manual-${Date.now()}`,text:brief.slice(start,start+phrase.length),concept:'custom',start,end:start+phrase.length,reason:'Selected by designer for interpretation',kind:/\s/.test(phrase)?'phrase':'word'}; updateState(s=>{s.hotspots.push(h);s.hotspots.sort((a,b)=>a.start-b.start);}); closeModal(); renderWorkspace(); selectHotspot(h.id); }
+  openModal(`<h2 id="modalTitle">Select text from the brief.</h2><p>Drag across any word or phrase below. TRACEWORK will preserve the exact wording as an Input hotspot.</p>
+    <div class="selection-brief" id="phraseSelectionText">${escapeHtml(brief)}</div>
+    <div class="selection-readout"><span>Selected</span><strong id="phraseSelectionPreview">Nothing selected yet</strong></div>
+    <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmPhrase" disabled>Add selected text</button></div>`,{
+    onOpen:m=>{
+      const box=m.querySelector('#phraseSelectionText'), preview=m.querySelector('#phraseSelectionPreview'), confirm=m.querySelector('#confirmPhrase');
+      let picked=null;
+      const readSelection=()=>{
+        const sel=window.getSelection();
+        if(!sel || sel.rangeCount===0 || sel.isCollapsed){ picked=null; preview.textContent='Nothing selected yet'; confirm.disabled=true; return; }
+        const range=sel.getRangeAt(0);
+        if(!box.contains(range.commonAncestorContainer)){ picked=null; preview.textContent='Nothing selected yet'; confirm.disabled=true; return; }
+        const start=textOffsetWithin(box,range.startContainer,range.startOffset);
+        const end=textOffsetWithin(box,range.endContainer,range.endOffset);
+        const a=Math.max(0,Math.min(start,end)), b=Math.min(brief.length,Math.max(start,end));
+        const text=brief.slice(a,b).trim();
+        if(!text){ picked=null; preview.textContent='Nothing selected yet'; confirm.disabled=true; return; }
+        const leading=brief.slice(a,b).indexOf(text);
+        picked={text,start:a+Math.max(0,leading),end:a+Math.max(0,leading)+text.length};
+        preview.textContent=`“${text}”`;
+        confirm.disabled=false;
+      };
+      box.addEventListener('mouseup',()=>setTimeout(readSelection,0));
+      box.addEventListener('keyup',()=>setTimeout(readSelection,0));
+      confirm.onclick=()=>{
+        if(!picked)return;
+        const duplicate=getState().hotspots.some(h=>h.start===picked.start&&h.end===picked.end);
+        if(duplicate){toast('That exact word or phrase is already a hotspot.');return;}
+        const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word'};
+        updateState(s=>{s.hotspots.push(h);s.hotspots.sort((a,b)=>a.start-b.start);});
+        closeModal(); showHotspotSuggestions=true; els.toggleHotspotsButton.textContent='Hide suggestions'; renderWorkspace(); selectHotspot(h.id);
+      };
+    }
   });
+}
+
+function textOffsetWithin(root,node,offset){
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  let total=0,current;
+  while((current=walker.nextNode())){
+    if(current===node) return total+offset;
+    total+=current.textContent.length;
+  }
+  return total;
 }
 
 async function renderPathwayCards(query=''){
@@ -353,6 +430,7 @@ function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?<
 
 async function seedTestProject(){
   try{
+    if(localStorage.getItem('tracework.dismissedTestProject.v1')==='1') return;
     const project=await (await fetch('./data/test-project.json')).json();
     ensureProject(project);
   }catch(err){ console.warn('TRACEWORK test project could not be seeded.',err); }
@@ -361,10 +439,11 @@ async function seedTestProject(){
 function renderProjectShelf(){
   const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
   if(!wrap||!root)return;
-  const projects=listProjects().slice(0,4);
+  const projects=listProjects().slice(0,8);
   wrap.classList.toggle('hidden',!projects.length);
-  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button></article>`).join('');
+  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
   root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
+  root.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); confirmDeleteSavedProject(b.dataset.deleteProject); });
 }
 
 function openSavedProject(id){
@@ -374,6 +453,21 @@ function openSavedProject(id){
   replaceState(project);
   enterApp(false);
   if(project.selectedHotspotId) renderWorkspace();
+}
+
+function confirmDeleteSavedProject(id){
+  const project=loadProject(id);
+  if(!project)return;
+  openModal(`<h2 id="modalTitle">Delete this trace?</h2><p><strong>${escapeHtml(project.projectName||'Untitled trace')}</strong> will be removed from this browser. This cannot be undone unless you exported a copy.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep trace</button><button class="danger-button" id="confirmDeleteTrace">Delete trace</button></div>`,{
+    onOpen:m=>m.querySelector('#confirmDeleteTrace').onclick=()=>{
+      deleteProject(id);
+      if(id==='tracework-test-pavilion') localStorage.setItem('tracework.dismissedTestProject.v1','1');
+      if(getState().projectId===id) resetState();
+      closeModal();
+      renderProjectShelf();
+      toast('Trace deleted from this browser.');
+    }
+  });
 }
 
 function renderDiscussion(){
@@ -435,14 +529,34 @@ function updateThoughtSuggestion(){
   const hasText=Boolean(text);
   els.addFreeThoughtButton.disabled=!hasText;
   els.addLooseNoteButton.disabled=!hasText;
+
   if(!hasText){
     els.thoughtReason.textContent='Start typing to see a suggestion.';
     els.thoughtTypeSelect.dataset.manual='';
+    if(els.thoughtMatches) els.thoughtMatches.innerHTML='';
     return;
   }
-  if(els.thoughtTypeSelect.dataset.manual!=='1' && result.type) els.thoughtTypeSelect.value=result.type;
-  const pct=Math.round(result.confidence*100);
-  els.thoughtReason.textContent=`${pct}% suggestion · ${result.reason}`;
+
+  const manual=els.thoughtTypeSelect.dataset.manual==='1';
+  if(!manual && result.type) els.thoughtTypeSelect.value=result.type;
+  const selected=els.thoughtTypeSelect.value;
+  const best=result.matches?.[0];
+  const selectedLabel=typeLabels[selected]||selected;
+  els.thoughtReason.textContent=manual
+    ? `Manual override · TRACEWORK will use ${selectedLabel}.`
+    : `${best?.strength??Math.round(result.confidence*100)}% match · ${result.reason}`;
+
+  if(els.thoughtMatches){
+    els.thoughtMatches.innerHTML=(result.matches||[]).slice(0,3).map((m,i)=>{
+      const label=typeLabels[m.type]||m.type;
+      return `<button type="button" class="thought-match ${m.type===selected?'selected':''} ${i===0?'strongest':''}" data-match-type="${m.type}"><span>${escapeHtml(label)}</span><strong>${m.strength}%</strong></button>`;
+    }).join('');
+    els.thoughtMatches.querySelectorAll('[data-match-type]').forEach(b=>b.onclick=()=>{
+      els.thoughtTypeSelect.value=b.dataset.matchType;
+      els.thoughtTypeSelect.dataset.manual='1';
+      updateThoughtSuggestion();
+    });
+  }
 }
 
 function addFreeThought(){
@@ -456,14 +570,15 @@ function addFreeThought(){
   const depth={input:0,interpretation:1,grounding:2,consequence:3,evaluation:4,goal:5}[type]??1;
   const branchId=active?.branchId||`free-${Date.now()}`;
   const expected={input:'interpretation',interpretation:'grounding',grounding:'consequence',consequence:'evaluation',evaluation:'goal'}[active?.type];
+  let created=null;
   updateState(s=>{
     const node=createNode({type,label:text,branchId,x:70+depth*265,y:maxY+165,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:'TRACEWORK',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
     s.nodes.push(node);
-    // Round 1 stays deliberately light-touch: connect only when the free thought is
-    // exactly the expected next reasoning role. Round 2 adds manual graph wiring.
     if(active && expected===type) s.edges.push(createEdge(active.id,node.id));
     s.activeNodeId=node.id; s.activeBranchId=branchId;
+    created=node;
   });
+  lastAddedNodeId=created?.id||null;
   logEvent('Free reasoning added',`${typeLabels[type]||type} · ${text}`);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; updateThoughtSuggestion(); renderWorkspace();
   toast(`Added as ${typeLabels[type]||type}.`);
@@ -474,10 +589,12 @@ function addLooseNote(){
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
   const scoped=scopedTrace(state); const maxY=Math.max(0,...scoped.nodes.map(n=>Number(n.y)||0));
+  let created=null;
   updateState(s=>{
     const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:335,y:maxY+165,meta:{hotspotId:s.selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
-    s.nodes.push(node); s.activeNodeId=node.id;
+    s.nodes.push(node); s.activeNodeId=node.id; created=node;
   });
+  lastAddedNodeId=created?.id||null;
   logEvent('Loose note added',text);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; updateThoughtSuggestion(); renderWorkspace();
   toast('Added as an unclassified note.');
@@ -491,7 +608,63 @@ function convertNote(node,type){
 
 function inspectCaseStudy(id){
   const c=caseStudies.find(x=>x.id===id); if(!c)return;
-  openModal(`<h2 id="modalTitle">${escapeHtml(c.name)}</h2><p>${escapeHtml(c.designer)} · ${escapeHtml(String(c.year))}</p><div class="node-use-card"><strong>Why TRACEWORK surfaced it</strong><p>${escapeHtml(c.note)}</p><p><strong>Question to carry back:</strong> ${escapeHtml(c.prompt)}</p></div><div class="inspector-section"><h4>Spatial moves to inspect</h4><div class="hotspot-list">${c.moves.map(m=>`<span class="hotspot-chip">${escapeHtml(m)}</span>`).join('')}</div></div><div class="modal-actions"><button class="primary-button compact" data-close-modal>Back to trace</button></div>`);
+  openModal(`<h2 id="modalTitle">${escapeHtml(c.name)}</h2><p>${escapeHtml(c.designer)} · ${escapeHtml(String(c.year))}${c.feature?` · ${escapeHtml(c.feature)}`:''}</p>
+    <div class="node-use-card"><strong>Feature to inspect</strong><p>${escapeHtml(c.note)}</p>${c.whyRelevant?`<p><strong>Why this may matter here:</strong> ${escapeHtml(c.whyRelevant)}</p>`:''}<p><strong>Question to carry back:</strong> ${escapeHtml(c.prompt)}</p></div>
+    <div class="inspector-section"><h4>Spatial moves to inspect</h4><div class="hotspot-list">${(c.moves||[]).map(m=>`<span class="hotspot-chip">${escapeHtml(m)}</span>`).join('')}</div></div>
+    <div class="modal-actions">${c.sourceUrl?`<a class="secondary-button" href="${escapeHtml(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(c.sourceLabel||'Open source')} ↗</a>`:''}<button class="primary-button compact" data-close-modal>Back to trace</button></div>`);
+}
+
+
+function traceIssues(state=getState()){
+  const scoped=scopedTrace(state);
+  const activeNodes=scoped.nodes.filter(n=>n.status!=='rejected');
+  const activeEdges=scoped.edges.filter(e=>e.status!=='rejected');
+  const degree=id=>activeEdges.filter(e=>e.source===id||e.target===id).length;
+  const outgoing=id=>activeEdges.filter(e=>e.source===id);
+  const issues=[];
+
+  for(const node of activeNodes){
+    if(node.type==='note') continue;
+    if(node.type!=='input' && degree(node.id)===0){
+      issues.push({node,kind:'unlinked',message:'This reasoning move is floating without a connection.'});
+      continue;
+    }
+    if(node.type==='goal') continue;
+    if(outgoing(node.id).length) continue;
+
+    const messages={
+      input:'No interpretation or downstream reasoning is connected yet.',
+      interpretation:'This interpretation has not been grounded or developed spatially yet.',
+      grounding:'This grounding has not produced a spatial consequence yet.',
+      consequence:'This spatial consequence has not been evaluated yet.',
+      evaluation:'This evaluation has not been connected to a design goal yet.'
+    };
+    issues.push({node,kind:'open-end',message:messages[node.type]||'This line of reasoning currently stops here.'});
+  }
+  return issues;
+}
+
+function updateTraceCheck(){
+  if(!els.traceCheckButton)return;
+  const issues=traceIssues();
+  els.traceCheckButton.textContent=issues.length?`Trace check · ${issues.length} open`:'Trace check · clear';
+  els.traceCheckButton.classList.toggle('attention',issues.length>0);
+}
+
+function openTraceCheck(){
+  const issues=traceIssues();
+  const body=issues.length
+    ? `<div class="trace-issue-list">${issues.map(i=>`<button class="trace-issue" data-trace-issue="${escapeHtml(i.node.id)}"><span>${escapeHtml(typeLabels[i.node.type]||i.node.type)}</span><strong>${escapeHtml(i.node.label)}</strong><small>${escapeHtml(i.message)}</small></button>`).join('')}</div>`
+    : `<div class="trace-clear"><strong>No obvious loose ends in this selected trace.</strong><p>TRACEWORK is only checking continuity here, not whether the reasoning is correct.</p></div>`;
+  openModal(`<h2 id="modalTitle">Trace check.</h2><p>These are prompts, not errors. A loose end may be intentional; this simply shows where reasoning currently stops or floats unconnected.</p>${body}<div class="modal-actions"><button class="primary-button compact" data-close-modal>Done</button></div>`,{
+    onOpen:m=>m.querySelectorAll('[data-trace-issue]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.traceIssue;
+      closeModal();
+      showView('workspace');
+      selectNode(id);
+      setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${id}"]`),canvasZoom),60);
+    })
+  });
 }
 
 function zoomTo(next){

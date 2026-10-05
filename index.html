@@ -79,10 +79,10 @@
           <div class="source-footer">
             <div class="section-label-row">
               <span class="section-label">Interpretive hotspots</span>
-              <span class="count-pill" id="hotspotCount">0</span>
+              <div class="hotspot-controls"><button class="text-button mini" id="toggleHotspotsButton" type="button">Hide suggestions</button><span class="count-pill" id="hotspotCount">0</span></div>
             </div>
             <div class="hotspot-list" id="hotspotList"></div>
-            <button class="secondary-button full" id="addPhraseButton">＋ Select a word or phrase</button>
+            <button class="secondary-button full" id="addPhraseButton">＋ Select text from brief</button>
           </div>
         </aside>
 
@@ -93,6 +93,7 @@
               <div class="canvas-title-row">
                 <h2 id="canvasTitle">Your trace</h2>
                 <span class="branch-count" id="branchCount">1 path</span>
+                <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
               </div>
             </div>
             <div class="toolbar-actions">
@@ -128,10 +129,12 @@
                   <option value="consequence">Spatial consequence</option>
                   <option value="evaluation">Evaluation</option>
                   <option value="goal">Goal</option>
-                  <option value="input">Input</option>
+                  <option value="input">Input / given condition</option>
                 </select>
                 <small id="thoughtReason">Start typing to see a suggestion.</small>
               </div>
+              <div class="thought-matches" id="thoughtMatches"></div>
+              <div class="thought-clarifier">Input = something given or observed. Note = an uncategorised thought.</div>
             </div>
             <div class="thought-actions">
               <button class="secondary-button" id="addLooseNoteButton" disabled>Add as note</button>

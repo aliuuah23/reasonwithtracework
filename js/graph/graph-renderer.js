@@ -1,5 +1,6 @@
 import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
+import { nodeGuidance } from '../core/node-guidance.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
@@ -57,9 +58,10 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
 
 function nodeMarkup(n,selected){
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
+  const help=nodeGuidance[n.type]?.use||'';
   return `<article class="graph-node ${selected?'selected':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" style="left:${n.x}px;top:${n.y}px">
     <div class="node-accent"></div><div class="node-body">
-      <div class="node-type"><i></i>${typeLabels[n.type]||n.type}</div>
+      <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       <div class="node-foot"><span>${escapeHtml(meta)}</span><span class="node-branch">${n.type==='note'?'Unclassified':shortBranch(n.branchId)}</span></div>
     </div></article>`;

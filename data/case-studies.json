@@ -1,52 +1,266 @@
 [
   {
-    "id":"serpentine-2013-fujimoto",
-    "name":"Serpentine Pavilion 2013",
-    "designer":"Sou Fujimoto",
-    "year":2013,
-    "tags":["openness","threshold","community","flexibility","porosity","circulation"],
-    "moves":["porous frame","gradients of enclosure","occupiable edge"],
-    "note":"A cloud-like lattice creates shifting degrees of enclosure rather than a single hard inside/outside boundary.",
-    "prompt":"What changes when openness is treated as a gradient rather than a binary condition?"
+    "id": "serpentine-2013-fujimoto",
+    "name": "Serpentine Pavilion 2013",
+    "designer": "Sou Fujimoto",
+    "year": 2013,
+    "feature": "Porous frame / occupiable edge",
+    "tags": [
+      "openness",
+      "threshold",
+      "community",
+      "flexibility",
+      "porosity",
+      "circulation",
+      "edge"
+    ],
+    "moves": [
+      "porous frame",
+      "gradients of enclosure",
+      "occupiable edge",
+      "distributed seating"
+    ],
+    "note": "The lattice works less as a single enclosure than as a field of occupiable edges and changing degrees of openness.",
+    "whyRelevant": "Useful when a trace is asking how one boundary or edge can support several degrees of occupation rather than one fixed room condition.",
+    "prompt": "What changes if the edge becomes occupiable instead of acting only as a boundary?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/about/press/serpentine-pavilion-2013/"
   },
   {
-    "id":"serpentine-2017-kere",
-    "name":"Serpentine Pavilion 2017",
-    "designer":"Francis Kéré",
-    "year":2017,
-    "tags":["community","shelter","gathering","climate","centre","rain"],
-    "moves":["shared canopy","central gathering space","climatic response"],
-    "note":"A broad canopy and central gathering condition frame shelter as both environmental protection and collective social space.",
-    "prompt":"Could one spatial move serve climatic shelter and social gathering at the same time?"
+    "id": "serpentine-2017-kere",
+    "name": "Serpentine Pavilion 2017",
+    "designer": "Francis K\u00e9r\u00e9",
+    "year": 2017,
+    "feature": "Shared canopy / central gathering",
+    "tags": [
+      "community",
+      "shelter",
+      "gathering",
+      "climate",
+      "centre",
+      "rain",
+      "canopy"
+    ],
+    "moves": [
+      "shared canopy",
+      "central gathering space",
+      "climatic response",
+      "perimeter occupation"
+    ],
+    "note": "A broad canopy and central gathering condition frame shelter as both environmental protection and collective social space.",
+    "whyRelevant": "Useful when one spatial move needs to carry both climatic performance and social use.",
+    "prompt": "Could one canopy condition support shelter and gathering at the same time?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/about/press/serpentine-pavilion-2017/"
   },
   {
-    "id":"serpentine-2009-sanaa",
-    "name":"Serpentine Pavilion 2009",
-    "designer":"SANAA",
-    "year":2009,
-    "tags":["shelter","openness","movement","lightness","edge","circulation"],
-    "moves":["continuous canopy","open perimeter","distributed occupation"],
-    "note":"A thin reflective canopy creates a continuous sheltered field while keeping the perimeter visually and physically open.",
-    "prompt":"What if shelter is continuous but enclosure is minimal?"
+    "id": "serpentine-2009-sanaa",
+    "name": "Serpentine Pavilion 2009",
+    "designer": "SANAA",
+    "year": 2009,
+    "feature": "Continuous roof / open perimeter",
+    "tags": [
+      "shelter",
+      "openness",
+      "movement",
+      "lightness",
+      "edge",
+      "circulation",
+      "canopy"
+    ],
+    "moves": [
+      "continuous canopy",
+      "open perimeter",
+      "distributed occupation",
+      "variable roof height"
+    ],
+    "note": "A continuous reflective roof provides shelter while the pavilion stays visually and physically open from many sides.",
+    "whyRelevant": "Useful for separating the idea of shelter from the idea of enclosure.",
+    "prompt": "What if shelter remains continuous while enclosure stays minimal?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/whats-on/serpentine-gallery-pavilion-2009-kazuyo-sejima-ryue-nishizawa-sanaa-0/"
   },
   {
-    "id":"serpentine-2015-selgascano",
-    "name":"Serpentine Pavilion 2015",
-    "designer":"selgascano",
-    "year":2015,
-    "tags":["movement","entry","threshold","route","experience","enclosure"],
-    "moves":["multiple entries","layered threshold","route choice"],
-    "note":"Multiple openings and layered circulation make arrival and movement part of the pavilion experience rather than a single front-door sequence.",
-    "prompt":"Could several routes support different levels or kinds of participation?"
+    "id": "serpentine-2015-selgascano",
+    "name": "Serpentine Pavilion 2015",
+    "designer": "selgascano",
+    "year": 2015,
+    "feature": "Multiple entries / layered threshold",
+    "tags": [
+      "movement",
+      "entry",
+      "threshold",
+      "route",
+      "experience",
+      "enclosure",
+      "circulation"
+    ],
+    "moves": [
+      "multiple entries",
+      "layered threshold",
+      "route choice",
+      "layered skin"
+    ],
+    "note": "Multiple openings and layered circulation make arrival and route choice part of the pavilion experience.",
+    "whyRelevant": "Useful when a trace is testing whether one main route is necessary or whether several entries can distribute movement.",
+    "prompt": "Could several thresholds support different kinds of participation without confusing circulation?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/whats-on/serpentine-pavilion-2015-designed-selgascano/"
   },
   {
-    "id":"serpentine-2021-counterspace",
-    "name":"Serpentine Pavilion 2021",
-    "designer":"Counterspace / Sumayya Vally",
-    "year":2021,
-    "tags":["community","memory","gathering","fragment","identity","distributed"],
-    "moves":["fragmented references","distributed pieces","social gathering"],
-    "note":"The pavilion draws from forms and spaces associated with gathering across London, treating precedent and collective memory as design material.",
-    "prompt":"What social spaces already matter to the users, and what could be learned from their spatial qualities?"
+    "id": "serpentine-2021-counterspace",
+    "name": "Serpentine Pavilion 2021",
+    "designer": "Counterspace / Sumayya Vally",
+    "year": 2021,
+    "feature": "Fragments of existing social spaces",
+    "tags": [
+      "community",
+      "memory",
+      "gathering",
+      "fragment",
+      "identity",
+      "distributed",
+      "precedent"
+    ],
+    "moves": [
+      "fragmented references",
+      "distributed pieces",
+      "social gathering",
+      "translated precedent"
+    ],
+    "note": "The pavilion draws from places of meeting and belonging across London, using social-spatial references as design material.",
+    "whyRelevant": "Useful when grounding a design move in existing social spaces rather than inventing a generic idea of community.",
+    "prompt": "Which existing places already support the behaviour being sought, and what spatial qualities can be translated?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/whats-on/serpentine-pavilion-2021-designed-by-counterspace/"
+  },
+  {
+    "id": "serpentine-2006-koolhaas-balmond",
+    "name": "Serpentine Pavilion 2006",
+    "designer": "Rem Koolhaas + Cecil Balmond / Arup",
+    "year": 2006,
+    "feature": "Adjustable inflatable canopy",
+    "tags": [
+      "shelter",
+      "climate",
+      "adaptability",
+      "canopy",
+      "weather",
+      "programme",
+      "flexibility"
+    ],
+    "moves": [
+      "raiseable canopy",
+      "weather-responsive cover",
+      "forum below",
+      "shared enclosure"
+    ],
+    "note": "The ovoid canopy could be raised or lowered in response to weather, making environmental change part of the pavilion's operation.",
+    "whyRelevant": "Useful when flexibility is tied to changing conditions over time rather than constant rearrangement of every element.",
+    "prompt": "Could one adjustable element respond to changing conditions while the rest of the pavilion stays stable?",
+    "sourceLabel": "Serpentine Galleries",
+    "sourceUrl": "https://www.serpentinegalleries.org/whats-on/serpentine-gallery-pavilion-2006-rem-koolhaas-and-cecil-balmond-arup-0/"
+  },
+  {
+    "id": "balik-vallo-sadovsky",
+    "name": "BA_LIK Pavilion",
+    "designer": "Vallo Sadovsky Architects",
+    "year": 2009,
+    "feature": "Five mobile modules on wheels",
+    "tags": [
+      "flexibility",
+      "reconfiguration",
+      "movement",
+      "enclosure",
+      "furniture",
+      "modular"
+    ],
+    "moves": [
+      "mobile modules",
+      "open/closed configurations",
+      "reconfigurable enclosure"
+    ],
+    "note": "Five wheeled elements can be moved and connected so the pavilion shifts between compact enclosure and a looser open arrangement.",
+    "whyRelevant": "Useful for testing whether physical reconfiguration needs many small movable objects or a smaller number of larger spatial components.",
+    "prompt": "Would a few larger mobile components produce clearer reconfiguration than many loose pieces of furniture?",
+    "sourceLabel": "ArchDaily",
+    "sourceUrl": "https://www.archdaily.com/34207/ba_lik-vallo-sadovsky-architects"
+  },
+  {
+    "id": "vidy-lausanne-timber-pavilion",
+    "name": "Timber Pavilion of the Vidy-Lausanne Theatre",
+    "designer": "Yves Weinand Architectes + Atelier Cube",
+    "year": 2019,
+    "feature": "Retractable seating",
+    "tags": [
+      "seating",
+      "capacity",
+      "flexibility",
+      "programme",
+      "reconfiguration",
+      "storage"
+    ],
+    "moves": [
+      "retractable seating",
+      "front/bifront stage",
+      "open floor when folded"
+    ],
+    "note": "Retractable seating changes the room between frontal, bifrontal and open configurations without requiring a completely different building.",
+    "whyRelevant": "Useful when peak-period capacity and everyday openness need to coexist within the same footprint.",
+    "prompt": "Could extra seating disappear into the architecture rather than becoming loose furniture that must be stored elsewhere?",
+    "sourceLabel": "ArchDaily",
+    "sourceUrl": "https://www.archdaily.com/925521/timber-pavilion-of-the-vidy-lausanne-theatre-yves-weinand-architectes-sarl-plus-atelier-cube"
+  },
+  {
+    "id": "dulwich-pavilion-ifdo",
+    "name": "The Dulwich Pavilion",
+    "designer": "IF_DO",
+    "year": 2017,
+    "feature": "Moveable / removable wall panels",
+    "tags": [
+      "flexibility",
+      "enclosure",
+      "partition",
+      "event",
+      "reconfiguration",
+      "threshold"
+    ],
+    "moves": [
+      "moveable wall panels",
+      "removable panels",
+      "fixed roof",
+      "multiple event configurations"
+    ],
+    "note": "Most wall panels are moveable or removable while the roof and deck remain fixed, allowing different event configurations.",
+    "whyRelevant": "Useful for asking which parts of a pavilion actually need to move, and which can remain stable.",
+    "prompt": "Which element needs to change for flexibility to occur: furniture, enclosure, programme, or all three?",
+    "sourceLabel": "ArchDaily",
+    "sourceUrl": "https://www.archdaily.com/872564/the-dulwich-pavilion-if-do"
+  },
+  {
+    "id": "green-agora-spatial-anatomy",
+    "name": "Green Agora Pavilion",
+    "designer": "Spatial Anatomy",
+    "year": 2020,
+    "feature": "Modular structure supporting community activity",
+    "tags": [
+      "community",
+      "modular",
+      "gathering",
+      "programme",
+      "Singapore",
+      "shared use"
+    ],
+    "moves": [
+      "modular frame",
+      "community dialogue",
+      "productive planting",
+      "everyday activation"
+    ],
+    "note": "The pavilion uses a modular aluminium system to support community dialogue and everyday neighbourhood activity.",
+    "whyRelevant": "Useful as a Singapore-based precedent when community use, modularity and everyday activation need to be considered together.",
+    "prompt": "Can a structural system support both a spatial programme and an ongoing community activity?",
+    "sourceLabel": "ArchDaily",
+    "sourceUrl": "https://www.archdaily.com/975691/green-agora-pavilion-spatial-anatomy"
   }
 ]

@@ -25,3 +25,19 @@
 /* Neutral note: deliberately outside the six-category ontology. */
 .graph-node[data-type="note"] { --node-color:#8d93a0; background:#f4f5f7; border-style:dashed; }
 .graph-node[data-type="note"] .node-branch { color:var(--muted-2); }
+
+/* Round 1.1 · Grasshopper-like lightweight help + locate-new-node feedback */
+.node-type.has-help { position:relative; width:max-content; max-width:100%; }
+.node-type.has-help::after {
+  content:attr(data-help); position:absolute; z-index:30; left:0; bottom:calc(100% + 8px);
+  width:230px; padding:8px 9px; border:1px solid var(--border); border-radius:9px;
+  background:#20232c; color:white; font-size:9px; font-weight:500; line-height:1.45;
+  letter-spacing:0; text-transform:none; box-shadow:0 10px 24px rgba(20,24,38,.16);
+  opacity:0; pointer-events:none; transform:translateY(3px); transition:.14s ease;
+}
+.node-type.has-help:hover::after { opacity:1; transform:translateY(0); }
+.graph-node.just-added { animation:newNodeHalo 1.7s ease-out; }
+@keyframes newNodeHalo {
+  0%,28% { box-shadow:0 0 0 7px rgba(91,91,214,.18),0 12px 28px rgba(34,40,61,.14); border-color:var(--accent); }
+  100% { box-shadow:0 5px 18px rgba(34,40,61,.06); }
+}
