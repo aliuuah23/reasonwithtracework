@@ -42,6 +42,7 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   const files=document.getElementById('briefChunkFiles');
   const tools=document.getElementById('briefChunkTools');
   const addButton=document.getElementById('addBriefChunkButton');
+  const editButton=document.getElementById('editBriefChunkButton');
   const adder=document.getElementById('briefChunkAdder');
   const titleInput=document.getElementById('newBriefChunkTitle');
   const textInput=document.getElementById('newBriefChunkText');
@@ -84,15 +85,21 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
     }
   }
   if(addButton && adder){
-    addButton.onclick=()=>{ adder.classList.remove('hidden'); addButton.classList.add('hidden'); titleInput?.focus(); };
-    cancelChunk.onclick=()=>{ adder.classList.add('hidden'); addButton.classList.remove('hidden'); if(titleInput)titleInput.value=''; if(textInput)textInput.value=''; };
+    const resetChunkEditor=()=>{ adder.classList.add('hidden'); addButton.classList.remove('hidden'); editButton?.classList.remove('hidden'); adder.dataset.mode=''; adder.dataset.chunkId=''; if(titleInput)titleInput.value=''; if(textInput)textInput.value=''; if(saveChunk)saveChunk.textContent='Add chunk'; };
+    addButton.onclick=()=>{ adder.dataset.mode='add'; adder.dataset.chunkId=''; adder.classList.remove('hidden'); addButton.classList.add('hidden'); editButton?.classList.add('hidden'); if(saveChunk)saveChunk.textContent='Add chunk'; if(titleInput)titleInput.value=''; if(textInput)textInput.value=''; titleInput?.focus(); };
+    if(editButton){
+      editButton.disabled=!chunk;
+      editButton.onclick=()=>{ if(!chunk)return; adder.dataset.mode='edit'; adder.dataset.chunkId=chunk.id; adder.classList.remove('hidden'); addButton.classList.add('hidden'); editButton.classList.add('hidden'); if(titleInput)titleInput.value=chunk.title||''; if(textInput)textInput.value=chunk.text||''; if(saveChunk)saveChunk.textContent='Save chunk'; titleInput?.focus(); };
+    }
+    cancelChunk.onclick=resetChunkEditor;
     saveChunk.onclick=()=>{
-      const title=titleInput?.value.trim()||`Chunk ${chunkCount+1}`;
+      const editing=adder.dataset.mode==='edit';
+      const title=titleInput?.value.trim()||(editing?chunk?.title:`Chunk ${chunkCount+1}`);
       const text=textInput?.value.trim()||'';
       if(!text){ textInput?.focus(); return; }
-      handlers.onAddChunk?.({title,text});
-      adder.classList.add('hidden'); addButton.classList.remove('hidden');
-      if(titleInput)titleInput.value=''; if(textInput)textInput.value='';
+      if(editing) handlers.onEditChunk?.({id:adder.dataset.chunkId,title,text});
+      else handlers.onAddChunk?.({title,text});
+      resetChunkEditor();
     };
   }
 

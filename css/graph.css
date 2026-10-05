@@ -143,3 +143,50 @@
 .graph-nodes.connecting .node-port.incompatible { opacity:.18; cursor:not-allowed; }
 .node-status { appearance:none; border:0; background:transparent; padding:0; margin:0; color:var(--muted-2); font:inherit; font-size:9px; cursor:pointer; }
 .node-status:hover { color:var(--text); }
+
+/* Round 2B.3 · reliable wire targeting */
+.trace-edge.wire-hover:not(.selected) { stroke:var(--accent); stroke-width:3.4px; opacity:1; filter:drop-shadow(0 0 3px rgba(91,91,214,.24)); }
+.trace-edge-hit { stroke-width:22; }
+
+
+/* Round 2B.3a · deterministic wire selection */
+.trace-edge, .trace-edge-hit, .trace-edge-selection { vector-effect:non-scaling-stroke; }
+.trace-edge-hit { stroke:transparent; stroke-width:36px; pointer-events:stroke; cursor:pointer; touch-action:none; }
+.trace-edge-selection { fill:none; stroke:rgba(91,91,214,.16); stroke-width:11px; pointer-events:none; }
+.trace-edge.selected { stroke:var(--accent-dark) !important; stroke-width:3px !important; opacity:1 !important; filter:drop-shadow(0 0 3px rgba(91,91,214,.28)); }
+.trace-edge.wire-hover:not(.selected) { stroke:var(--accent) !important; stroke-width:2.8px !important; opacity:1 !important; filter:drop-shadow(0 0 2px rgba(91,91,214,.20)); }
+
+
+/* Round 2B.3b · category editing affordance */
+.node-type.has-help { cursor:pointer; }
+.graph-node[data-type="input"] .node-type.has-help { cursor:help; }
+
+
+/* Round 2B.4 · expandable spatial consequence preview */
+.node-preview-toggle {
+  appearance:none; border:0; background:transparent; padding:0; margin:0 0 0 auto;
+  color:var(--muted); font:inherit; font-size:8px; font-weight:760; cursor:pointer;
+}
+.node-preview-toggle:hover { color:var(--text); }
+.spatial-preview {
+  margin-top:10px; padding-top:9px; border-top:1px solid var(--border);
+  display:grid; gap:7px; cursor:default; user-select:none;
+}
+.spatial-preview-head { display:grid; gap:2px; }
+.spatial-preview-head strong { font-size:9px; }
+.spatial-preview-head span { color:var(--muted-2); font-size:7.5px; line-height:1.35; }
+.spatial-preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.spatial-preview figure { margin:0; min-width:0; padding:5px; border:1px solid var(--border); border-radius:8px; background:var(--surface-soft); }
+.spatial-preview svg { display:block; width:100%; height:66px; color:#69717d; }
+.spatial-preview figcaption { margin-top:2px; color:var(--muted-2); font-size:7px; text-align:center; text-transform:uppercase; letter-spacing:.045em; }
+.spatial-zone { fill:none; stroke:currentColor; stroke-width:1.4; }
+.spatial-heavy { fill:none; stroke:currentColor; stroke-width:2.2; }
+.spatial-soft { fill:rgba(105,113,125,.08); stroke:currentColor; stroke-width:1.2; }
+.spatial-dashed { fill:none; stroke:currentColor; stroke-width:1.2; stroke-dasharray:3 2; }
+.spatial-fill { fill:rgba(105,113,125,.18); stroke:currentColor; stroke-width:1; }
+.spatial-arrow { fill:none; stroke:currentColor; stroke-width:1.2; stroke-dasharray:2.5 2; }
+.spatial-marker { fill:currentColor; stroke:none; }
+.spatial-erase { fill:none; stroke:var(--surface-soft); stroke-width:4; }
+.spatial-cues { display:flex; flex-wrap:wrap; gap:4px; }
+.spatial-cues span { padding:2px 5px; border-radius:999px; background:#f0f1f4; color:var(--muted); font-size:7px; }
+.graph-node.preview-open { min-height:250px; }

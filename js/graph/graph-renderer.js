@@ -5,9 +5,10 @@ import { connectionSignal } from './connection-rules.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
+let lastNodeActivation={id:null,time:0};
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeMove,onNodeContext,onNodeStatusClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
   selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null
 }){
   const world=autoLayout(nodes);
@@ -63,15 +64,57 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   };
   requestAnimationFrame(redrawEdges);
 
-  // Only the generous invisible hit-path handles selection. The visible line never jumps into pointer focus.
-  els.svg.querySelectorAll('.trace-edge-hit').forEach(path=>{
-    path.addEventListener('click',e=>{
+  // Wire selection uses a screen-consistent hit target and resolves overlapping wires by
+  // geometric proximity. The visible path never moves or changes geometry when selected.
+  const visibleEdges=[...els.svg.querySelectorAll('.trace-edge:not(.draft-connection)')];
+  const pointInSvg=e=>{
+    const pt=els.svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+    const matrix=els.svg.getScreenCTM();
+    return matrix?pt.matrixTransform(matrix.inverse()):{x:e.clientX,y:e.clientY};
+  };
+  const distanceToPath=(path,p)=>{
+    const len=path.getTotalLength?.()||0; if(!len)return Infinity;
+    // Denser sampling makes crossing/parallel wires deterministic without changing their paths.
+    const samples=Math.max(28,Math.min(160,Math.ceil(len/10)));
+    let best=Infinity;
+    for(let i=0;i<=samples;i++){
+      const q=path.getPointAtLength((len*i)/samples);
+      const d=Math.hypot(q.x-p.x,q.y-p.y); if(d<best)best=d;
+    }
+    return best;
+  };
+  const nearestEdgeId=e=>{
+    const p=pointInSvg(e); let winner=null,best=Infinity;
+    visibleEdges.forEach(path=>{
+      const d=distanceToPath(path,p);
+      if(d<best-.15){best=d;winner=path.dataset.edgeId;}
+      else if(Math.abs(d-best)<=.15 && path.dataset.edgeId===selectedEdgeId){winner=path.dataset.edgeId;}
+    });
+    // Keep roughly the same click tolerance on screen at every zoom level.
+    const scale=Math.max(.2,Number(getScale?.()||1));
+    return best<=(18/scale)?winner:null;
+  };
+  let hoveredWireId=null;
+  const setWireHover=id=>{
+    if(hoveredWireId===id)return;
+    hoveredWireId=id||null;
+    visibleEdges.forEach(x=>x.classList.toggle('wire-hover',Boolean(id)&&x.dataset.edgeId===id));
+  };
+  const hitPaths=[...els.svg.querySelectorAll('.trace-edge-hit')];
+  hitPaths.forEach(path=>{
+    path.addEventListener('pointermove',e=>setWireHover(nearestEdgeId(e)));
+    path.addEventListener('pointerdown',e=>{
+      if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
-      const id=path.dataset.edgeId;
+      const id=nearestEdgeId(e);
+      if(!id)return;
+      setWireHover(id);
       if(e.shiftKey) onEdgeQuickDisconnect?.(id);
       else onEdgeClick?.(id);
     });
+    path.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
   });
+  els.svg.addEventListener('pointerleave',()=>setWireHover(null));
 
   const groupIdsFor=(id)=>{
     const node=nodesById.get(id);
@@ -90,8 +133,17 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
     el.addEventListener('click',e=>{
-      if(e.target.closest('.node-port,.node-status'))return;
-      if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id,e);
+      if(e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
+      if(el.classList.contains('dragging'))return;
+      const now=Date.now(),id=el.dataset.id;
+      if(lastNodeActivation.id===id && now-lastNodeActivation.time<360){
+        lastNodeActivation={id:null,time:0};
+        e.preventDefault();e.stopPropagation();
+        onNodeDoubleClick?.(id,e);
+        return;
+      }
+      lastNodeActivation={id,time:now};
+      onNodeClick?.(id,e);
     });
     el.addEventListener('contextmenu',e=>{
       e.preventDefault();e.stopPropagation();
@@ -100,6 +152,14 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
     el.querySelector('.node-status')?.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
       onNodeStatusClick?.(el.dataset.id,e);
+    });
+    el.querySelector('.node-type')?.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      onNodeTypeClick?.(el.dataset.id,e);
+    });
+    el.querySelector('.node-preview-toggle')?.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      onNodePreviewToggle?.(el.dataset.id,e);
     });
 
     bindDrag(el,{
@@ -132,14 +192,71 @@ function nodeMarkup(n,selected,issue){
       : n.meta?.provisional
         ? 'Provisional = kept open for testing, revision or comparison rather than treated as settled.'
         : 'Active = currently retained as part of the working reasoning network.';
-  const help=nodeGuidance[n.type]?.use||'';
+  const sourceInput=n.type==='input' && n.meta?.source==='brief';
+  const baseHelp=nodeGuidance[n.type]?.use||'';
+  const help=sourceInput?`${baseHelp} Source Inputs stay tied to the brief.`:`${baseHelp} Click the category label to change this node type.`;
   const ports='<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drag from here to find a source for this node"></button><button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect this node forward"></button>';
-  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
+  const previewOpen=n.type==='consequence'&&Boolean(n.meta?.spatialPreviewOpen);
+  const previewButton=n.type==='consequence'?`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Expand a schematic spatial reading of this text">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`:'';
+  const preview=previewOpen?spatialPreviewMarkup(n.label):'';
+  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
-      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button></div>
+      ${preview}
+      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${previewButton}</div>
     </div></article>`;
+}
+
+
+function spatialPreviewMarkup(text=''){
+  const lower=String(text).toLowerCase();
+  const has=(...words)=>words.some(w=>lower.includes(w));
+  const cues=[];
+  if(has('seat','bench','chair','occup'))cues.push('occupation');
+  if(has('movable','moveable','flex','rearrang','combine','adapt'))cues.push('reconfiguration');
+  if(has('perimeter','edge','boundary'))cues.push('edge');
+  if(has('centre','center','central','middle'))cues.push('centre');
+  if(has('recess','sunken','lower','level','step'))cues.push('level');
+  if(has('open','permeable','visual connection'))cues.push('openness');
+  if(has('screen','wall','partition','privacy'))cues.push('screening');
+  if(has('roof','canopy','shelter','shade'))cues.push('cover');
+  if(has('path','route','circulation','approach','through'))cues.push('movement');
+  if(!cues.length)cues.push('spatial relation');
+
+  const plan=[];
+  plan.push('<rect x="12" y="12" width="76" height="48" rx="5" class="spatial-zone"/>');
+  if(cues.includes('edge')) plan.push('<path d="M18 20 H82 M18 52 H82" class="spatial-heavy"/>');
+  if(cues.includes('centre')) plan.push('<ellipse cx="50" cy="36" rx="19" ry="12" class="spatial-soft"/>');
+  if(cues.includes('level')) plan.push('<rect x="34" y="24" width="32" height="24" rx="4" class="spatial-dashed"/>');
+  if(cues.includes('screening')) plan.push('<path d="M50 16 V56" class="spatial-heavy"/>');
+  if(cues.includes('occupation')){
+    plan.push('<rect x="22" y="27" width="14" height="6" rx="2" class="spatial-fill"/>');
+    plan.push('<rect x="64" y="39" width="14" height="6" rx="2" class="spatial-fill"/>');
+  }
+  if(cues.includes('movement')) plan.push('<path d="M8 37 C27 30, 70 46, 92 35" class="spatial-arrow" marker-end="url(#arrowPlan)"/>');
+  if(cues.includes('reconfiguration')) plan.push('<path d="M31 43 L43 35 M69 29 L58 37" class="spatial-arrow" marker-end="url(#arrowPlan)"/>');
+  if(cues.includes('openness')) plan.push('<path d="M12 26 V18 Q12 12 18 12 H29 M71 60 H82 Q88 60 88 54 V46" class="spatial-erase"/>');
+
+  const ax=[];
+  ax.push('<path d="M20 45 L50 28 L82 44 L51 61 Z" class="spatial-zone"/>');
+  if(cues.includes('cover')) ax.push('<path d="M24 27 L53 11 L80 25 L51 41 Z" class="spatial-heavy"/>');
+  if(cues.includes('level')) ax.push('<path d="M38 43 L51 36 L65 43 L51 51 Z M38 43 V50 L51 58 L65 50 V43" class="spatial-dashed"/>');
+  if(cues.includes('screening')) ax.push('<path d="M51 28 V56 M51 28 L69 38 V54" class="spatial-heavy"/>');
+  if(cues.includes('occupation')){
+    ax.push('<path d="M28 43 L38 38 L45 42 L35 48 Z" class="spatial-fill"/>');
+    ax.push('<path d="M59 47 L69 42 L76 46 L66 52 Z" class="spatial-fill"/>');
+  }
+  if(cues.includes('reconfiguration')) ax.push('<path d="M31 56 C39 63 53 64 62 57" class="spatial-arrow" marker-end="url(#arrowAx)"/>');
+
+  return `<div class="spatial-preview" aria-label="Schematic spatial reading">
+    <div class="spatial-preview-head"><strong>Possible spatial read</strong><span>schematic · text cues, not a proposed solution</span></div>
+    <div class="spatial-preview-grid">
+      <figure><svg viewBox="0 0 100 72" aria-label="Plan sketch"><defs><marker id="arrowPlan" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z" class="spatial-marker"/></marker></defs>${plan.join('')}</svg><figcaption>plan sketch</figcaption></figure>
+      <figure><svg viewBox="0 0 100 72" aria-label="Simple axonometric sketch"><defs><marker id="arrowAx" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z" class="spatial-marker"/></marker></defs>${ax.join('')}</svg><figcaption>simple 3D</figcaption></figure>
+    </div>
+    <div class="spatial-cues">${cues.slice(0,4).map(c=>`<span>${escapeHtml(c)}</span>`).join('')}</div>
+  </div>`;
 }
 
 function edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence){
@@ -148,9 +265,11 @@ function edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignal
   const source=nodesById.get(e.source),target=nodesById.get(e.target);
   const signal=connectionSignal(source,target,pilotEvidence);
   const signalClass=showWireSignals?`evidence-${signal.band||'neutral'}`:'';
-  const visible=`<path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${e.id===selectedEdgeId?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" d=""/>`;
-  const hit=`<path data-edge-id="${e.id}" class="trace-edge-hit" d=""/>`;
-  return visible+hit;
+  const isSelected=e.id===selectedEdgeId;
+  const halo=isSelected?`<path data-edge-id="${e.id}" class="trace-edge-selection" vector-effect="non-scaling-stroke" d=""/>`:'';
+  const visible=`<path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${isSelected?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" vector-effect="non-scaling-stroke" d=""/>`;
+  const hit=`<path data-edge-id="${e.id}" class="trace-edge-hit" vector-effect="non-scaling-stroke" d=""/>`;
+  return halo+visible+hit;
 }
 
 function isOnActivePath(edge,activeNodeId,edges){
@@ -170,7 +289,7 @@ function isOnActivePath(edge,activeNodeId,edges){
 function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
   let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0||e.target.closest('.node-port,.node-status'))return;
+    if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
     if(locked)return;
     e.stopPropagation();
     const dragIds=getDragIds?.()||[el.dataset.id];

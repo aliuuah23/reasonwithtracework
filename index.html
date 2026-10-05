@@ -105,7 +105,7 @@
           </div>
           <div class="brief-chunk-files hidden" id="briefChunkFiles" aria-label="Brief sections"></div>
           <div class="brief-chunk-tools hidden" id="briefChunkTools">
-            <button class="secondary-button full compact-source" id="addBriefChunkButton" type="button">＋ Chunk</button>
+            <div class="brief-chunk-tool-row"><button class="secondary-button compact-source" id="editBriefChunkButton" type="button">Edit current</button><button class="secondary-button compact-source" id="addBriefChunkButton" type="button">＋ Chunk</button></div>
             <div class="brief-chunk-adder hidden" id="briefChunkAdder">
               <input id="newBriefChunkTitle" type="text" maxlength="70" placeholder="Chunk name · e.g. Movement">
               <textarea id="newBriefChunkText" rows="4" placeholder="Paste or write this part of the brief…"></textarea>
@@ -151,6 +151,7 @@
             <div class="toolbar-actions">
               <button class="tool-button" id="undoButton" type="button" disabled>↶ Undo</button>
               <button class="tool-button" id="findNodeButton" type="button" title="Find a node · Ctrl+F">⌕ Find</button>
+              <button class="tool-button" id="focusPathButton" type="button" title="Isolate the upstream and downstream reasoning around the selected node" disabled>◎ Focus path</button>
               <button class="tool-button" id="branchButton" disabled>⑂ Fork</button>
               <button class="tool-button" id="compareButton" disabled>⇆ Compare</button>
               <div class="zoom-control" aria-label="Canvas zoom"><button class="tool-button zoom-button" id="zoomOutButton" aria-label="Zoom out">−</button><span id="zoomLabel">100%</span><button class="tool-button zoom-button" id="zoomInButton" aria-label="Zoom in">＋</button></div><button class="tool-button" id="fitButton">⌗ Fit</button>
@@ -198,7 +199,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Ctrl+Z undo</span>
+            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus path isolates one reasoning route · Ctrl+Z undo</span>
           </div>
         </section>
 

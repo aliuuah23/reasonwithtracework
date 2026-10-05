@@ -16,15 +16,23 @@ export async function renderHotspotInspector(hotspot,handlers){
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip guided-direct-choice" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
-    <div class="guided-help-note">Choose a suggested reading to add it immediately, or write the interpretation in your own words below.</div>
-    <label class="field-label">Write the interpretation</label><div class="custom-answer"><input id="customInterpretation" placeholder="Describe the condition you mean"><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
+    <div class="guided-help-note">Choose a cue if useful. It will move into the same writing field so it can be extended, qualified or rewritten before it becomes a node.</div>
+    <label class="field-label">Write / extend the interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
     ${caseStudyMarkup(cases)}
     ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
   const input=root.querySelector('#customInterpretation');
   root.querySelectorAll('[data-interpretation]').forEach(b=>b.onclick=()=>{
-    const value=b.dataset.interpretation||'';
-    if(value)handlers.onInterpretation(value,p);
+    root.querySelectorAll('[data-interpretation]').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+    const value=(b.dataset.interpretation||'').trim();
+    if(value){
+      const current=input.value.trim();
+      if(!current) input.value=`${value} — `;
+      else if(!current.toLowerCase().includes(value.toLowerCase())) input.value=`${value} — ${current}`;
+      input.focus();
+      input.setSelectionRange?.(input.value.length,input.value.length);
+    }
   });
   root.querySelector('#addCustomInterpretation').onclick=()=>{
     const val=input.value.trim();
@@ -64,7 +72,7 @@ export async function renderNodeInspector(node,state,handlers){
     ${metaMarkup(node)}
     ${next}
     ${caseStudyMarkup(cases)}
-    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button" id="branchFromNode">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button" id="forkFromNode">Fork next step</button>':''}<button class="secondary-button" id="editNode">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button" id="restoreBranch">Restore path</button>':'<button class="secondary-button" id="rejectBranch">Reject path</button>'):''}</div></div>`;
+    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
   bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
   root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
@@ -83,7 +91,7 @@ function nextForm(node,state,inputPrompt=null){
   if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it to continue working from it, or branch from an earlier active node.</p></div>`;
   if(node.type==='input'){
     const p=inputPrompt||{question:'What does this language mean for the design?',choices:[]};
-    return `<div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${(p.choices||[]).map(c=>`<button class="choice-chip guided-direct-choice" data-direct-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div><div class="guided-help-note">This guided route always creates an Interpretation next. Choose a suggestion to add it immediately, or write a reading below. Node type can still be changed later with Edit.</div><label class="field-label">Write the interpretation</label><textarea class="field-textarea" id="nextText" placeholder="Describe what this wording means in this project…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add interpretation →</button></div>`;
+    return `<div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${(p.choices||[]).map(c=>`<button class="choice-chip guided-direct-choice" data-direct-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div><div class="guided-help-note">This guided route creates an Interpretation next. Choose a cue, then extend or rewrite it in the same field before adding the node. Node type can still be changed later with Edit.</div><label class="field-label">Write / extend the interpretation</label><textarea class="field-textarea" id="nextText" placeholder="Describe what this wording means in this project…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add interpretation →</button></div>`;
   }
   if(node.type==='interpretation'){
     const p=groundingPrompt(); return `<div class="inspector-section"><div class="prompt-question">${p.question}</div><div class="choice-list">${p.sources.map(x=>`<button class="choice-chip selectable" data-ground-source="${attr(x)}">${esc(x)}</button>`).join('')}</div><div class="guided-help-note">Choose a cue if useful, then write the reasoning in your own words. The cue guides the question; it does not become the node.</div><label class="field-label">Why does this reading matter here?</label><textarea class="field-textarea" id="nextText" placeholder="Explain the basis for this interpretation…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add grounding →</button></div>`;
@@ -103,8 +111,16 @@ function bindNext(root,node,handlers){
   let sourceKind=''; const tags=[];
   root.querySelectorAll('.selectable').forEach(b=>b.onclick=()=>{ b.classList.toggle('selected'); if(b.dataset.groundSource)sourceKind=b.dataset.groundSource; if(b.dataset.tag){ const i=tags.indexOf(b.dataset.tag); i>-1?tags.splice(i,1):tags.push(b.dataset.tag); } });
   root.querySelectorAll('[data-direct-interpretation]').forEach(b=>b.onclick=()=>{
-    const text=(b.dataset.directInterpretation||'').trim();
-    if(text)handlers.onNext(node,text,{sourceKind,tags,directChoice:true});
+    root.querySelectorAll('[data-direct-interpretation]').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+    const cue=(b.dataset.directInterpretation||'').trim();
+    const area=root.querySelector('#nextText');
+    if(cue && area){
+      const current=area.value.trim();
+      if(!current) area.value=`${cue} — `;
+      else if(!current.toLowerCase().includes(cue.toLowerCase())) area.value=`${cue} — ${current}`;
+      area.focus(); area.setSelectionRange?.(area.value.length,area.value.length);
+    }
   });
   root.querySelector('#addNext')?.addEventListener('click',()=>{ const area=root.querySelector('#nextText'); const text=area?.value.trim(); const validation=root.querySelector('#nextValidation'); if(!text){ if(validation)validation.textContent='Write the reasoning you want to turn into a node.'; area?.focus(); return; } if(validation)validation.textContent=''; handlers.onNext(node,text,{sourceKind,tags}); });
 }

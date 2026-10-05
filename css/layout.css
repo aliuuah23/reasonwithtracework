@@ -137,3 +137,15 @@
 .project-name-field label span { color:var(--muted-2); font-weight:550; }
 .project-name-field input { width:100%; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); color:var(--text); padding:10px 12px; outline:0; font-size:12px; }
 .project-name-field input:focus { border-color:#c7c7f8; background:var(--surface); box-shadow:0 0 0 3px rgba(99,94,232,.06); }
+
+/* Round 2B.3 · landing source filing */
+.brief-chunk-preview-head { display:flex; align-items:flex-start !important; justify-content:space-between; gap:12px; }
+.brief-chunk-preview-head > div { display:grid; gap:2px; }
+.brief-chunk-preview-list .landing-chunk-chip { display:inline-flex; align-items:center; gap:5px; min-height:25px; padding:4px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted); font:inherit; font-size:9px; cursor:pointer; }
+.brief-chunk-preview-list .landing-chunk-chip:hover { border-color:#cbcbed; color:var(--text); }
+.brief-chunk-preview-list .landing-chunk-chip.active { border-color:#aaa8ef; background:#f2f1ff; color:var(--accent-dark); box-shadow:0 0 0 2px rgba(99,94,232,.05); }
+.landing-chunk-empty { padding:7px 0; color:var(--muted); font-size:9px; }
+.landing-chunk-editor { display:grid; gap:7px; padding-top:8px; border-top:1px solid var(--border); }
+.landing-chunk-editor-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.landing-chunk-editor input,.landing-chunk-editor textarea { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); padding:8px 9px; outline:none; font:inherit; font-size:10px; resize:vertical; }
+.landing-chunk-editor input:focus,.landing-chunk-editor textarea:focus { border-color:#aaa8ef; box-shadow:0 0 0 2px rgba(99,94,232,.06); }

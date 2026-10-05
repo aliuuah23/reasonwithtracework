@@ -279,3 +279,30 @@
 .node-type-edit-row { display:grid; gap:6px; margin-top:12px; }
 .node-type-edit-row label { color:var(--muted); font-size:9px; font-weight:700; }
 .node-type-edit-row select { width:100%; border:1px solid var(--border); background:var(--surface); border-radius:9px; padding:9px 10px; color:var(--text); font:inherit; font-size:11px; outline:none; }
+
+/* Round 2B.3 · editable source chunks + compact guided answer */
+.brief-chunk-tool-row { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.brief-chunk-tool-row .compact-source { width:100%; }
+.guided-answer-stack { display:grid; gap:7px; }
+.guided-answer-stack .field-textarea { min-height:76px; }
+
+
+/* Round 2B.3 · action explanations */
+.inspector-actions .action-help { position:relative; }
+.inspector-actions .action-help::after {
+  content:attr(data-help); position:absolute; z-index:90; left:0; bottom:calc(100% + 7px); width:250px;
+  padding:8px 9px; border-radius:9px; background:#20232c; color:#fff; font-size:9px; font-weight:500;
+  line-height:1.45; text-align:left; white-space:normal; box-shadow:0 10px 24px rgba(20,24,38,.16);
+  opacity:0; visibility:hidden; transform:translateY(2px); pointer-events:none; transition:.08s ease;
+}
+.inspector-actions .action-help:hover::after,.inspector-actions .action-help:focus-visible::after { opacity:1; visibility:visible; transform:translateY(0); }
+.node-type-menu { max-width:280px; }
+
+
+/* Round 2B.4 · pathway focus */
+.tool-button.active {
+  color:var(--accent-dark);
+  border-color:#c7c5f4;
+  background:#f3f2ff;
+  box-shadow:0 0 0 2px rgba(91,91,214,.05);
+}

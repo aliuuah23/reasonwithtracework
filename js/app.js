@@ -2,6 +2,7 @@ import { getState, resetState, replaceState, patchState, updateState, subscribe,
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { createNode, createEdge } from './core/trace-model.js';
+import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
@@ -40,10 +41,12 @@ let showWireSignals = true;
 let landingBriefMode = 'quick';
 let pendingBriefFileName = '';
 let pendingBriefChunks = [];
+let pendingActiveChunkId = null;
 let lastAddedNodeId = null;
 let selectedEdgeId = null;
 let selectedNodeIds = new Set();
 let traceIssueNodeIds = new Set();
+let focusPathRootId = null;
 const undoStack = [];
 const MAX_UNDO = 30;
 
@@ -79,16 +82,16 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton')
   });
 }
 
 function bindGlobalEvents(){
-  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; updateLandingChunkPreview(); els.briefLanding.focus(); };
+  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); els.briefLanding.focus(); };
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
   els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
-  els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); updateLandingChunkPreview(); } });
-  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value,{mode:landingBriefMode,fileName:pendingBriefFileName,projectName:els.projectNameLanding?.value||''});
+  els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); } });
+  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value,{mode:landingBriefMode,fileName:pendingBriefFileName,projectName:els.projectNameLanding?.value||'',chunks:landingBriefMode==='document'?pendingBriefChunks:null});
   $('#brandButton').onclick=()=>getState().brief?confirmReturnHome():showLanding();
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',e=>{ e.preventDefault(); showView(b.dataset.view); }));
   $('#newProjectButton').onclick=()=>getState().brief?confirmNewProject():els.briefLanding.focus();
@@ -117,8 +120,9 @@ function bindGlobalEvents(){
   els.addLooseNoteButton.onclick=addLooseNote;
   if(els.undoButton) els.undoButton.onclick=undoLast;
   if(els.findNodeButton) els.findNodeButton.onclick=openNodeSearch;
+  if(els.focusPathButton) els.focusPathButton.onclick=togglePathFocus;
   document.addEventListener('keydown',handleWorkspaceKeydown);
-  document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); });
+  document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
     if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
     clearNewNodeHalo(); selectedEdgeId=null; selectedNodeIds.clear();
@@ -134,6 +138,7 @@ function setLandingBriefMode(mode='quick',{clear=false}={}){
     els.briefLanding.value='';
     pendingBriefFileName='';
     pendingBriefChunks=[];
+    pendingActiveChunkId=null;
     if(els.briefFileInput)els.briefFileInput.value='';
     if(els.briefFileStatus)els.briefFileStatus.textContent='PDF, DOCX, TXT or MD · processed locally in your browser.';
   }
@@ -143,6 +148,7 @@ function setLandingBriefMode(mode='quick',{clear=false}={}){
     ? 'Paste a long brief here, or upload PDF, DOCX, TXT or MD…'
     : 'Paste a brief, requirement, design statement or project intention…';
   pendingBriefChunks=landingBriefMode==='document'?chunkBrief(els.briefLanding.value):[];
+  pendingActiveChunkId=pendingBriefChunks[0]?.id||null;
   updateLandingChunkPreview();
   if(changed)els.briefLanding.focus();
 }
@@ -157,6 +163,7 @@ async function handleBriefFileUpload(){
     if(!text)throw new Error('No readable text was found in that file.');
     els.briefLanding.value=text;
     pendingBriefChunks=chunkBrief(text);
+    pendingActiveChunkId=pendingBriefChunks[0]?.id||null;
     if(els.briefFileStatus)els.briefFileStatus.textContent=`${pendingBriefFileName} · ${pendingBriefChunks.length} section${pendingBriefChunks.length===1?'':'s'} detected · processed locally`;
     updateLandingChunkPreview();
   }catch(err){
@@ -166,37 +173,84 @@ async function handleBriefFileUpload(){
   }
 }
 
-function updateLandingChunkPreview(){
-  if(!els.briefChunkPreview)return;
-  const show=landingBriefMode==='document' && pendingBriefChunks.length>1;
-  els.briefChunkPreview.classList.toggle('hidden',!show);
-  if(!show){els.briefChunkPreview.innerHTML='';return;}
-  els.briefChunkPreview.innerHTML=`<div><strong>${pendingBriefChunks.length} brief sections detected</strong><span>TRACEWORK keeps them inside one project so hotspots can be read section by section.</span></div><div class="brief-chunk-preview-list">${pendingBriefChunks.slice(0,5).map((c,i)=>`<span>${i+1}. ${escapeHtml(c.title)}</span>`).join('')}${pendingBriefChunks.length>5?`<span>+ ${pendingBriefChunks.length-5} more</span>`:''}</div>`;
+function composeBriefChunks(chunks=[]){
+  let brief='';
+  const clean=[];
+  chunks.forEach((chunk,index)=>{
+    const text=normaliseBrief(chunk?.text||'');
+    if(!text)return;
+    if(brief)brief+='\n\n';
+    const start=brief.length;
+    brief+=text;
+    clean.push({...chunk,id:chunk.id||`brief-chunk-${index+1}`,index:clean.length,title:String(chunk.title||`Section ${clean.length+1}`).trim()||`Section ${clean.length+1}`,start,end:start+text.length,text});
+  });
+  return {brief,chunks:clean};
 }
 
-async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFileName,projectName=''}={}){
-  const brief=normaliseBrief(raw);
-  if(!brief){toast('Paste or upload a design brief first.');return;}
+function updateLandingChunkPreview(){
+  if(!els.briefChunkPreview)return;
+  const show=landingBriefMode==='document';
+  els.briefChunkPreview.classList.toggle('hidden',!show);
+  if(!show){els.briefChunkPreview.innerHTML='';return;}
+  if(pendingActiveChunkId && !pendingBriefChunks.some(c=>c.id===pendingActiveChunkId)) pendingActiveChunkId=pendingBriefChunks[0]?.id||null;
+  const active=pendingBriefChunks.find(c=>c.id===pendingActiveChunkId)||null;
+  els.briefChunkPreview.innerHTML=`
+    <div class="brief-chunk-preview-head"><div><strong>${pendingBriefChunks.length?`${pendingBriefChunks.length} brief section${pendingBriefChunks.length===1?'':'s'}`:'Build the brief as chunks'}</strong><span>${pendingBriefChunks.length?'Click any section to inspect or edit it before tracing.':'Useful when the source document has unclear or inconsistent headings.'}</span></div><button type="button" class="secondary-button mini" id="landingAddChunk">＋ Chunk</button></div>
+    ${pendingBriefChunks.length?`<div class="brief-chunk-preview-list">${pendingBriefChunks.map((c,i)=>`<button type="button" class="landing-chunk-chip ${c.id===active?.id?'active':''}" data-landing-chunk="${escapeHtml(c.id)}">${i+1}. ${escapeHtml(c.title)}</button>`).join('')}</div>`:'<div class="landing-chunk-empty">Paste the full brief above for automatic filing, or add source chunks manually.</div>'}
+    ${active?`<div class="landing-chunk-editor"><div class="landing-chunk-editor-head"><strong>Selected chunk</strong><span>Edits here stay inside this one project.</span></div><input id="landingChunkTitle" type="text" maxlength="70" value="${escapeHtml(active.title)}" placeholder="Chunk name"><textarea id="landingChunkText" rows="4" placeholder="Paste or write this source chunk…">${escapeHtml(active.text)}</textarea><div class="inline-actions"><button type="button" class="text-button mini" id="landingRemoveChunk">Remove</button><button type="button" class="primary-button compact" id="landingSaveChunk">Save chunk</button></div></div>`:''}`;
+  els.briefChunkPreview.querySelectorAll('[data-landing-chunk]').forEach(b=>b.onclick=()=>{pendingActiveChunkId=b.dataset.landingChunk;updateLandingChunkPreview();});
+  els.briefChunkPreview.querySelector('#landingAddChunk')?.addEventListener('click',()=>{
+    const id=`landing-chunk-${Date.now()}`;
+    pendingBriefChunks=[...pendingBriefChunks,{id,index:pendingBriefChunks.length,title:`Chunk ${pendingBriefChunks.length+1}`,start:0,end:0,text:'',manual:true}];
+    pendingActiveChunkId=id;
+    updateLandingChunkPreview();
+    requestAnimationFrame(()=>els.briefChunkPreview.querySelector('#landingChunkTitle')?.select());
+  });
+  els.briefChunkPreview.querySelector('#landingSaveChunk')?.addEventListener('click',()=>{
+    const title=els.briefChunkPreview.querySelector('#landingChunkTitle')?.value.trim()||`Chunk ${pendingBriefChunks.findIndex(c=>c.id===pendingActiveChunkId)+1}`;
+    const text=normaliseBrief(els.briefChunkPreview.querySelector('#landingChunkText')?.value||'');
+    if(!text){toast('Add some source text to this chunk first.');return;}
+    pendingBriefChunks=pendingBriefChunks.map(c=>c.id===pendingActiveChunkId?{...c,title,text,manual:true}:c);
+    const composed=composeBriefChunks(pendingBriefChunks);
+    pendingBriefChunks=composed.chunks;
+    els.briefLanding.value=composed.brief;
+    updateLandingChunkPreview();
+  });
+  els.briefChunkPreview.querySelector('#landingRemoveChunk')?.addEventListener('click',()=>{
+    pendingBriefChunks=pendingBriefChunks.filter(c=>c.id!==pendingActiveChunkId);
+    pendingActiveChunkId=pendingBriefChunks[0]?.id||null;
+    const composed=composeBriefChunks(pendingBriefChunks);
+    pendingBriefChunks=composed.chunks;
+    els.briefLanding.value=composed.brief;
+    updateLandingChunkPreview();
+  });
+}
+
+async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFileName,projectName='',chunks=null}={}){
+  const provided=mode==='document' && Array.isArray(chunks) && chunks.some(c=>normaliseBrief(c?.text||''));
+  const composed=provided?composeBriefChunks(chunks):null;
+  const brief=normaliseBrief(composed?.brief||raw);
+  if(!brief){toast('Paste, upload, or add at least one source chunk first.');return;}
   const useChunks=mode==='document' || brief.length>2600;
-  const chunks=useChunks?chunkBrief(brief):[];
+  const sourceChunks=useChunks?(provided?composed.chunks:chunkBrief(brief)):[];
   const detected=await detectHotspots(brief);
-  const hotspots=attachChunksToHotspots(detected,chunks);
+  const hotspots=attachChunksToHotspots(detected,sourceChunks);
   resetState();
   patchState({
     brief,
     briefMode:useChunks?'document':'quick',
-    briefChunks:chunks,
-    activeBriefChunkId:chunks[0]?.id||null,
+    briefChunks:sourceChunks,
+    activeBriefChunkId:sourceChunks[0]?.id||null,
     sourceFileName:fileName||'',
     hotspots,
     projectName:projectName.trim()||projectNameFromBrief(brief)
   });
-  logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced${chunks.length>1?` across ${chunks.length} sections`:''}`);
+  logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced${sourceChunks.length>1?` across ${sourceChunks.length} sections`:''}`);
   enterApp(true);
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; undoStack.length=0; updateUndoButton(); updateZoomLabel();
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
@@ -205,7 +259,7 @@ function enterApp(autoSelect=true){
 }
 
 function showLanding(){
-  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); traceIssueNodeIds.clear();
+  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); document.getElementById('nodeTypeMenu')?.remove(); traceIssueNodeIds.clear(); focusPathRootId=null;
   els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf();
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='workspace'));
 }
@@ -247,7 +301,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
+  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   const hasNodes=state.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
@@ -259,6 +313,13 @@ function renderWorkspace(){
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
   $('#branchButton').disabled=!active || active.type==='goal' || active.type==='note' || active.status==='rejected';
   $('#compareButton').disabled=scopedBranches.length<2;
+  if(els.focusPathButton){
+    const focusAvailable=Boolean(active && scopedTrace(state).nodes.some(n=>n.id===active.id));
+    els.focusPathButton.disabled=!focusPathRootId && !focusAvailable;
+    els.focusPathButton.textContent=focusPathRootId?'◎ Show all':'◎ Focus path';
+    els.focusPathButton.classList.toggle('active',Boolean(focusPathRootId));
+    els.focusPathButton.title=focusPathRootId?'Restore every node in this hotspot trace':'Isolate the ancestors and descendants of the selected node';
+  }
   els.thoughtDock.classList.toggle('hidden',!state.selectedHotspotId);
   if(state.selectedHotspotId) updateThoughtSuggestion();
   if(active) renderNodeInspector(active,state,nodeHandlers());
@@ -268,13 +329,18 @@ function renderWorkspace(){
 
 function renderGraphState(){
   const state=getState();
-  const scoped=scopedTrace(state);
+  const baseScoped=scopedTrace(state);
+  if(focusPathRootId && !baseScoped.nodes.some(n=>n.id===focusPathRootId)) focusPathRootId=null;
+  const scoped=focusPathRootId?focusTraceAround(baseScoped,focusPathRootId):baseScoped;
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
+    onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node)editNode(node); },
+    onNodePreviewToggle:id=>toggleSpatialPreview(id),
     onEdgeClick:id=>selectEdge(id),
     onEdgeQuickDisconnect:id=>disconnectEdge(id),
     onNodeContext:(id,e)=>openNodeContext(id,e.clientX,e.clientY),
     onNodeStatusClick:(id,e)=>openNodeStatusMenu(id,e.clientX,e.clientY),
+    onNodeTypeClick:(id,e)=>openNodeTypeMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence),
     onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
@@ -313,7 +379,7 @@ function selectBriefChunk(id){
   const state=getState();
   if(!state.briefChunks?.some(c=>c.id===id))return;
   patchState({activeBriefChunkId:id,selectedHotspotId:null,activeNodeId:null},{silent:true});
-  selectedNodeIds.clear(); selectedEdgeId=null; traceIssueNodeIds.clear();
+  selectedNodeIds.clear(); selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
   renderWorkspace();
 }
 
@@ -344,7 +410,30 @@ async function addBriefChunk({title,text}={}){
   toast(`Added “${chunkTitle}” as a new brief chunk.`);
 }
 
+async function editBriefChunk({id,title,text}={}){
+  const state=getState();
+  const target=state.briefChunks?.find(c=>c.id===id); if(!target)return;
+  const value=normaliseBrief(text||'');
+  if(!value){ toast('A source chunk cannot be empty.'); return; }
+  const revised=(state.briefChunks||[]).map(c=>c.id===id?{...c,title:String(title||c.title||'Section').trim(),text:value,manual:true}:{...c});
+  const composed=composeBriefChunks(revised);
+  const detected=attachChunksToHotspots(await detectHotspots(composed.brief),composed.chunks);
+  checkpoint('edit source chunk');
+  updateState(s=>{
+    s.brief=composed.brief;
+    s.briefChunks=composed.chunks;
+    s.activeBriefChunkId=id;
+    s.hotspots=detected;
+    s.selectedHotspotId=null;
+  });
+  selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null;
+  logEvent('Source chunk revised',composed.chunks.find(c=>c.id===id)?.title||'Brief section');
+  renderWorkspace();
+  toast('Chunk updated and hotspots re-analysed. Existing reasoning nodes remain as trace history.');
+}
+
 async function selectHotspot(id){
+  focusPathRootId=null;
   const state=getState(), hotspot=state.hotspots.find(h=>h.id===id); if(!hotspot)return;
   let input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
   updateState(s=>{
@@ -408,7 +497,13 @@ function selectNode(id,event){
   renderWorkspace();
 }
 function selectEdge(id){
-  clearNewNodeHalo(); selectedNodeIds.clear(); selectedEdgeId=id; renderGraphState();
+  clearNewNodeHalo(); selectedNodeIds.clear(); selectedEdgeId=id;
+  document.querySelectorAll('.graph-node.selected').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('.trace-edge').forEach(el=>{
+    const selected=el.dataset.edgeId===id;
+    el.classList.toggle('selected',selected);
+    el.classList.toggle('edge-muted',!selected);
+  });
   const state=getState();
   const edge=state.edges.find(e=>e.id===id);
   const source=edge&&state.nodes.find(n=>n.id===edge.source);
@@ -416,6 +511,7 @@ function selectEdge(id){
   const empirical=source&&target?transitionSummary(source.type,target.type,pilotEvidence):null;
   toast(empirical?`${empirical} · Delete/Backspace disconnects only this wire.`:'Only this connection is selected · press Delete/Backspace, or Shift-click it, to disconnect.');
 }
+
 
 function nodeHandlers(){
   return {
@@ -824,6 +920,7 @@ function visibleCanvasPlacement(seed=0){
 
 function addFreeThought(){
   const text=els.freeThoughtInput.value.trim(); if(!text)return;
+  focusPathRootId=null;
   checkpoint('add reasoning node');
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
@@ -848,6 +945,7 @@ function addFreeThought(){
 
 function addLooseNote(){
   const text=els.freeThoughtInput.value.trim(); if(!text)return;
+  focusPathRootId=null;
   checkpoint('add note');
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
@@ -999,12 +1097,19 @@ function openNodeContext(id,x,y){
     return `<button type="button" class="node-context-wire" data-edge-action="${e.id}">Disconnect wire ${outgoing?'to':'from'} “${short}”</button>`;
   }).join('');
   const groupAction=canGroup?`<button type="button" data-node-action="group">${sameGroup?'Ungroup selected':'Group selected'} (${selected.length})</button>`:(groupMembers.length>1?`<button type="button" data-node-action="ungroup">Ungroup this group (${groupMembers.length})</button>`:'');
-  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · Ctrl+G groups them · Ctrl+F finds a node.'}</small>`;
+  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="focus">${focusPathRootId===id?'Show full pathway field':'Focus this pathway'}</button><button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · Ctrl+G groups them · Ctrl+F finds a node.'}</small>`;
   document.body.appendChild(menu);
   const rect=menu.getBoundingClientRect();
   menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
   menu.style.top=`${Math.max(8,Math.min(y,window.innerHeight-rect.height-8))}px`;
   menu.querySelector('[data-node-action="lock"]').onclick=()=>{toggleNodeLock(id);closeNodeContext();};
+  menu.querySelector('[data-node-action="focus"]').onclick=()=>{
+    focusPathRootId=focusPathRootId===id?null:id;
+    patchState({activeNodeId:id},{silent:true});
+    selectedNodeIds.clear();selectedNodeIds.add(id);
+    closeNodeContext();renderWorkspace();
+    toast(focusPathRootId?'Pathway isolated. Show all restores the full field.':'Showing the full hotspot trace again.');
+  };
   menu.querySelector('[data-node-action="group"]')?.addEventListener('click',()=>{
     checkpoint(sameGroup?'ungroup selected':'group selected');
     updateState(s=>{
@@ -1052,6 +1157,61 @@ function toggleGroupSelected(forceUngroup=false){
   });
   renderWorkspace();
   toast(ungroup?'Nodes ungrouped.':'Nodes grouped. Ctrl+Shift+G releases them.');
+}
+
+
+function focusTraceAround(scoped,rootId){
+  if(!rootId)return scoped;
+  const ids=new Set([rootId]);
+  const upstream=[rootId],downstream=[rootId];
+  while(upstream.length){
+    const id=upstream.shift();
+    scoped.edges.filter(e=>e.target===id).forEach(e=>{
+      if(ids.has(e.source))return;
+      ids.add(e.source);upstream.push(e.source);
+    });
+  }
+  while(downstream.length){
+    const id=downstream.shift();
+    scoped.edges.filter(e=>e.source===id).forEach(e=>{
+      if(ids.has(e.target))return;
+      ids.add(e.target);downstream.push(e.target);
+    });
+  }
+  return {
+    nodes:scoped.nodes.filter(n=>ids.has(n.id)),
+    edges:scoped.edges.filter(e=>ids.has(e.source)&&ids.has(e.target))
+  };
+}
+
+function togglePathFocus(){
+  if(focusPathRootId){
+    focusPathRootId=null;
+    renderWorkspace();
+    toast('Showing the full hotspot trace again.');
+    return;
+  }
+  const state=getState();
+  const id=state.activeNodeId || [...selectedNodeIds][0];
+  if(!id){toast('Select a node first, then Focus path.');return;}
+  if(!scopedTrace(state).nodes.some(n=>n.id===id)){toast('That node is not part of the current hotspot trace.');return;}
+  focusPathRootId=id;
+  selectedEdgeId=null;traceIssueNodeIds.clear();
+  renderWorkspace();
+  const focused=focusTraceAround(scopedTrace(getState()),id);
+  toast(`Focused on ${focused.nodes.length} reasoning move${focused.nodes.length===1?'':'s'}. Show all restores the canvas.`);
+}
+
+function toggleSpatialPreview(id){
+  const node=getState().nodes.find(n=>n.id===id);
+  if(!node || node.type!=='consequence')return;
+  updateState(s=>{
+    const n=s.nodes.find(n=>n.id===id);
+    if(n)n.meta={...(n.meta||{}),spatialPreviewOpen:!n.meta?.spatialPreviewOpen};
+  });
+  selectedNodeIds.clear();selectedNodeIds.add(id);
+  patchState({activeNodeId:id},{silent:true});
+  renderWorkspace();
 }
 
 function openNodeSearch(){
@@ -1105,6 +1265,43 @@ function openNodeStatusMenu(id,x,y){
     menu.remove();
     renderWorkspace();
     toast(`Node marked ${next}.`);
+  });
+}
+
+
+function openNodeTypeMenu(id,x,y){
+  document.getElementById('nodeTypeMenu')?.remove();
+  const node=getState().nodes.find(n=>n.id===id);
+  if(!node)return;
+  if(node.type==='input' && node.meta?.source==='brief'){
+    toast('This Input stays tied to the selected brief language. Other reasoning nodes can change type.');
+    return;
+  }
+  const editableTypes=['interpretation','grounding','consequence','evaluation','goal','note'];
+  const menu=document.createElement('div');
+  menu.id='nodeTypeMenu';
+  menu.className='node-status-menu node-type-menu';
+  menu.innerHTML=`<small>Reasoning role</small>${editableTypes.map(t=>`<button type="button" data-node-type="${t}" class="${node.type===t?'selected':''}">${escapeHtml(typeLabels[t]||t)}<span>${t==='note'?'Leave this thought deliberately unclassified.':nodeGuidance[t]?.use||'Change how this thought functions in the trace.'}</span></button>`).join('')}`;
+  document.body.appendChild(menu);
+  const rect=menu.getBoundingClientRect();
+  menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
+  menu.style.top=`${Math.max(8,Math.min(y,window.innerHeight-rect.height-8))}px`;
+  menu.querySelectorAll('[data-node-type]').forEach(b=>b.onclick=()=>{
+    const nextType=b.dataset.nodeType;
+    if(!nextType||nextType===node.type){menu.remove();return;}
+    checkpoint('change reasoning role');
+    updateState(s=>{
+      const n=s.nodes.find(n=>n.id===id); if(!n)return;
+      n.type=nextType; n.updatedAt=new Date().toISOString();
+      n.meta={...(n.meta||{}),typeEdited:true};
+      if(nextType==='note'){
+        const c=classifyThought(n.label||'');
+        n.meta.suggestedType=c.type||'interpretation'; n.meta.classificationReason=c.reason; n.meta.classificationConfidence=c.confidence;
+      }else delete n.meta.suggestedType;
+      s.edges.filter(e=>e.source===id||e.target===id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
+    });
+    menu.remove(); renderWorkspace();
+    toast(`Changed node to ${typeLabels[nextType]||nextType}. Existing wires were kept for review.`);
   });
 }
 
