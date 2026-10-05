@@ -94,12 +94,13 @@
                 <h2 id="canvasTitle">Your trace</h2>
                 <span class="branch-count" id="branchCount">1 path</span>
                 <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
+                <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
               </div>
             </div>
             <div class="toolbar-actions">
+              <button class="tool-button" id="undoButton" type="button" disabled>↶ Undo</button>
               <button class="tool-button" id="branchButton" disabled>⑂ Fork</button>
               <button class="tool-button" id="compareButton" disabled>⇆ Compare</button>
-              <button class="tool-button" id="toggleNodeTypesButton" type="button">Hide types</button>
               <div class="zoom-control" aria-label="Canvas zoom"><button class="tool-button zoom-button" id="zoomOutButton" aria-label="Zoom out">−</button><span id="zoomLabel">100%</span><button class="tool-button zoom-button" id="zoomInButton" aria-label="Zoom in">＋</button></div><button class="tool-button" id="fitButton">⌗ Fit</button>
             </div>
           </div>
@@ -145,7 +146,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Drag port to connect · Select node/line + Delete to remove · Zoom ±</span>
+            <span class="canvas-hint">Drag canvas to pan · Drag right port → left port to connect · Shift-click wire to disconnect · Right-click node to lock · Ctrl+Z undo</span>
           </div>
         </section>
 

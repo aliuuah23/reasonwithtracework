@@ -61,7 +61,7 @@ export async function renderNodeInspector(node,state,handlers){
 
 function caseStudyMarkup(items){
   if(!items?.length)return '';
-  return `<div class="inspector-section"><h4>Related case studies</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Specific spatial features to compare — not prescribed answers.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">Open source / images ↗</a>`:''}</div>`).join('')}</div></div>`;
+  return `<div class="inspector-section"><h4>Related case studies</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Specific spatial features to compare — not prescribed answers.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
 }
 
 function nextForm(node,state){

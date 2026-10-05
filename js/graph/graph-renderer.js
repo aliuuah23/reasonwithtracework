@@ -6,7 +6,7 @@ const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeMove,onEdgeClick,onConnect,canConnect,getScale=()=>1,
+  onNodeClick,onNodeMove,onNodeContext,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
   selectedEdgeId=null,issueNodeIds=[],showNodeTypes=true
 }){
   const world=autoLayout(nodes);
@@ -31,21 +31,45 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.surface.dataset.contentMaxY=String(maxY);
   els.surface.classList.toggle('hide-node-types',!showNodeTypes);
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
-  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId)).join('');
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId,issueSet.has(n.id))).join('');
+  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId)).join('');
 
-  const redrawEdges=()=>{
-    els.svg.querySelectorAll('.trace-edge').forEach(path=>{
-      const edge=edges.find(e=>e.id===path.dataset.edgeId);
-      if(!edge) return;
-      const d=edgePath(edge,positions);
-      if(d) path.setAttribute('d',d);
-    });
+  const nodeAnchor=(id,side='out')=>{
+    const el=els.nodes.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
+    if(!el){
+      const n=positions.get(id); if(!n)return null;
+      return {x:n.x+(side==='out'?230:0),y:n.y+46};
+    }
+    return {
+      x:el.offsetLeft+(side==='out'?el.offsetWidth:0),
+      y:el.offsetTop+el.offsetHeight/2
+    };
   };
 
-  els.svg.querySelectorAll('.trace-edge').forEach(path=>{
-    path.addEventListener('click',e=>{e.stopPropagation();onEdgeClick?.(path.dataset.edgeId);});
+  const pathForEdge=edge=>{
+    const a=nodeAnchor(edge.source,'out'),b=nodeAnchor(edge.target,'in');
+    if(!a||!b)return '';
+    return curvePath(a.x,a.y,b.x,b.y);
+  };
+
+  const redrawEdges=()=>{
+    els.svg.querySelectorAll('[data-edge-id]').forEach(path=>{
+      const edge=edges.find(e=>e.id===path.dataset.edgeId);
+      if(!edge)return;
+      const d=pathForEdge(edge);
+      if(d)path.setAttribute('d',d);
+    });
+  };
+  requestAnimationFrame(redrawEdges);
+
+  els.svg.querySelectorAll('.trace-edge-hit,.trace-edge').forEach(path=>{
+    path.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=path.dataset.edgeId;
+      if(e.shiftKey) onEdgeQuickDisconnect?.(id);
+      else onEdgeClick?.(id);
+    });
   });
 
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
@@ -53,12 +77,17 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
       if(e.target.closest('.node-port'))return;
       if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id);
     });
+    el.addEventListener('contextmenu',e=>{
+      e.preventDefault();e.stopPropagation();
+      onNodeContext?.(el.dataset.id,e);
+    });
 
     bindDrag(el,{
       bounds:size,
+      locked:el.dataset.locked==='true',
       onLiveMove:(id,x,y)=>{
         const pos=positions.get(id);
-        if(pos){ pos.x=x; pos.y=y; }
+        if(pos){pos.x=x;pos.y=y;}
         redrawEdges();
       },
       onMove:(id,x,y)=>onNodeMove?.(id,x-CANVAS_ORIGIN_X,y-CANVAS_ORIGIN_Y),
@@ -66,15 +95,16 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
     });
   });
 
-  bindConnectionPorts({surface:els.surface,svg:els.svg,nodesRoot:els.nodes,positions,nodesById,edges,onConnect,canConnect,getScale});
+  bindConnectionPorts({surface:els.surface,svg:els.svg,nodesRoot:els.nodes,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor});
 }
 
 function nodeMarkup(n,selected,issue){
+  const locked=Boolean(n.meta?.locked);
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
   const help=nodeGuidance[n.type]?.use||'';
-  const ports=n.type==='note'?'':`${n.type!=='input'?'<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Connect into this node"></button>':''}${n.type!=='goal'?'<button class="node-port port-out" type="button" aria-label="Connect from this node" title="Connect from this node"></button>':''}`;
-  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" style="left:${n.x}px;top:${n.y}px">
-    ${ports}<div class="node-accent"></div><div class="node-body">
+  const ports=n.type==='note'?'':`${n.type!=='input'?'<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drop a connection here"></button>':''}${n.type!=='goal'?'<button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect another reasoning move"></button>':''}`;
+  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
+    ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       <div class="node-foot"><span>${escapeHtml(meta)}</span><span class="node-branch">${n.type==='note'?'Unclassified':shortBranch(n.branchId)}</span></div>
@@ -83,14 +113,14 @@ function nodeMarkup(n,selected,issue){
 
 function edgeMarkup(e,pos,activeNodeId,edges,selectedEdgeId){
   const d=edgePath(e,pos);
-  if(!d) return '';
+  if(!d)return '';
   const active=isOnActivePath(e,activeNodeId,edges);
-  return `<path data-edge-id="${e.id}" class="trace-edge ${active?'active':''} ${e.id===selectedEdgeId?'selected':''} ${e.status==='provisional'?'provisional':''} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
+  return `<path data-edge-id="${e.id}" class="trace-edge-hit" d="${d}"/><path data-edge-id="${e.id}" class="trace-edge ${active?'active':''} ${e.id===selectedEdgeId?'selected':''} ${e.status==='provisional'?'provisional':''} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
 }
 
 function edgePath(e,pos){
-  const a=pos.get(e.source), b=pos.get(e.target);
-  if(!a||!b) return '';
+  const a=pos.get(e.source),b=pos.get(e.target);
+  if(!a||!b)return '';
   return curvePath(a.x+230,a.y+46,b.x,b.y+46);
 }
 function curvePath(x1,y1,x2,y2){
@@ -114,11 +144,12 @@ function isOnActivePath(edge,activeNodeId,edges){
   return path.has(edge.id);
 }
 
-function bindDrag(el,{bounds,onLiveMove,onMove,getScale}){
+function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false}){
   let start=null,origin=null,moved=false;
 
   el.addEventListener('pointerdown',e=>{
     if(e.button!==0||e.target.closest('.node-port'))return;
+    if(locked)return;
     e.stopPropagation();
     start={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
     origin={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};
@@ -127,40 +158,32 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale}){
   });
 
   el.addEventListener('pointermove',e=>{
-    if(!start || e.pointerId!==start.pointerId)return;
+    if(!start||e.pointerId!==start.pointerId)return;
     const scale=Math.max(.01,Number(getScale?.()||1));
     const dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
-    if(Math.abs(dx)+Math.abs(dy)<=4 && !moved)return;
-
+    if(Math.abs(dx)+Math.abs(dy)<=4&&!moved)return;
     moved=true;
     el.classList.add('dragging');
     const maxX=Math.max(20,bounds.width-250);
     const maxY=Math.max(20,bounds.height-112);
     const x=Math.min(maxX,Math.max(20,origin.x+dx));
     const y=Math.min(maxY,Math.max(20,origin.y+dy));
-    el.style.left=`${x}px`;
-    el.style.top=`${y}px`;
+    el.style.left=`${x}px`;el.style.top=`${y}px`;
     onLiveMove?.(el.dataset.id,x,y);
   });
 
   const finish=e=>{
-    if(!start || e.pointerId!==start.pointerId)return;
-    if(moved){
-      const x=parseFloat(el.style.left),y=parseFloat(el.style.top);
-      onMove?.(el.dataset.id,x,y);
-    }
-    try{ el.releasePointerCapture(e.pointerId); }catch{}
-    start=null;
-    setTimeout(()=>el.classList.remove('dragging'),0);
+    if(!start||e.pointerId!==start.pointerId)return;
+    if(moved){const x=parseFloat(el.style.left),y=parseFloat(el.style.top);onMove?.(el.dataset.id,x,y);}
+    try{el.releasePointerCapture(e.pointerId);}catch{}
+    start=null;setTimeout(()=>el.classList.remove('dragging'),0);
   };
-
   el.addEventListener('pointerup',finish);
   el.addEventListener('pointercancel',finish);
 }
 
-function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,onConnect,canConnect,getScale}){
-  const outputs=nodesRoot.querySelectorAll('.port-out');
-  outputs.forEach(port=>{
+function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor}){
+  nodesRoot.querySelectorAll('.port-out').forEach(port=>{
     port.addEventListener('pointerdown',e=>{
       if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
@@ -168,7 +191,7 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
       const sourceId=sourceEl?.dataset.id;
       const source=nodesById.get(sourceId);
       if(!source)return;
-      const start=positions.get(sourceId);
+      const start=nodeAnchor(sourceId,'out')||positions.get(sourceId);
       const temp=document.createElementNS('http://www.w3.org/2000/svg','path');
       temp.setAttribute('class','trace-edge draft-connection');
       svg.appendChild(temp);
@@ -176,18 +199,18 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
       nodesRoot.querySelectorAll('.port-in').forEach(targetPort=>{
         const targetId=targetPort.closest('.graph-node')?.dataset.id;
         const target=nodesById.get(targetId);
-        const result=canConnect?.(source,target,edges) ?? {ok:true};
+        const result=canConnect?.(source,target,edges)??{ok:true};
         targetPort.classList.add(result.ok?'compatible':'incompatible');
       });
 
       const pointFromEvent=evt=>{
         const rect=surface.getBoundingClientRect();
         const scale=Math.max(.01,Number(getScale?.()||1));
-        return {x:(evt.clientX-rect.left)/scale,y:(evt.clientY-rect.top)/scale};
+        return{x:(evt.clientX-rect.left)/scale,y:(evt.clientY-rect.top)/scale};
       };
       const move=evt=>{
         const p=pointFromEvent(evt);
-        temp.setAttribute('d',curvePath(start.x+230,start.y+46,p.x,p.y));
+        temp.setAttribute('d',curvePath(start.x,start.y,p.x,p.y));
       };
       const finish=evt=>{
         window.removeEventListener('pointermove',move,true);
@@ -197,7 +220,7 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.port-in');
         const targetId=hit?.closest('.graph-node')?.dataset.id;
         const target=nodesById.get(targetId);
-        const result=canConnect?.(source,target,edges) ?? {ok:Boolean(target)};
+        const result=canConnect?.(source,target,edges)??{ok:Boolean(target)};
         onConnect?.(source,target,result);
       };
       window.addEventListener('pointermove',move,true);
@@ -207,5 +230,6 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
   });
 }
 
-function shortBranch(id){ return id==='branch-1'?'Path 1':`Path ${String(id||'').slice(-3).toUpperCase()}`; }
-function escapeHtml(t=''){ return String(t).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
+function shortBranch(id){return id==='branch-1'?'Path 1':`Path ${String(id||'').slice(-3).toUpperCase()}`;}
+function escapeHtml(t=''){return String(t).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));}
+function cssEscape(value=''){return globalThis.CSS?.escape?CSS.escape(String(value)):String(value).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}

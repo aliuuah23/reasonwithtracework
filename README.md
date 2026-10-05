@@ -81,3 +81,10 @@ Manual graph wiring, convergence and node locking remain the core of Round 2 rat
 - Click a connection and press Delete/Backspace to disconnect it; select a non-Input node and press Delete/Backspace to remove only that node while leaving downstream reasoning available for reconnection.
 - New-node halo is stronger but temporary; ordinary selection is quieter.
 - Added Hide types / Show types to reduce category-label clutter while keeping reasoning content visible.
+
+### Round 1.3 interaction controls
+- Free reasoning nodes are placed unconnected; wire them manually from the right output shoulder to a left input shoulder.
+- Right-click a node to lock/unlock its position, disconnect its wires, or delete it.
+- Select a wire and press Delete/Backspace, or Shift-click the wire, to disconnect it.
+- Ctrl/Cmd+Z restores recent canvas mutations such as node deletion, disconnection, locking, or manual additions.
+- Trace Check uses non-blocking on-canvas halos and a compact issue panel.
