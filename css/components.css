@@ -253,3 +253,15 @@
 .brief-chunk-actions .icon-button:disabled { opacity:.38; cursor:not-allowed; }
 .guided-help-note { margin:8px 0 9px; padding:8px 9px; border-left:2px solid #d7d7fa; background:var(--surface-soft); border-radius:0 8px 8px 0; color:var(--muted); font-size:10px; line-height:1.5; }
 .guided-validation { min-height:15px; margin:4px 0 2px; color:var(--danger); font-size:9px; line-height:1.4; }
+
+/* Round 2B.1 · source filing and hotspot source filters */
+.brief-chunk-files { display:grid; gap:5px; margin:7px 0 12px; max-height:168px; overflow:auto; padding-right:2px; }
+.brief-file-card { width:100%; min-width:0; display:grid; grid-template-columns:24px minmax(0,1fr) auto; align-items:center; gap:7px; border:1px solid var(--border); border-radius:9px; background:var(--surface); padding:7px 8px; text-align:left; color:var(--text); cursor:pointer; }
+.brief-file-card:hover { border-color:#cbcbed; background:#fbfbff; }
+.brief-file-card.active { border-color:#bdbbf5; background:#f4f3ff; box-shadow:0 0 0 2px rgba(99,94,232,.05); }
+.brief-file-card > span { color:var(--muted-2); font-size:8px; font-weight:800; letter-spacing:.04em; }
+.brief-file-card strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; }
+.brief-file-card small { color:var(--muted-2); font-size:8px; white-space:nowrap; }
+.hotspot-view-select { max-width:92px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--muted); padding:5px 6px; outline:0; font-size:8px; font-weight:700; }
+.hotspot-kind { margin-left:4px; }
+.choice-chip.selected { border-color:#bdbbf5; background:#f1f0ff; color:var(--accent-dark); }

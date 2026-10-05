@@ -130,3 +130,10 @@
 .brief-chunk-preview span { color:var(--muted); font-size:9px; }
 .brief-chunk-preview-list { display:flex; flex-wrap:wrap; gap:5px; }
 .brief-chunk-preview-list span { display:inline-flex; align-items:center; min-height:23px; padding:4px 7px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+
+/* Round 2B.1 · named projects and explicit long-brief filing */
+.project-name-field { margin:0 2px 10px; }
+.project-name-field label { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:3px 3px 6px; color:var(--text); font-size:10px; }
+.project-name-field label span { color:var(--muted-2); font-weight:550; }
+.project-name-field input { width:100%; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); color:var(--text); padding:10px 12px; outline:0; font-size:12px; }
+.project-name-field input:focus { border-color:#c7c7f8; background:var(--surface); box-shadow:0 0 0 3px rgba(99,94,232,.06); }

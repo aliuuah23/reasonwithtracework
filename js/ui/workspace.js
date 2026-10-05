@@ -15,21 +15,35 @@ function relativeHotspots(hotspots,chunk){
   return hotspots.map(h=>({...h,start:h.start-chunk.start,end:h.end-chunk.start}));
 }
 
-export function renderBrief(state,handlers,{showSuggestions=true}={}){
+function isDesignerSelected(h){
+  return String(h.id||'').startsWith('hotspot-manual-') || h.concept==='custom' || h.source==='designer';
+}
+
+function filterHotspots(hotspots,mode='all'){
+  if(mode==='selected') return hotspots.filter(isDesignerSelected);
+  if(mode==='suggested') return hotspots.filter(h=>!isDesignerSelected(h));
+  return hotspots;
+}
+
+export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='all'}={}){
   const doc=document.getElementById('briefDocument'), list=document.getElementById('hotspotList'), count=document.getElementById('hotspotCount');
   const chunk=activeChunk(state);
   const displayedText=chunk?.text||state.brief;
   const scoped=chunkScopedHotspots(state,chunk);
-  const relative=relativeHotspots(scoped,chunk);
+  const filtered=filterHotspots(scoped,hotspotFilter);
+  const visible=showSuggestions?filtered:filtered.filter(isDesignerSelected);
+  const relative=relativeHotspots(visible,chunk);
   const selectedId=state.selectedHotspotId;
 
   const nav=document.getElementById('briefChunkNav');
   const select=document.getElementById('briefChunkSelect');
   const counter=document.getElementById('briefChunkCounter');
   const file=document.getElementById('briefChunkFile');
+  const files=document.getElementById('briefChunkFiles');
   if(nav){
     const enabled=(state.briefChunks?.length||0)>1;
     nav.classList.toggle('hidden',!enabled);
+    files?.classList.toggle('hidden',!enabled);
     if(enabled && select){
       select.innerHTML=state.briefChunks.map((c,i)=>`<option value="${escapeHtml(c.id)}">${i+1}. ${escapeHtml(c.title)}</option>`).join('');
       select.value=chunk?.id||state.briefChunks[0].id;
@@ -40,18 +54,32 @@ export function renderBrief(state,handlers,{showSuggestions=true}={}){
       const prev=document.getElementById('prevBriefChunk'),next=document.getElementById('nextBriefChunk');
       if(prev){prev.disabled=i<=0;prev.onclick=()=>handlers.onChunk?.(state.briefChunks[Math.max(0,i-1)].id);}
       if(next){next.disabled=i>=state.briefChunks.length-1;next.onclick=()=>handlers.onChunk?.(state.briefChunks[Math.min(state.briefChunks.length-1,i+1)].id);}
+      if(files){
+        files.innerHTML=state.briefChunks.map((c,idx)=>{
+          const n=chunkScopedHotspots(state,c).length;
+          return `<button type="button" class="brief-file-card ${c.id===chunk?.id?'active':''}" data-brief-chunk="${escapeHtml(c.id)}"><span>${String(idx+1).padStart(2,'0')}</span><strong>${escapeHtml(c.title)}</strong><small>${n} hotspot${n===1?'':'s'}</small></button>`;
+        }).join('');
+        files.querySelectorAll('[data-brief-chunk]').forEach(b=>b.onclick=()=>handlers.onChunk?.(b.dataset.briefChunk));
+      }
+    } else if(files){
+      files.innerHTML='';
     }
   }
 
-  if(showSuggestions){
+  if(visible.length){
     doc.innerHTML=highlightBrief(displayedText,relative,selectedId);
-    list.innerHTML=scoped.map(h=>`<button class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${h.id}">${escapeHtml(h.text)}<span class="hotspot-kind">${escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button>`).join('') || `<span style="font-size:12px;color:var(--muted)">No hotspots detected in this section. Select text manually.</span>`;
+    list.innerHTML=visible.map(h=>`<button class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${h.id}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button>`).join('');
     [...doc.querySelectorAll('[data-hotspot]'),...list.querySelectorAll('[data-hotspot]')].forEach(el=>el.onclick=()=>handlers.onHotspot(el.dataset.hotspot));
   }else{
     doc.textContent=displayedText;
-    list.innerHTML=`<span style="font-size:12px;color:var(--muted)">Automatic hotspot suggestions are hidden. Select any word or phrase manually.</span>`;
+    const message=!showSuggestions && hotspotFilter!=='selected'
+      ? 'Automatic suggestions are hidden. Switch to Selected by me or select text manually.'
+      : hotspotFilter==='selected'
+        ? 'No designer-selected hotspots in this section yet. Select text manually to add one.'
+        : 'No hotspots in this view. Select text manually or switch the hotspot filter.';
+    list.innerHTML=`<span style="font-size:12px;color:var(--muted)">${message}</span>`;
   }
-  count.textContent=chunk?`${scoped.length}/${state.hotspots.length}`:state.hotspots.length;
+  if(count) count.textContent=chunk?`${visible.length}/${scoped.length}`:`${visible.length}/${state.hotspots.length}`;
 }
 
 export function highlightBrief(text,hotspots,selectedId){
@@ -71,7 +99,7 @@ export function highlightBrief(text,hotspots,selectedId){
   let cursor=0,out='';
   chosen.forEach(h=>{
     out+=escapeHtml(text.slice(cursor,h.start));
-    out+=`<button class="hotspot-inline ${h.id===selectedId?'active':''}" data-hotspot="${h.id}" title="${h.kind==='word'?'Word':'Phrase'} hotspot · trace this reading">${escapeHtml(text.slice(h.start,h.end))}</button>`;
+    out+=`<button class="hotspot-inline ${h.id===selectedId?'active':''}" data-hotspot="${h.id}" title="${isDesignerSelected(h)?'Selected by designer':h.kind==='word'?'Word':'Phrase'} hotspot · trace this reading">${escapeHtml(text.slice(h.start,h.end))}</button>`;
     cursor=h.end;
   });
   return out+escapeHtml(text.slice(cursor));
@@ -83,5 +111,6 @@ export function toggleBriefEditor(open,state){
   document.getElementById('briefEditorWrap').classList.toggle('hidden',!open);
   document.getElementById('briefDocument').classList.toggle('hidden',open);
   document.getElementById('briefChunkNav')?.classList.toggle('hidden',open || !(state.briefChunks?.length>1));
+  document.getElementById('briefChunkFiles')?.classList.toggle('hidden',open || !(state.briefChunks?.length>1));
   if(open)document.getElementById('briefEditor').value=state.brief;
 }

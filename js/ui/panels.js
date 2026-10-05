@@ -16,12 +16,26 @@ export async function renderHotspotInspector(hotspot,handlers){
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
-    <label class="field-label">Or write your own interpretation</label><div class="custom-answer"><input id="customInterpretation" placeholder="Describe the condition you mean"><button class="primary-button compact" id="addCustomInterpretation">Add</button></div></div>
+    <div class="guided-help-note">Choose a cue to start, then edit it into the reading you actually mean. Nothing becomes a node until Add is pressed.</div>
+    <label class="field-label">Write the interpretation</label><div class="custom-answer"><input id="customInterpretation" placeholder="Describe the condition you mean"><button class="primary-button compact" id="addCustomInterpretation">Add</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
     ${caseStudyMarkup(cases)}
     ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
-  root.querySelectorAll('[data-interpretation]').forEach(b=>b.onclick=()=>handlers.onInterpretation(b.dataset.interpretation,p));
-  root.querySelector('#addCustomInterpretation').onclick=()=>{ const val=root.querySelector('#customInterpretation').value.trim(); if(val)handlers.onInterpretation(val,p); };
+  const input=root.querySelector('#customInterpretation');
+  root.querySelectorAll('[data-interpretation]').forEach(b=>b.onclick=()=>{
+    root.querySelectorAll('[data-interpretation]').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
+    input.value=b.dataset.interpretation||'';
+    input.focus();
+    input.select();
+  });
+  root.querySelector('#addCustomInterpretation').onclick=()=>{
+    const val=input.value.trim();
+    const validation=root.querySelector('#interpretationValidation');
+    if(!val){ if(validation)validation.textContent='Choose a cue or write the interpretation you want to trace.'; input.focus(); return; }
+    if(validation)validation.textContent='';
+    handlers.onInterpretation(val,p);
+  };
   root.querySelectorAll('[data-related-path]').forEach(b=>b.onclick=()=>handlers.onRelatedPath?.(b.dataset.relatedPath));
   root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
 }

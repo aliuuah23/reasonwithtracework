@@ -34,6 +34,7 @@ let pilotEvidence = {pairs:{},source:{}};
 let saveTimer = null;
 let canvasZoom = 1;
 let showHotspotSuggestions = true;
+let hotspotViewMode = 'all';
 let showNodeTypes = true;
 let showWireSignals = true;
 let landingBriefMode = 'quick';
@@ -77,17 +78,17 @@ async function init(){
 function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
-    briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
+    briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
     thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton')
   });
 }
 
 function bindGlobalEvents(){
-  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; pendingBriefFileName=''; pendingBriefChunks=[]; updateLandingChunkPreview(); els.briefLanding.focus(); };
-  document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode));
+  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; updateLandingChunkPreview(); els.briefLanding.focus(); };
+  document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
   els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
   els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); updateLandingChunkPreview(); } });
-  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value,{mode:landingBriefMode,fileName:pendingBriefFileName});
+  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value,{mode:landingBriefMode,fileName:pendingBriefFileName,projectName:els.projectNameLanding?.value||''});
   $('#brandButton').onclick=()=>getState().brief?confirmReturnHome():showLanding();
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',e=>{ e.preventDefault(); showView(b.dataset.view); }));
   $('#newProjectButton').onclick=()=>getState().brief?confirmNewProject():els.briefLanding.focus();
@@ -97,6 +98,7 @@ function bindGlobalEvents(){
   $('#applyBriefEdit').onclick=()=>applyEditedBrief();
   $('#addPhraseButton').onclick=manualPhrase;
   els.toggleHotspotsButton.onclick=()=>{ showHotspotSuggestions=!showHotspotSuggestions; els.toggleHotspotsButton.textContent=showHotspotSuggestions?'Hide suggestions':'Show suggestions'; renderWorkspace(); };
+  if(els.hotspotViewSelect) els.hotspotViewSelect.onchange=()=>{ hotspotViewMode=els.hotspotViewSelect.value||'all'; renderWorkspace(); };
   els.traceCheckButton.onclick=openTraceCheck;
   els.toggleNodeTypesButton.onclick=()=>{ showNodeTypes=!showNodeTypes; els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide node types':'Show node types'; renderGraphState(); };
   if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderGraphState(); };
@@ -124,8 +126,17 @@ function bindGlobalEvents(){
   });
 }
 
-function setLandingBriefMode(mode='quick'){
-  landingBriefMode=mode==='document'?'document':'quick';
+function setLandingBriefMode(mode='quick',{clear=false}={}){
+  const next=mode==='document'?'document':'quick';
+  const changed=next!==landingBriefMode;
+  landingBriefMode=next;
+  if(clear && changed){
+    els.briefLanding.value='';
+    pendingBriefFileName='';
+    pendingBriefChunks=[];
+    if(els.briefFileInput)els.briefFileInput.value='';
+    if(els.briefFileStatus)els.briefFileStatus.textContent='PDF, DOCX, TXT or MD · processed locally in your browser.';
+  }
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.classList.toggle('active',b.dataset.briefMode===landingBriefMode));
   els.documentBriefTools?.classList.toggle('hidden',landingBriefMode!=='document');
   els.briefLanding.placeholder=landingBriefMode==='document'
@@ -133,6 +144,7 @@ function setLandingBriefMode(mode='quick'){
     : 'Paste a brief, requirement, design statement or project intention…';
   pendingBriefChunks=landingBriefMode==='document'?chunkBrief(els.briefLanding.value):[];
   updateLandingChunkPreview();
+  if(changed)els.briefLanding.focus();
 }
 
 async function handleBriefFileUpload(){
@@ -162,7 +174,7 @@ function updateLandingChunkPreview(){
   els.briefChunkPreview.innerHTML=`<div><strong>${pendingBriefChunks.length} brief sections detected</strong><span>TRACEWORK keeps them inside one project so hotspots can be read section by section.</span></div><div class="brief-chunk-preview-list">${pendingBriefChunks.slice(0,5).map((c,i)=>`<span>${i+1}. ${escapeHtml(c.title)}</span>`).join('')}${pendingBriefChunks.length>5?`<span>+ ${pendingBriefChunks.length-5} more</span>`:''}</div>`;
 }
 
-async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFileName}={}){
+async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFileName,projectName=''}={}){
   const brief=normaliseBrief(raw);
   if(!brief){toast('Paste or upload a design brief first.');return;}
   const useChunks=mode==='document' || brief.length>2600;
@@ -177,7 +189,7 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
     activeBriefChunkId:chunks[0]?.id||null,
     sourceFileName:fileName||'',
     hotspots,
-    projectName:projectNameFromBrief(brief)
+    projectName:projectName.trim()||projectNameFromBrief(brief)
   });
   logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced${chunks.length>1?` across ${chunks.length} sections`:''}`);
   enterApp(true);
@@ -235,7 +247,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk},{showSuggestions:showHotspotSuggestions});
+  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   const hasNodes=state.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
@@ -326,26 +338,34 @@ async function selectHotspot(id){
 
 function hotspotHandlers(inputNodeId=null){
   return {
-    onInterpretation:(text,prompt)=>captureContext(text,prompt,inputNodeId || getState().activeNodeId),
+    onInterpretation:(text,prompt)=>addHotspotInterpretation(text,prompt,inputNodeId || getState().activeNodeId),
     onRelatedPath:id=>inspectPathway(pathways.find(p=>p.id===id)),
     onCaseStudy:id=>inspectCaseStudy(id)
   };
 }
 
-function captureContext(text,prompt,inputNodeId){
-  const who=prompt?.who||[], when=prompt?.when||[];
-  openModal(`<h2 id="modalTitle">Make the reading specific.</h2><p>Optional, but useful: who should experience this condition, and when does it matter?</p>
-    <label class="field-label">Who?</label><select class="field-input" id="contextWho"><option value="">Leave open for now</option>${who.map(x=>`<option>${escapeHtml(x)}</option>`).join('')}</select>
-    <label class="field-label">When / under what condition?</label><select class="field-input" id="contextWhen"><option value="">Leave open for now</option>${when.map(x=>`<option>${escapeHtml(x)}</option>`).join('')}</select>
-    <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmInterpretation">Add interpretation →</button></div>`,{
-      onOpen:m=>m.querySelector('#confirmInterpretation').onclick=()=>{
-        const meta={who:m.querySelector('#contextWho').value,when:m.querySelector('#contextWhen').value};
-        let created=null;
-        updateState(s=>{ const input=s.nodes.find(n=>n.id===inputNodeId); created=addInterpretation(s,inputNodeId,text,input?.branchId||s.activeBranchId,meta); });
-        lastAddedNodeId=created?.id||null;
-        logEvent('Interpretation added',text); closeModal(); renderWorkspace();
-      }
-    });
+function addHotspotInterpretation(text,prompt,inputNodeId){
+  const value=String(text||'').trim();
+  if(!value)return;
+  checkpoint('add guided interpretation');
+  let created=null;
+  const fallback=visibleCanvasPlacement(getState().nodes.length+1);
+  updateState(s=>{
+    const input=s.nodes.find(n=>n.id===inputNodeId);
+    created=addInterpretation(s,inputNodeId,value,input?.branchId||s.activeBranchId,{guided:true,sourcePrompt:prompt?.question||''});
+    if(created){
+      const baseX=Number.isFinite(Number(input?.x))?Number(input.x):fallback.x;
+      const baseY=Number.isFinite(Number(input?.y))?Number(input.y):fallback.y;
+      created.x=baseX+270;
+      created.y=baseY;
+      s.activeNodeId=created.id;
+    }
+  });
+  lastAddedNodeId=created?.id||null;
+  if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
+  logEvent('Interpretation added',value);
+  renderWorkspace();
+  if(created)toast('Interpretation added and linked. Continue from the new node, or leave it open.');
 }
 
 function selectNode(id,event){
@@ -476,7 +496,7 @@ function manualPhrase(){
         if(!picked)return;
         const duplicate=getState().hotspots.some(h=>h.start===picked.start&&h.end===picked.end);
         if(duplicate){toast('That exact word or phrase is already a hotspot.');return;}
-        const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word',chunkId:chunk?.id||null};
+        const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',source:'designer',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word',chunkId:chunk?.id||null};
         updateState(s=>{s.hotspots.push(h);s.hotspots.sort((a,b)=>a.start-b.start);});
         closeModal(); showHotspotSuggestions=true; els.toggleHotspotsButton.textContent='Hide suggestions'; renderWorkspace(); selectHotspot(h.id);
       };
@@ -593,6 +613,7 @@ function confirmResetLocalData(){
     resetState();
     closeModal();
     els.briefLanding.value='';
+    if(els.projectNameLanding)els.projectNameLanding.value='';
     setSaveStatus('Local data reset',false);
     renderProjectShelf();
     showLanding();
@@ -600,7 +621,7 @@ function confirmResetLocalData(){
   }});
 }
 
-function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current trace stays saved in this browser. You can reopen it from the project shelf.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{saveProject(getState());resetState();closeModal();els.briefLanding.value='';showLanding();};}}); }
+function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current trace stays saved in this browser. You can reopen it from the project shelf.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{saveProject(getState());resetState();closeModal();els.briefLanding.value='';if(els.projectNameLanding)els.projectNameLanding.value='';showLanding();};}}); }
 
 
 async function seedTestProject(){

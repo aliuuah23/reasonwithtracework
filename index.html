@@ -49,6 +49,10 @@
             <button type="button" class="brief-mode-button" data-brief-mode="document">Long brief / document</button>
           </div>
         </div>
+        <div class="project-name-field">
+          <label for="landingProjectName">Project / trace name <span>optional</span></label>
+          <input id="landingProjectName" type="text" maxlength="80" placeholder="e.g. Flexible Pavilion">
+        </div>
         <div class="document-brief-tools hidden" id="documentBriefTools">
           <label class="document-upload-button" for="briefFileInput">＋ Upload brief</label>
           <input id="briefFileInput" type="file" accept=".txt,.md,.pdf,.docx,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
@@ -99,13 +103,22 @@
               <button class="icon-button small" id="nextBriefChunk" type="button" aria-label="Next brief section">→</button>
             </div>
           </div>
+          <div class="brief-chunk-files hidden" id="briefChunkFiles" aria-label="Brief sections"></div>
 
           <div class="brief-document" id="briefDocument" tabindex="0"></div>
 
           <div class="source-footer">
             <div class="section-label-row">
               <span class="section-label">Interpretive hotspots</span>
-              <div class="hotspot-controls"><button class="text-button mini" id="toggleHotspotsButton" type="button">Hide suggestions</button><span class="count-pill" id="hotspotCount">0</span></div>
+              <div class="hotspot-controls">
+                <select class="hotspot-view-select" id="hotspotViewSelect" aria-label="Hotspot view">
+                  <option value="all">All</option>
+                  <option value="suggested">Suggested</option>
+                  <option value="selected">Selected by me</option>
+                </select>
+                <button class="text-button mini" id="toggleHotspotsButton" type="button">Hide suggestions</button>
+                <span class="count-pill" id="hotspotCount">0</span>
+              </div>
             </div>
             <div class="hotspot-list" id="hotspotList"></div>
             <button class="secondary-button full" id="addPhraseButton">＋ Select text from brief</button>
