@@ -21,3 +21,7 @@
 .graph-node[data-type="consequence"] { --node-color:var(--consequence); }
 .graph-node[data-type="evaluation"] { --node-color:var(--evaluation); }
 .graph-node[data-type="goal"] { --node-color:var(--goal); }
+
+/* Neutral note: deliberately outside the six-category ontology. */
+.graph-node[data-type="note"] { --node-color:#8d93a0; background:#f4f5f7; border-style:dashed; }
+.graph-node[data-type="note"] .node-branch { color:var(--muted-2); }

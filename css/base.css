@@ -37,3 +37,4 @@ textarea::placeholder, input::placeholder { color: #a0a6b2; }
 .hidden { display: none !important; }
 ::selection { background: #dedeff; }
 :focus-visible { outline: 3px solid rgba(91,91,214,.2); outline-offset: 2px; }
+:root { --note:#8d93a0; }

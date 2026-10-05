@@ -97,3 +97,19 @@
 .project-card h3 { margin:5px 0 4px; font-size:13px; }
 .project-card p { margin:0; color:var(--muted); font-size:10px; line-height:1.45; max-width:420px; }
 .compact-project { flex:0 0 auto; padding:8px 12px; }
+
+/* Round 1 · free reasoning input. Kept as an overlay so the established workspace layout stays intact. */
+.thought-dock {
+  position:absolute; z-index:7; left:50%; bottom:62px; transform:translateX(-50%);
+  width:min(690px,calc(100% - 44px)); display:grid; grid-template-columns:minmax(0,1fr) auto;
+  gap:10px; align-items:end; padding:10px; background:rgba(245,246,249,.96);
+  border:1px solid var(--border-strong); border-radius:14px; box-shadow:0 10px 28px rgba(34,40,61,.10);
+  backdrop-filter:blur(10px);
+}
+.thought-entry { min-width:0; }
+.thought-entry textarea { width:100%; min-height:48px; max-height:116px; resize:vertical; border:0; outline:0; background:transparent; padding:6px 8px 4px; font-size:12px; line-height:1.5; }
+.thought-reading { display:flex; align-items:center; gap:7px; min-height:26px; padding:2px 7px 0; color:var(--muted); font-size:9px; }
+.thought-reading select { max-width:155px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); padding:4px 8px; font-size:9px; font-weight:750; outline:0; }
+.thought-reading small { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted-2); }
+.thought-actions { display:flex; gap:6px; padding-bottom:2px; }
+.thought-actions button:disabled { opacity:.42; cursor:not-allowed; }

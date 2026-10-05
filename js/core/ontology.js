@@ -11,5 +11,5 @@ export function nextType(type){
   return order[order.indexOf(type)+1] || null;
 }
 export const typeLabels = {
-  input:'Input', interpretation:'Interpretation', grounding:'Grounding', consequence:'Spatial consequence', evaluation:'Evaluation', goal:'Goal'
+  input:'Input', interpretation:'Interpretation', grounding:'Grounding', consequence:'Spatial consequence', evaluation:'Evaluation', goal:'Goal', note:'Note'
 };

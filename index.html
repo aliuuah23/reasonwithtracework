@@ -82,7 +82,7 @@
               <span class="count-pill" id="hotspotCount">0</span>
             </div>
             <div class="hotspot-list" id="hotspotList"></div>
-            <button class="secondary-button full" id="addPhraseButton">＋ Select another phrase</button>
+            <button class="secondary-button full" id="addPhraseButton">＋ Select a word or phrase</button>
           </div>
         </aside>
 
@@ -114,6 +114,28 @@
                 <svg class="graph-edges" id="graphEdges" aria-hidden="true"></svg>
                 <div class="graph-nodes" id="graphNodes"></div>
               </div>
+            </div>
+          </div>
+
+          <div class="thought-dock hidden" id="thoughtDock" aria-label="Free reasoning input">
+            <div class="thought-entry">
+              <textarea id="freeThoughtInput" rows="2" placeholder="Write a thought, decision, observation, spatial move…"></textarea>
+              <div class="thought-reading" id="thoughtReading">
+                <span>TRACEWORK reads this as</span>
+                <select id="thoughtTypeSelect" aria-label="Suggested reasoning category">
+                  <option value="interpretation">Interpretation</option>
+                  <option value="grounding">Grounding</option>
+                  <option value="consequence">Spatial consequence</option>
+                  <option value="evaluation">Evaluation</option>
+                  <option value="goal">Goal</option>
+                  <option value="input">Input</option>
+                </select>
+                <small id="thoughtReason">Start typing to see a suggestion.</small>
+              </div>
+            </div>
+            <div class="thought-actions">
+              <button class="secondary-button" id="addLooseNoteButton" disabled>Add as note</button>
+              <button class="primary-button compact" id="addFreeThoughtButton" disabled>Add to field →</button>
             </div>
           </div>
 

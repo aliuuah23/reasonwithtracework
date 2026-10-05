@@ -1,0 +1,52 @@
+[
+  {
+    "id":"serpentine-2013-fujimoto",
+    "name":"Serpentine Pavilion 2013",
+    "designer":"Sou Fujimoto",
+    "year":2013,
+    "tags":["openness","threshold","community","flexibility","porosity","circulation"],
+    "moves":["porous frame","gradients of enclosure","occupiable edge"],
+    "note":"A cloud-like lattice creates shifting degrees of enclosure rather than a single hard inside/outside boundary.",
+    "prompt":"What changes when openness is treated as a gradient rather than a binary condition?"
+  },
+  {
+    "id":"serpentine-2017-kere",
+    "name":"Serpentine Pavilion 2017",
+    "designer":"Francis Kéré",
+    "year":2017,
+    "tags":["community","shelter","gathering","climate","centre","rain"],
+    "moves":["shared canopy","central gathering space","climatic response"],
+    "note":"A broad canopy and central gathering condition frame shelter as both environmental protection and collective social space.",
+    "prompt":"Could one spatial move serve climatic shelter and social gathering at the same time?"
+  },
+  {
+    "id":"serpentine-2009-sanaa",
+    "name":"Serpentine Pavilion 2009",
+    "designer":"SANAA",
+    "year":2009,
+    "tags":["shelter","openness","movement","lightness","edge","circulation"],
+    "moves":["continuous canopy","open perimeter","distributed occupation"],
+    "note":"A thin reflective canopy creates a continuous sheltered field while keeping the perimeter visually and physically open.",
+    "prompt":"What if shelter is continuous but enclosure is minimal?"
+  },
+  {
+    "id":"serpentine-2015-selgascano",
+    "name":"Serpentine Pavilion 2015",
+    "designer":"selgascano",
+    "year":2015,
+    "tags":["movement","entry","threshold","route","experience","enclosure"],
+    "moves":["multiple entries","layered threshold","route choice"],
+    "note":"Multiple openings and layered circulation make arrival and movement part of the pavilion experience rather than a single front-door sequence.",
+    "prompt":"Could several routes support different levels or kinds of participation?"
+  },
+  {
+    "id":"serpentine-2021-counterspace",
+    "name":"Serpentine Pavilion 2021",
+    "designer":"Counterspace / Sumayya Vally",
+    "year":2021,
+    "tags":["community","memory","gathering","fragment","identity","distributed"],
+    "moves":["fragmented references","distributed pieces","social gathering"],
+    "note":"The pavilion draws from forms and spaces associated with gathering across London, treating precedent and collective memory as design material.",
+    "prompt":"What social spaces already matter to the users, and what could be learned from their spatial qualities?"
+  }
+]

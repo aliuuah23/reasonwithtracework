@@ -134,3 +134,19 @@
 .discussion-anchor-preview span { color:var(--accent-dark); font-size:9px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
 .discussion-anchor-preview strong { font-size:11px; line-height:1.45; font-weight:680; color:var(--text); }
 .discussion-scope { max-width:48%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Round 1 · semantic hotspot labels, node-use guidance and precedent suggestions */
+.hotspot-kind { display:inline-flex; align-items:center; margin-left:5px; padding:2px 5px; border-radius:999px; background:var(--surface-soft); border:1px solid var(--border); color:var(--muted-2); font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; vertical-align:middle; }
+.hotspot-chip.active .hotspot-kind { background:rgba(255,255,255,.64); border-color:#d4d4fa; color:var(--accent-dark); }
+.node-use-card { padding:11px 12px; border:1px solid var(--border); border-radius:11px; background:var(--surface-soft); }
+.node-use-card strong { display:block; font-size:11px; margin-bottom:4px; }
+.node-use-card p { margin:0; color:var(--muted); font-size:11px; line-height:1.5; }
+.node-use-card p + p { margin-top:7px; }
+.case-study-list { display:grid; gap:8px; }
+.case-study-button { width:100%; text-align:left; border:1px solid var(--border); background:var(--surface-soft); border-radius:11px; padding:10px 11px; cursor:pointer; transition:.16s ease; }
+.case-study-button:hover { background:var(--surface); border-color:#c9c9f6; }
+.case-study-button span { display:block; color:var(--accent-dark); font-size:9px; font-weight:800; letter-spacing:.035em; text-transform:uppercase; }
+.case-study-button strong { display:block; margin-top:4px; font-size:11px; }
+.case-study-button small { display:block; margin-top:4px; color:var(--muted); font-size:10px; line-height:1.45; }
+.classification-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border-radius:999px; border:1px solid var(--border); background:var(--surface-soft); font-size:9px; color:var(--muted); }
+.classification-chip i { width:6px; height:6px; border-radius:50%; background:var(--node-color,var(--muted)); }

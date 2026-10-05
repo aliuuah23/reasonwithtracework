@@ -44,3 +44,16 @@ TRACEWORK autosaves active traces locally. Clicking the brand mark now returns t
 
 ## Prototype privacy direction
 Current projects and discussion notes are browser-local. A future account layer is intended to keep traces private by default, with optional invited studios/classrooms and scoped collaborators rather than one global public feed.
+
+## Round 1 — intelligent workspace
+
+The current workspace adds a designer-led free-input layer without changing the established visual system:
+
+- free thoughts are classified locally into the six ontology roles while the designer types;
+- the suggested role is always overridable by the designer;
+- neutral loose notes remain outside the ontology until converted;
+- word-level and phrase-level hotspots are both retained, with phrase readings preferred inline when ranges overlap;
+- each selected node explains its practical role in the reasoning process;
+- selected language and reasoning nodes can surface small pavilion-relevant case-study prompts for comparison rather than prescription.
+
+The classifier is currently a transparent local semantic heuristic, not an external AI service. It is designed so a later model-backed classifier can replace the inference layer without changing the interaction pattern.
