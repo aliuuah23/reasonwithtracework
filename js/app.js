@@ -247,7 +247,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
+  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   const hasNodes=state.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
@@ -315,6 +315,33 @@ function selectBriefChunk(id){
   patchState({activeBriefChunkId:id,selectedHotspotId:null,activeNodeId:null},{silent:true});
   selectedNodeIds.clear(); selectedEdgeId=null; traceIssueNodeIds.clear();
   renderWorkspace();
+}
+
+async function addBriefChunk({title,text}={}){
+  const value=normaliseBrief(text||'');
+  if(!value){ toast('Write or paste something into the new chunk first.'); return; }
+  const state=getState();
+  const chunkTitle=String(title||'').trim()||`Chunk ${(state.briefChunks?.length||0)+1}`;
+  const separator=state.brief?'\n\n':'';
+  const start=(state.brief||'').length+separator.length;
+  const id=`brief-chunk-manual-${Date.now()}`;
+  const chunk={id,index:state.briefChunks?.length||0,title:chunkTitle,start,end:start+value.length,text:value,manual:true};
+  const detected=await detectHotspots(value);
+  const hotspots=detected.map(h=>({...h,id:`${h.id||'hotspot'}-manual-${Date.now()}-${Math.random().toString(36).slice(2,5)}`,start:start+(h.start||0),end:start+(h.end||0),chunkId:id}));
+  checkpoint('add source chunk');
+  updateState(s=>{
+    s.brief=`${s.brief||''}${separator}${value}`;
+    s.briefMode='document';
+    s.briefChunks=[...(s.briefChunks||[]),chunk];
+    s.activeBriefChunkId=id;
+    s.hotspots=[...(s.hotspots||[]),...hotspots];
+    s.selectedHotspotId=null;
+    s.activeNodeId=null;
+  });
+  selectedNodeIds.clear(); selectedEdgeId=null; traceIssueNodeIds.clear();
+  logEvent('Source chunk added',`${chunkTitle} · ${hotspots.length} hotspots`);
+  renderWorkspace();
+  toast(`Added “${chunkTitle}” as a new brief chunk.`);
 }
 
 async function selectHotspot(id){
@@ -397,7 +424,8 @@ function nodeHandlers(){
       let created=null;
       const fallback=visibleCanvasPlacement(getState().nodes.length+1);
       updateState(s=>{
-        if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
+        if(node.type==='input') created=addInterpretation(s,node.id,text,node.branchId||s.activeBranchId,{guided:true,sourcePrompt:'Input-node guidance'});
+        else if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
         else if(node.type==='grounding') created=addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
         else if(node.type==='consequence') created=addEvaluation(s,node.id,text,node.branchId,extra.tags||[]);
         else if(node.type==='evaluation') created=addGoal(s,node.id,text,node.branchId);
@@ -412,7 +440,7 @@ function nodeHandlers(){
       });
       lastAddedNodeId=created?.id||null;
       if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
-      const labels={interpretation:'Grounding added',grounding:'Spatial consequence added',consequence:'Evaluation added',evaluation:'Goal added'};
+      const labels={input:'Interpretation added',interpretation:'Grounding added',grounding:'Spatial consequence added',consequence:'Evaluation added',evaluation:'Goal added'};
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
       if(created) toast(`${typeLabels[created.type]||created.type} added and linked.`);
     },
@@ -447,10 +475,35 @@ function branchFrom(id){
 }
 
 function editNode(node){
-  openModal(`<h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'note':node.type)}.</h2><p>Changing a reasoning move does not erase the rest of the trace. It makes revision visible.</p><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save change</button></div>`,{
-    onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{ const val=m.querySelector('#editNodeText').value.trim(); if(!val)return; updateState(s=>{const n=s.nodes.find(x=>x.id===node.id);n.label=val;if(n.type==='note'){const c=classifyThought(val);n.meta={...n.meta,suggestedType:c.type||'interpretation',classificationReason:c.reason,classificationConfidence:c.confidence};}n.updatedAt=new Date().toISOString();}); logEvent('Reasoning revised',val); closeModal(); renderWorkspace(); }
+  const sourceInput=node.type==='input' && node.meta?.source==='brief';
+  const editableTypes=['interpretation','grounding','consequence','evaluation','goal','note'];
+  const typeOptions=editableTypes.map(t=>`<option value="${t}" ${node.type===t?'selected':''}>${escapeHtml(typeLabels[t]||t)}</option>`).join('');
+  openModal(`<h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'note':typeLabels[node.type]||node.type)}.</h2><p>Revise the wording${sourceInput?' while keeping this source node anchored to the brief.':', or change what role this thought plays in the reasoning network.'}</p><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input is locked as Input so its provenance to the brief remains intact.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node type</label><select id="editNodeType">${typeOptions}</select></div>`}<div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save change</button></div>`,{
+    onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{
+      const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
+      const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
+      const changedType=nextType!==node.type;
+      updateState(s=>{
+        const n=s.nodes.find(x=>x.id===node.id); if(!n)return;
+        n.label=val; n.type=nextType; n.updatedAt=new Date().toISOString();
+        if(nextType==='note'){
+          const c=classifyThought(val);
+          n.meta={...n.meta,suggestedType:c.type||'interpretation',classificationReason:c.reason,classificationConfidence:c.confidence};
+        }else{
+          n.meta={...n.meta,typeEdited:changedType||n.meta?.typeEdited};
+          delete n.meta.suggestedType;
+        }
+        if(changedType){
+          s.edges.filter(e=>e.source===n.id||e.target===n.id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
+        }
+      });
+      logEvent(changedType?'Reasoning type revised':'Reasoning revised',changedType?`${typeLabels[node.type]||node.type} → ${typeLabels[nextType]||nextType} · ${val}`:val);
+      closeModal(); renderWorkspace();
+      if(changedType)toast(`Changed to ${typeLabels[nextType]||nextType}. Existing wires were kept for review.`);
+    }
   });
 }
+
 
 async function applyEditedBrief(){
   const brief=normaliseBrief(els.briefEditor.value); if(!brief)return;

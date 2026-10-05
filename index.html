@@ -104,6 +104,17 @@
             </div>
           </div>
           <div class="brief-chunk-files hidden" id="briefChunkFiles" aria-label="Brief sections"></div>
+          <div class="brief-chunk-tools hidden" id="briefChunkTools">
+            <button class="secondary-button full compact-source" id="addBriefChunkButton" type="button">＋ Chunk</button>
+            <div class="brief-chunk-adder hidden" id="briefChunkAdder">
+              <input id="newBriefChunkTitle" type="text" maxlength="70" placeholder="Chunk name · e.g. Movement">
+              <textarea id="newBriefChunkText" rows="4" placeholder="Paste or write this part of the brief…"></textarea>
+              <div class="inline-actions">
+                <button class="text-button mini" id="cancelBriefChunk" type="button">Cancel</button>
+                <button class="primary-button compact" id="saveBriefChunk" type="button">Add chunk</button>
+              </div>
+            </div>
+          </div>
 
           <div class="brief-document" id="briefDocument" tabindex="0"></div>
 

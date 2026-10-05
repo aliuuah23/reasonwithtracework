@@ -265,3 +265,17 @@
 .hotspot-view-select { max-width:92px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--muted); padding:5px 6px; outline:0; font-size:8px; font-weight:700; }
 .hotspot-kind { margin-left:4px; }
 .choice-chip.selected { border-color:#bdbbf5; background:#f1f0ff; color:var(--accent-dark); }
+
+/* Round 2B.2 · manual source chunks */
+.brief-chunk-tools { margin:-5px 0 12px; position:relative; z-index:3; }
+.compact-source { min-height:32px; padding:7px 10px; font-size:9px; }
+.brief-chunk-adder { display:grid; gap:7px; padding:9px; border:1px dashed #cfd0dc; border-radius:10px; background:#fafafe; }
+.brief-chunk-adder input,.brief-chunk-adder textarea { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); padding:8px 9px; outline:none; font:inherit; font-size:10px; resize:vertical; }
+.brief-chunk-adder input:focus,.brief-chunk-adder textarea:focus { border-color:#aaa8ef; box-shadow:0 0 0 2px rgba(99,94,232,.06); }
+.brief-chunk-files,.brief-file-card { position:relative; z-index:2; pointer-events:auto; }
+.brief-file-card:focus-visible { outline:2px solid rgba(99,94,232,.35); outline-offset:1px; }
+.guided-next-label { display:inline-flex; align-items:center; gap:5px; margin-bottom:8px; padding:4px 7px; border-radius:999px; background:var(--surface-soft); color:var(--muted); font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.guided-direct-choice::after { content:' →'; color:var(--accent-dark); }
+.node-type-edit-row { display:grid; gap:6px; margin-top:12px; }
+.node-type-edit-row label { color:var(--muted); font-size:9px; font-weight:700; }
+.node-type-edit-row select { width:100%; border:1px solid var(--border); background:var(--surface); border-radius:9px; padding:9px 10px; color:var(--text); font:inherit; font-size:11px; outline:none; }

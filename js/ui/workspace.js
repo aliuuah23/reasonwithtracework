@@ -40,11 +40,21 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   const counter=document.getElementById('briefChunkCounter');
   const file=document.getElementById('briefChunkFile');
   const files=document.getElementById('briefChunkFiles');
+  const tools=document.getElementById('briefChunkTools');
+  const addButton=document.getElementById('addBriefChunkButton');
+  const adder=document.getElementById('briefChunkAdder');
+  const titleInput=document.getElementById('newBriefChunkTitle');
+  const textInput=document.getElementById('newBriefChunkText');
+  const saveChunk=document.getElementById('saveBriefChunk');
+  const cancelChunk=document.getElementById('cancelBriefChunk');
+  const chunkCount=state.briefChunks?.length||0;
+  const navEnabled=chunkCount>1;
+  const filingEnabled=state.briefMode==='document' && chunkCount>0;
   if(nav){
-    const enabled=(state.briefChunks?.length||0)>1;
-    nav.classList.toggle('hidden',!enabled);
-    files?.classList.toggle('hidden',!enabled);
-    if(enabled && select){
+    nav.classList.toggle('hidden',!navEnabled);
+    files?.classList.toggle('hidden',!filingEnabled);
+    tools?.classList.toggle('hidden',state.briefMode!=='document');
+    if(navEnabled && select){
       select.innerHTML=state.briefChunks.map((c,i)=>`<option value="${escapeHtml(c.id)}">${i+1}. ${escapeHtml(c.title)}</option>`).join('');
       select.value=chunk?.id||state.briefChunks[0].id;
       select.onchange=()=>handlers.onChunk?.(select.value);
@@ -61,9 +71,29 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
         }).join('');
         files.querySelectorAll('[data-brief-chunk]').forEach(b=>b.onclick=()=>handlers.onChunk?.(b.dataset.briefChunk));
       }
-    } else if(files){
-      files.innerHTML='';
+    } else {
+      if(files && filingEnabled){
+        files.innerHTML=state.briefChunks.map((c,idx)=>{
+          const n=chunkScopedHotspots(state,c).length;
+          return `<button type="button" class="brief-file-card ${c.id===chunk?.id?'active':''}" data-brief-chunk="${escapeHtml(c.id)}"><span>${String(idx+1).padStart(2,'0')}</span><strong>${escapeHtml(c.title)}</strong><small>${n} hotspot${n===1?'':'s'}</small></button>`;
+        }).join('');
+        files.querySelectorAll('[data-brief-chunk]').forEach(b=>b.onclick=()=>handlers.onChunk?.(b.dataset.briefChunk));
+      } else if(files){
+        files.innerHTML='';
+      }
     }
+  }
+  if(addButton && adder){
+    addButton.onclick=()=>{ adder.classList.remove('hidden'); addButton.classList.add('hidden'); titleInput?.focus(); };
+    cancelChunk.onclick=()=>{ adder.classList.add('hidden'); addButton.classList.remove('hidden'); if(titleInput)titleInput.value=''; if(textInput)textInput.value=''; };
+    saveChunk.onclick=()=>{
+      const title=titleInput?.value.trim()||`Chunk ${chunkCount+1}`;
+      const text=textInput?.value.trim()||'';
+      if(!text){ textInput?.focus(); return; }
+      handlers.onAddChunk?.({title,text});
+      adder.classList.add('hidden'); addButton.classList.remove('hidden');
+      if(titleInput)titleInput.value=''; if(textInput)textInput.value='';
+    };
   }
 
   if(visible.length){
@@ -111,6 +141,7 @@ export function toggleBriefEditor(open,state){
   document.getElementById('briefEditorWrap').classList.toggle('hidden',!open);
   document.getElementById('briefDocument').classList.toggle('hidden',open);
   document.getElementById('briefChunkNav')?.classList.toggle('hidden',open || !(state.briefChunks?.length>1));
-  document.getElementById('briefChunkFiles')?.classList.toggle('hidden',open || !(state.briefChunks?.length>1));
+  document.getElementById('briefChunkFiles')?.classList.toggle('hidden',open || state.briefMode!=='document' || !(state.briefChunks?.length>0));
+  document.getElementById('briefChunkTools')?.classList.toggle('hidden',open || state.briefMode!=='document');
   if(open)document.getElementById('briefEditor').value=state.brief;
 }
