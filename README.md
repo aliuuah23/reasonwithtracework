@@ -131,3 +131,10 @@ Manual graph wiring, convergence and node locking remain the core of Round 2 rat
 - Wire selection uses geometric nearest-path targeting so selecting a wire does not alter its geometry.
 - Spatial Consequence nodes can expand a local schematic preview. The plan/axon diagrams are generated from simple spatial cues in the node text and are explicitly exploratory, not a proposed design.
 - `Focus path` isolates the selected node's upstream reasoning and downstream consequences without deleting anything; `Show all` restores the complete hotspot trace. This works for both quick and long briefs.
+
+
+## Round 3A — Aggregate Project Map
+
+This cumulative patch is built directly on Round 2B.4 and preserves the existing workspace. It adds a Focus map / Aggregate map switch. Aggregate map merges all hotspot-specific reasoning maps in the current project into one large navigable field while keeping individual focus-map positions separate from aggregate-map positions.
+
+Aggregate tools include hotspot, brief-section, node-type and status filters; Focus path works inside the aggregate map; clicking a hotspot returns to its individual Focus map; Arrange map restores a loose hotspot-cluster overview without changing the individual maps.

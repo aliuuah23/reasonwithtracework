@@ -47,6 +47,11 @@ let selectedEdgeId = null;
 let selectedNodeIds = new Set();
 let traceIssueNodeIds = new Set();
 let focusPathRootId = null;
+let workspaceMapMode = 'focus';
+let aggregateHotspotFilter = 'all';
+let aggregateChunkFilter = 'all';
+let aggregateTypeFilter = 'all';
+let aggregateStatusFilter = 'all';
 const undoStack = [];
 const MAX_UNDO = 30;
 
@@ -82,7 +87,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton')
   });
 }
 
@@ -121,6 +126,14 @@ function bindGlobalEvents(){
   if(els.undoButton) els.undoButton.onclick=undoLast;
   if(els.findNodeButton) els.findNodeButton.onclick=openNodeSearch;
   if(els.focusPathButton) els.focusPathButton.onclick=togglePathFocus;
+  if(els.focusMapModeButton) els.focusMapModeButton.onclick=()=>setWorkspaceMapMode('focus');
+  if(els.aggregateMapModeButton) els.aggregateMapModeButton.onclick=()=>setWorkspaceMapMode('aggregate');
+  if(els.aggregateHotspotFilter) els.aggregateHotspotFilter.onchange=()=>{ aggregateHotspotFilter=els.aggregateHotspotFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
+  if(els.aggregateChunkFilter) els.aggregateChunkFilter.onchange=()=>{ aggregateChunkFilter=els.aggregateChunkFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
+  if(els.aggregateTypeFilter) els.aggregateTypeFilter.onchange=()=>{ aggregateTypeFilter=els.aggregateTypeFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
+  if(els.aggregateStatusFilter) els.aggregateStatusFilter.onchange=()=>{ aggregateStatusFilter=els.aggregateStatusFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
+  if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
+  if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   document.addEventListener('keydown',handleWorkspaceKeydown);
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
@@ -250,7 +263,7 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
@@ -259,7 +272,7 @@ function enterApp(autoSelect=true){
 }
 
 function showLanding(){
-  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); document.getElementById('nodeTypeMenu')?.remove(); traceIssueNodeIds.clear(); focusPathRootId=null;
+  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); document.getElementById('nodeTypeMenu')?.remove(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus';
   els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf();
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='workspace'));
 }
@@ -302,36 +315,51 @@ function showView(view){
 function renderWorkspace(){
   const state=getState();
   renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
-  const hasNodes=state.nodes.length>0;
+  updateMapModeControls(state);
+  if(workspaceMapMode==='aggregate') updateAggregateControls(state);
+
+  const visibleTrace=workspaceTrace(state);
+  const hasNodes=visibleTrace.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
+
   const scopedBranches=currentBranches(state);
-  $('#branchCount').textContent=`${scopedBranches.length || 1} ${(scopedBranches.length || 1)===1?'path':'paths'}`;
+  if(workspaceMapMode==='aggregate'){
+    const mapCount=new Set(state.nodes.map(n=>n.meta?.hotspotId).filter(Boolean)).size;
+    $('#branchCount').textContent=`${visibleTrace.nodes.length} nodes · ${mapCount} ${mapCount===1?'map':'maps'}`;
+    $('#canvasTitle').textContent='Project reasoning — Aggregate map';
+  }else{
+    $('#branchCount').textContent=`${scopedBranches.length || 1} ${(scopedBranches.length || 1)===1?'path':'paths'}`;
+    $('#canvasTitle').textContent=state.selectedHotspotId ? `Tracing “${state.hotspots.find(h=>h.id===state.selectedHotspotId)?.text || 'language'}”` : 'Your trace';
+  }
+
   updateTraceCheck();
-  $('#canvasTitle').textContent=state.selectedHotspotId ? `Tracing “${state.hotspots.find(h=>h.id===state.selectedHotspotId)?.text || 'language'}”` : 'Your trace';
   if(hasNodes)renderGraphState();
-  const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  $('#branchButton').disabled=!active || active.type==='goal' || active.type==='note' || active.status==='rejected';
-  $('#compareButton').disabled=scopedBranches.length<2;
+  const activeCandidate=state.nodes.find(n=>n.id===state.activeNodeId);
+  const active=activeCandidate && visibleTrace.nodes.some(n=>n.id===activeCandidate.id)?activeCandidate:null;
+  $('#branchButton').disabled=workspaceMapMode==='aggregate' || !active || active.type==='goal' || active.type==='note' || active.status==='rejected';
+  $('#compareButton').disabled=workspaceMapMode==='aggregate' || scopedBranches.length<2;
   if(els.focusPathButton){
-    const focusAvailable=Boolean(active && scopedTrace(state).nodes.some(n=>n.id===active.id));
+    const base=workspaceTrace(state);
+    const focusAvailable=Boolean(active && base.nodes.some(n=>n.id===active.id));
     els.focusPathButton.disabled=!focusPathRootId && !focusAvailable;
     els.focusPathButton.textContent=focusPathRootId?'◎ Show all':'◎ Focus path';
     els.focusPathButton.classList.toggle('active',Boolean(focusPathRootId));
-    els.focusPathButton.title=focusPathRootId?'Restore every node in this hotspot trace':'Isolate the ancestors and descendants of the selected node';
+    els.focusPathButton.title=focusPathRootId?'Restore the full visible reasoning field':'Isolate the ancestors and descendants of the selected node';
   }
-  els.thoughtDock.classList.toggle('hidden',!state.selectedHotspotId);
-  if(state.selectedHotspotId) updateThoughtSuggestion();
+  els.thoughtDock.classList.toggle('hidden',workspaceMapMode==='aggregate' || !state.selectedHotspotId);
+  if(workspaceMapMode==='focus' && state.selectedHotspotId) updateThoughtSuggestion();
   if(active) renderNodeInspector(active,state,nodeHandlers());
-  else if(state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,hotspotHandlers()); }
+  else if(workspaceMapMode==='focus' && state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,hotspotHandlers()); }
   else renderEmptyInspector();
 }
 
 function renderGraphState(){
   const state=getState();
-  const baseScoped=scopedTrace(state);
+  const baseScoped=workspaceTrace(state);
   if(focusPathRootId && !baseScoped.nodes.some(n=>n.id===focusPathRootId)) focusPathRootId=null;
   const scoped=focusPathRootId?focusTraceAround(baseScoped,focusPathRootId):baseScoped;
+  els.graphSurface?.classList.toggle('aggregate-map',workspaceMapMode==='aggregate');
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
     onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node)editNode(node); },
@@ -343,7 +371,11 @@ function renderGraphState(){
     onNodeTypeClick:(id,e)=>openNodeTypeMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence),
-    onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
+    onNodeMove:(id,x,y)=>updateState(s=>{
+      const n=s.nodes.find(n=>n.id===id); if(!n)return;
+      if(workspaceMapMode==='aggregate') n.meta={...(n.meta||{}),aggregateX:x,aggregateY:y};
+      else { n.x=x; n.y=y; }
+    }),
     getScale:()=>canvasZoom,
     selectedEdgeId,
     selectedNodeIds:[...selectedNodeIds],
@@ -433,6 +465,7 @@ async function editBriefChunk({id,title,text}={}){
 }
 
 async function selectHotspot(id){
+  workspaceMapMode='focus';
   focusPathRootId=null;
   const state=getState(), hotspot=state.hotspots.find(h=>h.id===id); if(!hotspot)return;
   let input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
@@ -1108,7 +1141,7 @@ function openNodeContext(id,x,y){
     patchState({activeNodeId:id},{silent:true});
     selectedNodeIds.clear();selectedNodeIds.add(id);
     closeNodeContext();renderWorkspace();
-    toast(focusPathRootId?'Pathway isolated. Show all restores the full field.':'Showing the full hotspot trace again.');
+    toast(focusPathRootId?'Pathway isolated. Show all restores the full field.':workspaceMapMode==='aggregate'?'Showing the full aggregate field again.':'Showing the full hotspot trace again.');
   };
   menu.querySelector('[data-node-action="group"]')?.addEventListener('click',()=>{
     checkpoint(sameGroup?'ungroup selected':'group selected');
@@ -1188,18 +1221,19 @@ function togglePathFocus(){
   if(focusPathRootId){
     focusPathRootId=null;
     renderWorkspace();
-    toast('Showing the full hotspot trace again.');
+    toast(workspaceMapMode==='aggregate'?'Showing the full aggregate reasoning field again.':'Showing the full hotspot trace again.');
     return;
   }
   const state=getState();
   const id=state.activeNodeId || [...selectedNodeIds][0];
   if(!id){toast('Select a node first, then Focus path.');return;}
-  if(!scopedTrace(state).nodes.some(n=>n.id===id)){toast('That node is not part of the current hotspot trace.');return;}
+  const base=workspaceTrace(state);
+  if(!base.nodes.some(n=>n.id===id)){toast('That node is outside the current visible reasoning field.');return;}
   focusPathRootId=id;
   selectedEdgeId=null;traceIssueNodeIds.clear();
   renderWorkspace();
-  const focused=focusTraceAround(scopedTrace(getState()),id);
-  toast(`Focused on ${focused.nodes.length} reasoning move${focused.nodes.length===1?'':'s'}. Show all restores the canvas.`);
+  const focused=focusTraceAround(workspaceTrace(getState()),id);
+  toast(`Focused on ${focused.nodes.length} reasoning move${focused.nodes.length===1?'':'s'}. Show all restores the ${workspaceMapMode==='aggregate'?'aggregate map':'canvas'}.`);
 }
 
 function toggleSpatialPreview(id){
@@ -1216,7 +1250,7 @@ function toggleSpatialPreview(id){
 
 function openNodeSearch(){
   document.getElementById('nodeSearchPopover')?.remove();
-  const scoped=scopedTrace(getState());
+  const scoped=workspaceTrace(getState());
   const panel=document.createElement('aside');
   panel.id='nodeSearchPopover';
   panel.className='node-search-popover';
@@ -1324,7 +1358,7 @@ function inspectCaseStudy(id){
 
 
 function traceIssues(state=getState()){
-  const scoped=scopedTrace(state);
+  const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state);
   const activeNodes=scoped.nodes.filter(n=>n.status!=='rejected');
   const activeEdges=scoped.edges.filter(e=>e.status!=='rejected');
   const degree=id=>activeEdges.filter(e=>e.source===id||e.target===id).length;
@@ -1393,6 +1427,135 @@ function zoomTo(next){
 }
 function updateZoomLabel(){ const label=$('#zoomLabel'); if(label)label.textContent=`${Math.round(canvasZoom*100)}%`; }
 
+
+function setWorkspaceMapMode(mode='focus'){
+  const next=mode==='aggregate'?'aggregate':'focus';
+  if(next==='focus'){
+    const state=getState();
+    let hotspotId=state.selectedHotspotId;
+    const active=state.nodes.find(n=>n.id===state.activeNodeId);
+    if(active?.meta?.hotspotId) hotspotId=active.meta.hotspotId;
+    if(!hotspotId){
+      hotspotId=state.nodes.find(n=>n.meta?.hotspotId)?.meta?.hotspotId||state.hotspots?.[0]?.id||null;
+    }
+    if(!hotspotId){ toast('Choose a hotspot first to open a focus map.'); return; }
+    patchState({selectedHotspotId:hotspotId,activeNodeId:active?.meta?.hotspotId===hotspotId?active.id:null},{silent:true});
+  }
+  workspaceMapMode=next;
+  focusPathRootId=null; selectedEdgeId=null; traceIssueNodeIds.clear(); selectedNodeIds.clear();
+  canvasZoom=1; updateZoomLabel();
+  if(els.graphViewport) els.graphViewport.dataset.needsInitialPosition='1';
+  renderWorkspace();
+  if(next==='aggregate') {
+    setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },50);
+    toast('Aggregate map · every focus map in this project is now visible together.');
+  }
+}
+
+function updateMapModeControls(state){
+  if(els.focusMapModeButton) els.focusMapModeButton.classList.toggle('active',workspaceMapMode==='focus');
+  if(els.aggregateMapModeButton){
+    els.aggregateMapModeButton.classList.toggle('active',workspaceMapMode==='aggregate');
+    els.aggregateMapModeButton.disabled=!state.nodes.length;
+  }
+  if(els.aggregateControls) els.aggregateControls.classList.toggle('hidden',workspaceMapMode!=='aggregate');
+}
+
+function resetAggregateFilters({render=true}={}){
+  aggregateHotspotFilter='all'; aggregateChunkFilter='all'; aggregateTypeFilter='all'; aggregateStatusFilter='all';
+  if(els.aggregateHotspotFilter) els.aggregateHotspotFilter.value='all';
+  if(els.aggregateChunkFilter) els.aggregateChunkFilter.value='all';
+  if(els.aggregateTypeFilter) els.aggregateTypeFilter.value='all';
+  if(els.aggregateStatusFilter) els.aggregateStatusFilter.value='all';
+  focusPathRootId=null; selectedEdgeId=null;
+  if(render && workspaceMapMode==='aggregate') renderWorkspace();
+}
+
+function updateAggregateControls(state){
+  const hotspotCounts=new Map();
+  state.nodes.forEach(n=>{ const id=n.meta?.hotspotId; if(id)hotspotCounts.set(id,(hotspotCounts.get(id)||0)+1); });
+  const hotspotOptions=['<option value="all">All hotspots</option>',...state.hotspots.filter(h=>hotspotCounts.has(h.id)).map(h=>`<option value="${escapeHtml(h.id)}">${escapeHtml(h.text)} · ${hotspotCounts.get(h.id)}</option>`)].join('');
+  if(els.aggregateHotspotFilter){ els.aggregateHotspotFilter.innerHTML=hotspotOptions; if([...els.aggregateHotspotFilter.options].some(o=>o.value===aggregateHotspotFilter)) els.aggregateHotspotFilter.value=aggregateHotspotFilter; else aggregateHotspotFilter=els.aggregateHotspotFilter.value='all'; }
+
+  const chunkById=new Map((state.briefChunks||[]).map(c=>[c.id,c]));
+  const chunkCounts=new Map();
+  state.nodes.forEach(n=>{ const h=state.hotspots.find(x=>x.id===n.meta?.hotspotId); const cid=h?.chunkId; if(cid)chunkCounts.set(cid,(chunkCounts.get(cid)||0)+1); });
+  const chunkOptions=['<option value="all">All sections</option>',...[...chunkCounts.entries()].map(([id,count])=>`<option value="${escapeHtml(id)}">${escapeHtml(chunkById.get(id)?.title||'Source section')} · ${count}</option>`)].join('');
+  if(els.aggregateChunkFilter){ els.aggregateChunkFilter.innerHTML=chunkOptions; if([...els.aggregateChunkFilter.options].some(o=>o.value===aggregateChunkFilter)) els.aggregateChunkFilter.value=aggregateChunkFilter; else aggregateChunkFilter=els.aggregateChunkFilter.value='all'; }
+
+  const typeOrder=['input','interpretation','grounding','consequence','evaluation','goal','note'];
+  if(els.aggregateTypeFilter){
+    els.aggregateTypeFilter.innerHTML=['<option value="all">All node types</option>',...typeOrder.map(t=>`<option value="${t}">${escapeHtml(typeLabels[t]||t)}</option>`)].join('');
+    els.aggregateTypeFilter.value=aggregateTypeFilter;
+  }
+  if(els.aggregateStatusFilter) els.aggregateStatusFilter.value=aggregateStatusFilter;
+}
+
+function aggregateInitialPositions(state){
+  const nodes=state.nodes||[];
+  const hotspotOrder=[];
+  const seen=new Set();
+  (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
+  nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
+  const positions=new Map();
+  const columns=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(Math.max(1,hotspotOrder.length)))));
+  const clusterW=720,clusterH=500;
+  hotspotOrder.forEach((hotspotId,clusterIndex)=>{
+    const cluster=nodes.filter(n=>(n.meta?.hotspotId||'__loose__')===hotspotId);
+    if(!cluster.length)return;
+    const finite=cluster.filter(n=>Number.isFinite(Number(n.x))&&Number.isFinite(Number(n.y)));
+    const minX=finite.length?Math.min(...finite.map(n=>Number(n.x))):0;
+    const minY=finite.length?Math.min(...finite.map(n=>Number(n.y))):0;
+    const col=clusterIndex%columns,row=Math.floor(clusterIndex/columns);
+    const baseX=col*clusterW+(row%2?90:0);
+    const baseY=row*clusterH+(col%2?38:0);
+    cluster.forEach((n,i)=>{
+      if(Number.isFinite(Number(n.meta?.aggregateX))&&Number.isFinite(Number(n.meta?.aggregateY))){
+        positions.set(n.id,{x:Number(n.meta.aggregateX),y:Number(n.meta.aggregateY)}); return;
+      }
+      const localX=Number.isFinite(Number(n.x))?Number(n.x)-minX:(i%3)*245;
+      const localY=Number.isFinite(Number(n.y))?Number(n.y)-minY:Math.floor(i/3)*140;
+      positions.set(n.id,{x:baseX+localX*.78,y:baseY+localY*.78});
+    });
+  });
+  return positions;
+}
+
+function aggregateTrace(state,{ignoreFilters=false}={}){
+  const positions=aggregateInitialPositions(state);
+  const hotspotById=new Map((state.hotspots||[]).map(h=>[h.id,h]));
+  let nodes=(state.nodes||[]).map(n=>{ const pos=positions.get(n.id)||{x:n.x||0,y:n.y||0}; return {...n,x:pos.x,y:pos.y}; });
+  if(!ignoreFilters){
+    nodes=nodes.filter(n=>{
+      const hotspot=hotspotById.get(n.meta?.hotspotId);
+      if(aggregateHotspotFilter!=='all' && n.meta?.hotspotId!==aggregateHotspotFilter) return false;
+      if(aggregateChunkFilter!=='all' && hotspot?.chunkId!==aggregateChunkFilter) return false;
+      if(aggregateTypeFilter!=='all' && n.type!==aggregateTypeFilter) return false;
+      const status=n.status==='rejected'?'rejected':n.meta?.provisional?'provisional':'active';
+      if(aggregateStatusFilter!=='all' && status!==aggregateStatusFilter) return false;
+      return true;
+    });
+  }
+  const ids=new Set(nodes.map(n=>n.id));
+  const edges=(state.edges||[]).filter(e=>ids.has(e.source)&&ids.has(e.target));
+  return {nodes,edges};
+}
+
+function workspaceTrace(state){
+  return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
+}
+
+function arrangeAggregateMap(){
+  if(workspaceMapMode!=='aggregate')return;
+  checkpoint('arrange aggregate map');
+  const state=getState();
+  const positions=aggregateInitialPositions({...state,nodes:state.nodes.map(n=>({...n,meta:{...(n.meta||{}),aggregateX:undefined,aggregateY:undefined}}))});
+  updateState(s=>{ s.nodes.forEach(n=>{ const pos=positions.get(n.id); if(pos)n.meta={...(n.meta||{}),aggregateX:pos.x,aggregateY:pos.y}; }); });
+  selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
+  renderWorkspace();
+  setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
+  toast('Aggregate map rearranged into loose hotspot clusters. Focus-map layouts were not changed.');
+}
 
 function scopedTrace(state){
   const input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===state.selectedHotspotId);

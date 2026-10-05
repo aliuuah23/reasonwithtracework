@@ -143,9 +143,22 @@
               <div class="canvas-title-row">
                 <h2 id="canvasTitle">Your trace</h2>
                 <span class="branch-count" id="branchCount">1 path</span>
+                <div class="map-mode-toggle" aria-label="Reasoning map view">
+                  <button class="map-mode-button active" id="focusMapModeButton" type="button" title="Show only the reasoning around the selected hotspot">Focus map</button>
+                  <button class="map-mode-button" id="aggregateMapModeButton" type="button" title="Merge every focus map in this project into one reasoning field">Aggregate map</button>
+                </div>
                 <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                 <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
                 <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
+              </div>
+              <div class="aggregate-controls hidden" id="aggregateControls" aria-label="Aggregate map filters">
+                <span class="aggregate-label">ALL PROJECT REASONING</span>
+                <select id="aggregateHotspotFilter" aria-label="Filter aggregate map by hotspot"><option value="all">All hotspots</option></select>
+                <select id="aggregateChunkFilter" aria-label="Filter aggregate map by source section"><option value="all">All sections</option></select>
+                <select id="aggregateTypeFilter" aria-label="Filter aggregate map by node type"><option value="all">All node types</option></select>
+                <select id="aggregateStatusFilter" aria-label="Filter aggregate map by working status"><option value="all">All statuses</option><option value="active">Active</option><option value="provisional">Provisional</option><option value="rejected">Rejected</option></select>
+                <button class="aggregate-action" id="resetAggregateFiltersButton" type="button">Reset filters</button>
+                <button class="aggregate-action" id="arrangeAggregateButton" type="button" title="Restore a loose hotspot-cluster layout without changing the individual focus maps">Arrange map</button>
               </div>
             </div>
             <div class="toolbar-actions">
@@ -199,7 +212,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus path isolates one reasoning route · Ctrl+Z undo</span>
+            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Focus path isolates one route · Ctrl+Z undo</span>
           </div>
         </section>
 

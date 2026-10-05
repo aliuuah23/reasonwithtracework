@@ -149,3 +149,11 @@
 .landing-chunk-editor-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
 .landing-chunk-editor input,.landing-chunk-editor textarea { width:100%; box-sizing:border-box; border:1px solid var(--border); border-radius:9px; background:var(--surface); color:var(--text); padding:8px 9px; outline:none; font:inherit; font-size:10px; resize:vertical; }
 .landing-chunk-editor input:focus,.landing-chunk-editor textarea:focus { border-color:#aaa8ef; box-shadow:0 0 0 2px rgba(99,94,232,.06); }
+
+/* Round 3A · aggregate-map toolbar stays compact at desktop widths. */
+.canvas-toolbar > div:first-child { min-width:0; }
+.canvas-title-row { flex-wrap:wrap; }
+@media (max-width: 1180px){
+  .aggregate-controls { max-width:560px; }
+  .aggregate-controls select { max-width:130px; }
+}

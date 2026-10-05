@@ -190,3 +190,10 @@
 .spatial-cues { display:flex; flex-wrap:wrap; gap:4px; }
 .spatial-cues span { padding:2px 5px; border-radius:999px; background:#f0f1f4; color:var(--muted); font-size:7px; }
 .graph-node.preview-open { min-height:250px; }
+
+/* Aggregate map keeps the established node language but makes dense fields easier to scan. */
+.graph-surface.aggregate-map .graph-node { box-shadow:0 2px 10px rgba(30,34,49,.045); }
+.graph-surface.aggregate-map .graph-node:not(.selected):not(.trace-open) { opacity:.97; }
+.graph-surface.aggregate-map .trace-edge { opacity:.74; }
+.graph-surface.aggregate-map .trace-edge.selected,
+.graph-surface.aggregate-map .trace-edge.wire-hover { opacity:1; }
