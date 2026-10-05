@@ -113,3 +113,20 @@
 .thought-reading small { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted-2); }
 .thought-actions { display:flex; gap:6px; padding-bottom:2px; }
 .thought-actions button:disabled { opacity:.42; cursor:not-allowed; }
+
+/* Long-brief intake keeps the existing landing card but adds a quiet mode switch. */
+.brief-start-head { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:2px 4px 10px; }
+.brief-start-head > label { padding:4px 2px; }
+.brief-mode-toggle { display:flex; align-items:center; gap:3px; padding:3px; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); }
+.brief-mode-button { border:0; background:transparent; color:var(--muted); border-radius:7px; padding:7px 9px; font-size:10px; font-weight:750; cursor:pointer; }
+.brief-mode-button.active { background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(20,24,38,.08); }
+.document-brief-tools { display:flex; align-items:center; gap:10px; margin:0 2px 10px; padding:10px 11px; border:1px dashed var(--border-strong); border-radius:12px; background:var(--surface-soft); }
+.document-upload-button { flex:0 0 auto; margin:0 !important; padding:7px 10px !important; border:1px solid var(--border-strong); border-radius:9px; background:var(--surface); font-size:10px !important; cursor:pointer; }
+.document-upload-button:hover { border-color:#bfc4cf; }
+.document-file-status { min-width:0; color:var(--muted); font-size:10px; line-height:1.45; }
+.brief-chunk-preview { margin:10px 2px 0; padding:11px 12px; border:1px solid var(--border); border-radius:12px; background:#fafaff; display:grid; gap:8px; }
+.brief-chunk-preview > div:first-child { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.brief-chunk-preview strong { font-size:11px; }
+.brief-chunk-preview span { color:var(--muted); font-size:9px; }
+.brief-chunk-preview-list { display:flex; flex-wrap:wrap; gap:5px; }
+.brief-chunk-preview-list span { display:inline-flex; align-items:center; min-height:23px; padding:4px 7px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--muted); }

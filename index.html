@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#f7f8fb">
   <title>TRACEWORK — Give reasoning traction.</title>
   <meta name="description" content="TRACEWORK helps designers turn ambiguous design language into visible, traceable reasoning pathways.">
+  <link rel="preconnect" href="https://www.archdaily.com" crossorigin>
+  <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
@@ -40,8 +42,20 @@
       </div>
 
       <div class="start-card">
-        <label for="landingBrief">Start with a real design brief</label>
+        <div class="brief-start-head">
+          <label for="landingBrief">Start with a real design brief</label>
+          <div class="brief-mode-toggle" aria-label="Brief input mode">
+            <button type="button" class="brief-mode-button active" data-brief-mode="quick">Quick brief</button>
+            <button type="button" class="brief-mode-button" data-brief-mode="document">Long brief / document</button>
+          </div>
+        </div>
+        <div class="document-brief-tools hidden" id="documentBriefTools">
+          <label class="document-upload-button" for="briefFileInput">＋ Upload brief</label>
+          <input id="briefFileInput" type="file" accept=".txt,.md,.pdf,.docx,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+          <div class="document-file-status" id="briefFileStatus">PDF, DOCX, TXT or MD · processed locally in your browser.</div>
+        </div>
         <textarea id="landingBrief" rows="7" placeholder="Paste a brief, requirement, design statement or project intention…"></textarea>
+        <div class="brief-chunk-preview hidden" id="briefChunkPreview"></div>
         <div class="start-actions">
           <button class="text-button" id="loadDemoButton">Try an example</button>
           <button class="primary-button" id="startTracingButton">Start tracing <span>→</span></button>
@@ -74,6 +88,18 @@
             </div>
           </div>
 
+          <div class="brief-chunk-nav hidden" id="briefChunkNav">
+            <div>
+              <span class="brief-chunk-file" id="briefChunkFile"></span>
+              <strong id="briefChunkCounter">Section 1 of 1</strong>
+            </div>
+            <div class="brief-chunk-actions">
+              <button class="icon-button small" id="prevBriefChunk" type="button" aria-label="Previous brief section">←</button>
+              <select id="briefChunkSelect" aria-label="Brief section"></select>
+              <button class="icon-button small" id="nextBriefChunk" type="button" aria-label="Next brief section">→</button>
+            </div>
+          </div>
+
           <div class="brief-document" id="briefDocument" tabindex="0"></div>
 
           <div class="source-footer">
@@ -95,11 +121,12 @@
                 <span class="branch-count" id="branchCount">1 path</span>
                 <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                 <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
-                <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Solid = direct adjacent reasoning. Dashed = exploratory, skipped-stage or provisional reasoning. You can hide this signal.">Hide wire signals</button>
+                <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
               </div>
             </div>
             <div class="toolbar-actions">
               <button class="tool-button" id="undoButton" type="button" disabled>↶ Undo</button>
+              <button class="tool-button" id="findNodeButton" type="button" title="Find a node · Ctrl+F">⌕ Find</button>
               <button class="tool-button" id="branchButton" disabled>⑂ Fork</button>
               <button class="tool-button" id="compareButton" disabled>⇆ Compare</button>
               <div class="zoom-control" aria-label="Canvas zoom"><button class="tool-button zoom-button" id="zoomOutButton" aria-label="Zoom out">−</button><span id="zoomLabel">100%</span><button class="tool-button zoom-button" id="zoomInButton" aria-label="Zoom in">＋</button></div><button class="tool-button" id="fitButton">⌗ Fit</button>
@@ -147,7 +174,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Drag ports to connect · Shift-click wire to disconnect · Right-click node for group/lock · Ctrl+Z undo</span>
+            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Ctrl+Z undo</span>
           </div>
         </section>
 

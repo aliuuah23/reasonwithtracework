@@ -127,3 +127,19 @@
 .graph-surface.hide-node-types .graph-node:not([data-type="note"]) .node-accent,
 .graph-surface.hide-node-types .graph-node:not([data-type="note"]) .node-port { background:#a9afb9; }
 .graph-surface.hide-node-types .graph-node[data-type="note"] { --node-color:#737985; background:#f0f1f3; }
+
+/* Round 2B · stable wire selection, empirical signals, bidirectional ports and editable status */
+.trace-edge { pointer-events:none; }
+.trace-edge-hit { pointer-events:stroke; stroke:transparent; stroke-width:28; cursor:pointer; }
+.trace-edge.evidence-frequent { stroke-width:2.8; stroke-dasharray:none; opacity:1; }
+.trace-edge.evidence-observed { stroke-width:2.2; stroke-dasharray:none; opacity:.92; }
+.trace-edge.evidence-limited { stroke-width:2; stroke-dasharray:8 5; opacity:.86; }
+.trace-edge.evidence-unseen { stroke-width:1.8; stroke-dasharray:2 6; opacity:.72; }
+.trace-edge.evidence-neutral { stroke-width:2; stroke-dasharray:none; opacity:.82; }
+.graph-surface.hide-wire-signals .trace-edge { stroke-width:2 !important; stroke-dasharray:none !important; opacity:.9 !important; }
+.trace-edge.selected { stroke:var(--accent-dark) !important; stroke-width:5 !important; stroke-dasharray:none !important; opacity:1 !important; }
+.node-port { touch-action:none; }
+.graph-nodes.connecting .node-port.compatible { box-shadow:0 0 0 7px rgba(76,166,112,.23); transform:scale(1.08); opacity:1; }
+.graph-nodes.connecting .node-port.incompatible { opacity:.18; cursor:not-allowed; }
+.node-status { appearance:none; border:0; background:transparent; padding:0; margin:0; color:var(--muted-2); font:inherit; font-size:9px; cursor:pointer; }
+.node-status:hover { color:var(--text); }

@@ -1,14 +1,14 @@
 import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
 import { nodeGuidance } from '../core/node-guidance.js';
+import { connectionSignal } from './connection-rules.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
-const TYPE_ORDER=['input','interpretation','grounding','consequence','evaluation','goal'];
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeMove,onNodeContext,onNodeQuickLock,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
-  selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true
+  onNodeClick,onNodeMove,onNodeContext,onNodeStatusClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null
 }){
   const world=autoLayout(nodes);
   const laid=world.map(n=>({...n,x:(Number(n.x)||0)+CANVAS_ORIGIN_X,y:(Number(n.y)||0)+CANVAS_ORIGIN_Y}));
@@ -36,7 +36,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id))).join('');
-  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals)).join('');
+  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
 
   const nodeAnchor=(id,side='out')=>{
     const el=els.nodes.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
@@ -63,9 +63,10 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   };
   requestAnimationFrame(redrawEdges);
 
-  els.svg.querySelectorAll('.trace-edge-hit,.trace-edge').forEach(path=>{
+  // Only the generous invisible hit-path handles selection. The visible line never jumps into pointer focus.
+  els.svg.querySelectorAll('.trace-edge-hit').forEach(path=>{
     path.addEventListener('click',e=>{
-      e.stopPropagation();
+      e.preventDefault();e.stopPropagation();
       const id=path.dataset.edgeId;
       if(e.shiftKey) onEdgeQuickDisconnect?.(id);
       else onEdgeClick?.(id);
@@ -89,17 +90,16 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
     el.addEventListener('click',e=>{
-      if(e.target.closest('.node-port'))return;
+      if(e.target.closest('.node-port,.node-status'))return;
       if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id,e);
     });
     el.addEventListener('contextmenu',e=>{
       e.preventDefault();e.stopPropagation();
       onNodeContext?.(el.dataset.id,e);
     });
-    el.addEventListener('auxclick',e=>{
-      if(e.button!==1||e.target.closest('.node-port'))return;
+    el.querySelector('.node-status')?.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
-      onNodeQuickLock?.(el.dataset.id,e);
+      onNodeStatusClick?.(el.dataset.id,e);
     });
 
     bindDrag(el,{
@@ -130,47 +130,27 @@ function nodeMarkup(n,selected,issue){
     : n.status==='rejected'
       ? 'Rejected = retained as reasoning history, but no longer treated as an active route.'
       : n.meta?.provisional
-        ? 'Provisional = an alternative, imported or forked move that has not yet been treated as the main route.'
+        ? 'Provisional = kept open for testing, revision or comparison rather than treated as settled.'
         : 'Active = currently retained as part of the working reasoning network.';
   const help=nodeGuidance[n.type]?.use||'';
-  const ports=n.type==='note'?'':`${n.type!=='input'?'<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drop a connection here"></button>':''}${n.type!=='goal'?'<button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect another reasoning move"></button>':''}`;
+  const ports='<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drag from here to find a source for this node"></button><button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect this node forward"></button>';
   return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
-      <div class="node-foot"><span class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}</span></div>
+      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button></div>
     </div></article>`;
 }
 
-function edgeMarkup(e,pos,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals){
-  const d=edgePath(e,pos);
-  if(!d)return '';
+function edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence){
   const active=isOnActivePath(e,activeNodeId,edges);
   const muted=Boolean(selectedEdgeId && e.id!==selectedEdgeId);
-  const signal=wireSignal(e,nodesById);
-  const signalClass=showWireSignals && signal==='exploratory'?'exploratory':'';
-  return `<path data-edge-id="${e.id}" class="trace-edge-hit" d="${d}"/><path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${e.id===selectedEdgeId?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
-}
-
-function wireSignal(edge,nodesById){
-  const a=nodesById.get(edge.source),b=nodesById.get(edge.target);
-  if(!a||!b)return 'direct';
-  const ai=TYPE_ORDER.indexOf(a.type),bi=TYPE_ORDER.indexOf(b.type);
-  if(edge.status==='provisional')return 'exploratory';
-  if(ai<0||bi<0)return 'direct';
-  return bi-ai===1?'direct':'exploratory';
-}
-
-function edgePath(e,pos){
-  const a=pos.get(e.source),b=pos.get(e.target);
-  if(!a||!b)return '';
-  return curvePath(a.x+230,a.y+46,b.x,b.y+46);
-}
-function curvePath(x1,y1,x2,y2){
-  const distance=Math.abs(x2-x1);
-  const dx=Math.max(50,distance*.45);
-  const direction=x2>=x1?1:-1;
-  return `M ${x1} ${y1} C ${x1+(dx*direction)} ${y1}, ${x2-(dx*direction)} ${y2}, ${x2} ${y2}`;
+  const source=nodesById.get(e.source),target=nodesById.get(e.target);
+  const signal=connectionSignal(source,target,pilotEvidence);
+  const signalClass=showWireSignals?`evidence-${signal.band||'neutral'}`:'';
+  const visible=`<path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${e.id===selectedEdgeId?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" d=""/>`;
+  const hit=`<path data-edge-id="${e.id}" class="trace-edge-hit" d=""/>`;
+  return visible+hit;
 }
 
 function isOnActivePath(edge,activeNodeId,edges){
@@ -188,13 +168,12 @@ function isOnActivePath(edge,activeNodeId,edges){
 }
 
 function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
-  let start=null,origins=null,moved=false,dragIds=[];
-
+  let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0||e.target.closest('.node-port'))return;
+    if(e.button!==0||e.target.closest('.node-port,.node-status'))return;
     if(locked)return;
     e.stopPropagation();
-    dragIds=getDragIds?.()||[el.dataset.id];
+    const dragIds=getDragIds?.()||[el.dataset.id];
     origins=new Map();
     dragIds.forEach(id=>{
       const target=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
@@ -205,12 +184,11 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=
     moved=false;
     el.setPointerCapture(e.pointerId);
   });
-
   el.addEventListener('pointermove',e=>{
     if(!start||e.pointerId!==start.pointerId)return;
     const scale=Math.max(.01,Number(getScale?.()||1));
     let dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
-    if(Math.abs(dx)+Math.abs(dy)<=2&&!moved)return;
+    if(Math.abs(dx)+Math.abs(dy)<=1&&!moved)return;
     moved=true;
     origins.forEach(({el:target})=>target.classList.add('dragging'));
     const maxX=Math.max(20,bounds.width-250),maxY=Math.max(20,bounds.height-112);
@@ -227,14 +205,10 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=
       onLiveMove?.(id,x,y);
     });
   });
-
   const finish=e=>{
     if(!start||e.pointerId!==start.pointerId)return;
     if(moved){
-      origins.forEach((o,id)=>{
-        const x=parseFloat(o.el.style.left),y=parseFloat(o.el.style.top);
-        onMove?.(id,x,y);
-      });
+      origins.forEach((o,id)=>onMove?.(id,parseFloat(o.el.style.left),parseFloat(o.el.style.top)));
     }
     try{el.releasePointerCapture(e.pointerId);}catch{}
     start=null;
@@ -245,24 +219,28 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=
 }
 
 function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor}){
-  nodesRoot.querySelectorAll('.port-out').forEach(port=>{
+  nodesRoot.querySelectorAll('.node-port').forEach(port=>{
     port.addEventListener('pointerdown',e=>{
       if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
-      const sourceEl=port.closest('.graph-node');
-      const sourceId=sourceEl?.dataset.id;
-      const source=nodesById.get(sourceId);
-      if(!source)return;
-      const start=nodeAnchor(sourceId,'out')||positions.get(sourceId);
+      const originEl=port.closest('.graph-node');
+      const originId=originEl?.dataset.id;
+      const origin=nodesById.get(originId);
+      if(!origin)return;
+      const startSide=port.classList.contains('port-in')?'in':'out';
+      const start=nodeAnchor(originId,startSide)||positions.get(originId);
       const temp=document.createElementNS('http://www.w3.org/2000/svg','path');
       temp.setAttribute('class','trace-edge draft-connection');
       svg.appendChild(temp);
       nodesRoot.classList.add('connecting');
-      nodesRoot.querySelectorAll('.port-in').forEach(targetPort=>{
-        const targetId=targetPort.closest('.graph-node')?.dataset.id;
-        const target=nodesById.get(targetId);
-        const result=canConnect?.(source,target,edges)??{ok:true};
-        targetPort.classList.add(result.ok?'compatible':'incompatible');
+
+      nodesRoot.querySelectorAll('.node-port').forEach(candidate=>{
+        const otherId=candidate.closest('.graph-node')?.dataset.id;
+        if(!otherId||otherId===originId)return;
+        const other=nodesById.get(otherId);
+        const pair=resolvePair(origin,other,startSide);
+        const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
+        candidate.classList.add(result.ok?'compatible':'incompatible');
       });
 
       const pointFromEvent=evt=>{
@@ -278,18 +256,31 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         window.removeEventListener('pointermove',move,true);
         window.removeEventListener('pointerup',finish,true);
         temp.remove();nodesRoot.classList.remove('connecting');
-        nodesRoot.querySelectorAll('.port-in').forEach(p=>p.classList.remove('compatible','incompatible'));
-        const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.port-in');
-        const targetId=hit?.closest('.graph-node')?.dataset.id;
-        const target=nodesById.get(targetId);
-        const result=canConnect?.(source,target,edges)??{ok:Boolean(target)};
-        onConnect?.(source,target,result);
+        nodesRoot.querySelectorAll('.node-port').forEach(p=>p.classList.remove('compatible','incompatible'));
+        const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.node-port');
+        const otherId=hit?.closest('.graph-node')?.dataset.id;
+        const other=nodesById.get(otherId);
+        if(!other){onConnect?.(null,null,{ok:false});return;}
+        const pair=resolvePair(origin,other,startSide);
+        const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
+        onConnect?.(pair.source,pair.target,result);
       };
       window.addEventListener('pointermove',move,true);
       window.addEventListener('pointerup',finish,true);
       move(e);
     });
   });
+}
+
+function resolvePair(origin,other,startSide){
+  return startSide==='in'?{source:other,target:origin}:{source:origin,target:other};
+}
+
+function curvePath(x1,y1,x2,y2){
+  const distance=Math.abs(x2-x1);
+  const dx=Math.max(50,distance*.45);
+  const direction=x2>=x1?1:-1;
+  return `M ${x1} ${y1} C ${x1+(dx*direction)} ${y1}, ${x2-(dx*direction)} ${y2}, ${x2} ${y2}`;
 }
 
 function escapeHtml(t=''){return String(t).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));}

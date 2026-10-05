@@ -98,3 +98,26 @@ Manual graph wiring, convergence and node locking remain the core of Round 2 rat
 - Neutral category-hidden mode, exact ontology names in the legend, and status hover help.
 - Blank-canvas click clears selection.
 - Optional wire signal: solid = direct adjacent reasoning; dashed = exploratory/skipped-stage/provisional. This is structural guidance, not empirical frequency or correctness.
+
+## Round 2B — Session + network intelligence
+
+- Returning Home now closes the active workspace session while keeping the saved trace in the local project shelf.
+- Free thoughts and notes are placed inside the current viewport instead of being auto-stacked below existing reasoning.
+- Ctrl/Cmd+G groups selected nodes; Ctrl/Cmd+Shift+G ungroups; Ctrl/Cmd+F opens TRACEWORK node search.
+- Middle-click canvas actions were removed to avoid browser auto-scroll behaviour; lock/group actions remain in the node context menu.
+- Wire hit areas are stable and isolated; either node shoulder can initiate a connection. Pulling from the left shoulder asks TRACEWORK to infer a source for the current node.
+- Loose notes are wild-card nodes and can connect in either direction to any node type.
+- Active/Provisional status is user-selectable from the status pill on a node.
+- Connection refusals use a pinnable explanation card and explain the specific role conflict between the two attempted nodes.
+- Wire signals now use empirical P01–P10 transition evidence derived from the corrected ontology workbook rather than creation order. Participant coverage is weighted more heavily than raw edge count; signals remain optional via Hide wire signals.
+
+
+## Round 2B.1 — Long brief intake + guided prompt repair
+
+- Landing now offers **Quick brief** and **Long brief / document** modes without changing the established TRACEWORK visual language.
+- Long brief mode can read TXT/MD directly and PDF/DOCX client-side using on-demand browser modules; no document is uploaded to a TRACEWORK server.
+- Long briefs are automatically filed into project sections/chunks. The Source panel lets the designer move between sections while hotspot detection remains tied to exact positions in the complete brief.
+- Manual phrase selection works inside the active brief section and stores the correct full-document offsets.
+- Guided inspector questions are repaired: category chips remain cues, the designer's written answer becomes the node, empty submissions explain what is missing, and the newly generated node is placed beside its source and focused immediately.
+- Case-study prompts remain available beneath guided questions as comparative prompts.
+- ArchDaily receives an early browser preconnect hint so direct precedent links can begin resolving sooner; final load time still depends on the external site and network.

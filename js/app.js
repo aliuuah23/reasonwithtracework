@@ -3,6 +3,8 @@ import { saveProject, loadProject, listProjects, ensureProject, deleteProject, c
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { normaliseBrief } from './input/brief-parser.js';
+import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
+import { readBriefFile } from './input/document-loader.js';
 import { detectHotspots } from './input/hotspot-detector.js';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
@@ -15,6 +17,7 @@ import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
+import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
@@ -27,11 +30,15 @@ const els = {};
 let ontology = [];
 let pathways = [];
 let caseStudies = [];
+let pilotEvidence = {pairs:{},source:{}};
 let saveTimer = null;
 let canvasZoom = 1;
 let showHotspotSuggestions = true;
 let showNodeTypes = true;
 let showWireSignals = true;
+let landingBriefMode = 'quick';
+let pendingBriefFileName = '';
+let pendingBriefChunks = [];
 let lastAddedNodeId = null;
 let selectedEdgeId = null;
 let selectedNodeIds = new Set();
@@ -44,6 +51,7 @@ async function init(){
   ontology = await loadOntology();
   pathways = await loadPathways();
   caseStudies = await loadCaseStudies();
+  pilotEvidence = await loadPilotEvidence();
   renderLegend(ontology);
   bindGlobalEvents();
   updateUndoButton();
@@ -69,14 +77,17 @@ async function init(){
 function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
-    briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton')
+    briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton')
   });
 }
 
 function bindGlobalEvents(){
-  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; els.briefLanding.focus(); };
-  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value);
+  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; pendingBriefFileName=''; pendingBriefChunks=[]; updateLandingChunkPreview(); els.briefLanding.focus(); };
+  document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode));
+  els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
+  els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); updateLandingChunkPreview(); } });
+  $('#startTracingButton').onclick=()=>startFromBrief(els.briefLanding.value,{mode:landingBriefMode,fileName:pendingBriefFileName});
   $('#brandButton').onclick=()=>getState().brief?confirmReturnHome():showLanding();
   document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',e=>{ e.preventDefault(); showView(b.dataset.view); }));
   $('#newProjectButton').onclick=()=>getState().brief?confirmNewProject():els.briefLanding.focus();
@@ -103,8 +114,9 @@ function bindGlobalEvents(){
   els.addFreeThoughtButton.onclick=addFreeThought;
   els.addLooseNoteButton.onclick=addLooseNote;
   if(els.undoButton) els.undoButton.onclick=undoLast;
+  if(els.findNodeButton) els.findNodeButton.onclick=openNodeSearch;
   document.addEventListener('keydown',handleWorkspaceKeydown);
-  document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); });
+  document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
     if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
     clearNewNodeHalo(); selectedEdgeId=null; selectedNodeIds.clear();
@@ -112,13 +124,62 @@ function bindGlobalEvents(){
   });
 }
 
-async function startFromBrief(raw){
+function setLandingBriefMode(mode='quick'){
+  landingBriefMode=mode==='document'?'document':'quick';
+  document.querySelectorAll('[data-brief-mode]').forEach(b=>b.classList.toggle('active',b.dataset.briefMode===landingBriefMode));
+  els.documentBriefTools?.classList.toggle('hidden',landingBriefMode!=='document');
+  els.briefLanding.placeholder=landingBriefMode==='document'
+    ? 'Paste a long brief here, or upload PDF, DOCX, TXT or MD…'
+    : 'Paste a brief, requirement, design statement or project intention…';
+  pendingBriefChunks=landingBriefMode==='document'?chunkBrief(els.briefLanding.value):[];
+  updateLandingChunkPreview();
+}
+
+async function handleBriefFileUpload(){
+  const file=els.briefFileInput?.files?.[0];
+  if(!file)return;
+  pendingBriefFileName=file.name||'';
+  if(els.briefFileStatus)els.briefFileStatus.textContent=`Reading ${pendingBriefFileName}…`;
+  try{
+    const text=normaliseBrief(await readBriefFile(file));
+    if(!text)throw new Error('No readable text was found in that file.');
+    els.briefLanding.value=text;
+    pendingBriefChunks=chunkBrief(text);
+    if(els.briefFileStatus)els.briefFileStatus.textContent=`${pendingBriefFileName} · ${pendingBriefChunks.length} section${pendingBriefChunks.length===1?'':'s'} detected · processed locally`;
+    updateLandingChunkPreview();
+  }catch(err){
+    pendingBriefChunks=[];
+    if(els.briefFileStatus)els.briefFileStatus.textContent=`Could not read ${pendingBriefFileName}. ${err?.message||'Try pasting the brief instead.'}`;
+    toast('Could not read that brief file. You can still paste the text directly.');
+  }
+}
+
+function updateLandingChunkPreview(){
+  if(!els.briefChunkPreview)return;
+  const show=landingBriefMode==='document' && pendingBriefChunks.length>1;
+  els.briefChunkPreview.classList.toggle('hidden',!show);
+  if(!show){els.briefChunkPreview.innerHTML='';return;}
+  els.briefChunkPreview.innerHTML=`<div><strong>${pendingBriefChunks.length} brief sections detected</strong><span>TRACEWORK keeps them inside one project so hotspots can be read section by section.</span></div><div class="brief-chunk-preview-list">${pendingBriefChunks.slice(0,5).map((c,i)=>`<span>${i+1}. ${escapeHtml(c.title)}</span>`).join('')}${pendingBriefChunks.length>5?`<span>+ ${pendingBriefChunks.length-5} more</span>`:''}</div>`;
+}
+
+async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFileName}={}){
   const brief=normaliseBrief(raw);
-  if(!brief){toast('Paste a design brief first.');return;}
-  const hotspots=await detectHotspots(brief);
+  if(!brief){toast('Paste or upload a design brief first.');return;}
+  const useChunks=mode==='document' || brief.length>2600;
+  const chunks=useChunks?chunkBrief(brief):[];
+  const detected=await detectHotspots(brief);
+  const hotspots=attachChunksToHotspots(detected,chunks);
   resetState();
-  patchState({brief,hotspots,projectName:projectNameFromBrief(brief)});
-  logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced`);
+  patchState({
+    brief,
+    briefMode:useChunks?'document':'quick',
+    briefChunks:chunks,
+    activeBriefChunkId:chunks[0]?.id||null,
+    sourceFileName:fileName||'',
+    hotspots,
+    projectName:projectNameFromBrief(brief)
+  });
+  logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced${chunks.length>1?` across ${chunks.length} sections`:''}`);
   enterApp(true);
 }
 
@@ -132,7 +193,7 @@ function enterApp(autoSelect=true){
 }
 
 function showLanding(){
-  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); traceIssueNodeIds.clear();
+  closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); traceIssueNodeIds.clear();
   els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf();
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='workspace'));
 }
@@ -174,7 +235,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot},{showSuggestions:showHotspotSuggestions});
+  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk},{showSuggestions:showHotspotSuggestions});
   const hasNodes=state.nodes.length>0;
   els.canvasEmpty.classList.toggle('hidden',hasNodes);
   els.graphViewport.classList.toggle('hidden',!hasNodes);
@@ -201,16 +262,17 @@ function renderGraphState(){
     onEdgeClick:id=>selectEdge(id),
     onEdgeQuickDisconnect:id=>disconnectEdge(id),
     onNodeContext:(id,e)=>openNodeContext(id,e.clientX,e.clientY),
-    onNodeQuickLock:(id,e)=>quickNodeAction(id,e),
+    onNodeStatusClick:(id,e)=>openNodeStatusMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
-    canConnect:(source,target,edges)=>connectionCheck(source,target,edges),
+    canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence),
     onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
     getScale:()=>canvasZoom,
     selectedEdgeId,
     selectedNodeIds:[...selectedNodeIds],
     issueNodeIds:[...traceIssueNodeIds],
     showNodeTypes,
-    showWireSignals
+    showWireSignals,
+    pilotEvidence
   });
   applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
   if(els.graphViewport.dataset.needsInitialPosition==='1'){
@@ -235,11 +297,20 @@ function renderGraphState(){
   }
 }
 
+function selectBriefChunk(id){
+  const state=getState();
+  if(!state.briefChunks?.some(c=>c.id===id))return;
+  patchState({activeBriefChunkId:id,selectedHotspotId:null,activeNodeId:null},{silent:true});
+  selectedNodeIds.clear(); selectedEdgeId=null; traceIssueNodeIds.clear();
+  renderWorkspace();
+}
+
 async function selectHotspot(id){
   const state=getState(), hotspot=state.hotspots.find(h=>h.id===id); if(!hotspot)return;
   let input=state.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
   updateState(s=>{
     s.selectedHotspotId=id;
+    if(hotspot.chunkId) s.activeBriefChunkId=hotspot.chunkId;
     if(!input){
       input=createNode({type:'input',label:hotspot.text,branchId:`trace-${id}`,meta:{hotspotId:id,source:'brief'}});
       s.nodes.push(input); s.activeBranchId=input.branchId;
@@ -289,22 +360,41 @@ function selectNode(id,event){
   }
   renderWorkspace();
 }
-function selectEdge(id){ clearNewNodeHalo(); selectedNodeIds.clear(); selectedEdgeId=id; renderGraphState(); toast('Only this connection is selected · press Delete/Backspace, or Shift-click it, to disconnect.'); }
+function selectEdge(id){
+  clearNewNodeHalo(); selectedNodeIds.clear(); selectedEdgeId=id; renderGraphState();
+  const state=getState();
+  const edge=state.edges.find(e=>e.id===id);
+  const source=edge&&state.nodes.find(n=>n.id===edge.source);
+  const target=edge&&state.nodes.find(n=>n.id===edge.target);
+  const empirical=source&&target?transitionSummary(source.type,target.type,pilotEvidence):null;
+  toast(empirical?`${empirical} · Delete/Backspace disconnects only this wire.`:'Only this connection is selected · press Delete/Backspace, or Shift-click it, to disconnect.');
+}
 
 function nodeHandlers(){
   return {
     onNext:(node,text,extra)=>{
-      checkpoint('add reasoning step');
+      checkpoint('add guided reasoning step');
       let created=null;
+      const fallback=visibleCanvasPlacement(getState().nodes.length+1);
       updateState(s=>{
         if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
         else if(node.type==='grounding') created=addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
         else if(node.type==='consequence') created=addEvaluation(s,node.id,text,node.branchId,extra.tags||[]);
         else if(node.type==='evaluation') created=addGoal(s,node.id,text,node.branchId);
+        if(created){
+          const baseX=Number.isFinite(Number(node.x))?Number(node.x):fallback.x;
+          const baseY=Number.isFinite(Number(node.y))?Number(node.y):fallback.y;
+          created.x=baseX+270;
+          created.y=baseY;
+          created.meta={...(created.meta||{}),guided:true,hotspotId:node.meta?.hotspotId||s.selectedHotspotId};
+          s.activeNodeId=created.id;
+        }
       });
       lastAddedNodeId=created?.id||null;
+      if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
       const labels={interpretation:'Grounding added',grounding:'Spatial consequence added',consequence:'Evaluation added',evaluation:'Goal added'};
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
+      if(created) toast(`${typeLabels[created.type]||created.type} added and linked.`);
     },
     onBranch:id=>branchFrom(id),
     onFork:id=>forkFrom(id),
@@ -344,14 +434,20 @@ function editNode(node){
 
 async function applyEditedBrief(){
   const brief=normaliseBrief(els.briefEditor.value); if(!brief)return;
-  const hotspots=await detectHotspots(brief);
-  updateState(s=>{s.brief=brief;s.hotspots=hotspots;s.selectedHotspotId=null;s.nodes=[];s.edges=[];s.activeNodeId=null;s.activeBranchId='branch-1';});
-  logEvent('Brief revised','Existing reasoning reset to avoid false links'); toggleBriefEditor(false,getState()); renderWorkspace(); toast('Brief re-analysed.');
+  const state=getState();
+  const useChunks=state.briefMode==='document' || brief.length>2600;
+  const chunks=useChunks?chunkBrief(brief):[];
+  const hotspots=attachChunksToHotspots(await detectHotspots(brief),chunks);
+  updateState(s=>{s.brief=brief;s.briefChunks=chunks;s.activeBriefChunkId=chunks[0]?.id||null;s.hotspots=hotspots;s.selectedHotspotId=null;s.nodes=[];s.edges=[];s.activeNodeId=null;s.activeBranchId='branch-1';});
+  logEvent('Brief revised',`Existing reasoning reset to avoid false links${chunks.length>1?` · ${chunks.length} sections`:''}`); toggleBriefEditor(false,getState()); renderWorkspace(); toast('Brief re-analysed.');
 }
 
 function manualPhrase(){
-  const brief=getState().brief;
-  openModal(`<h2 id="modalTitle">Select text from the brief.</h2><p>Drag across any word or phrase below. TRACEWORK will preserve the exact wording as an Input hotspot.</p>
+  const state=getState();
+  const chunk=state.briefChunks?.find(c=>c.id===state.activeBriefChunkId)||null;
+  const brief=chunk?.text||state.brief;
+  const baseOffset=chunk?.start||0;
+  openModal(`<h2 id="modalTitle">Select text from the brief.</h2><p>Drag across any word or phrase below. TRACEWORK will preserve the exact wording as an Input hotspot${chunk?' inside this brief section':''}.</p>
     <div class="selection-brief" id="phraseSelectionText">${escapeHtml(brief)}</div>
     <div class="selection-readout"><span>Selected</span><strong id="phraseSelectionPreview">Nothing selected yet</strong></div>
     <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmPhrase" disabled>Add selected text</button></div>`,{
@@ -369,7 +465,8 @@ function manualPhrase(){
         const text=brief.slice(a,b).trim();
         if(!text){ picked=null; preview.textContent='Nothing selected yet'; confirm.disabled=true; return; }
         const leading=brief.slice(a,b).indexOf(text);
-        picked={text,start:a+Math.max(0,leading),end:a+Math.max(0,leading)+text.length};
+        const localStart=a+Math.max(0,leading);
+        picked={text,start:baseOffset+localStart,end:baseOffset+localStart+text.length};
         preview.textContent=`“${text}”`;
         confirm.disabled=false;
       };
@@ -379,14 +476,13 @@ function manualPhrase(){
         if(!picked)return;
         const duplicate=getState().hotspots.some(h=>h.start===picked.start&&h.end===picked.end);
         if(duplicate){toast('That exact word or phrase is already a hotspot.');return;}
-        const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word'};
+        const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word',chunkId:chunk?.id||null};
         updateState(s=>{s.hotspots.push(h);s.hotspots.sort((a,b)=>a.start-b.start);});
         closeModal(); showHotspotSuggestions=true; els.toggleHotspotsButton.textContent='Hide suggestions'; renderWorkspace(); selectHotspot(h.id);
       };
     }
   });
 }
-
 function textOffsetWithin(root,node,offset){
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
   let total=0,current;
@@ -482,7 +578,7 @@ function confirmRejectBranch(branchId,node){
 
 function confirmReturnHome(){
   saveProject(getState());
-  openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is already saved in this browser. You can reopen it from the project shelf or My Trace.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();showLanding();}});
+  openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is saved in this browser. Going home closes the active workspace session, so Pathway Bank, My Trace and Discussion will no longer carry this project until you reopen it.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();resetState();selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();showLanding();}});
 }
 
 function confirmLeaveForAbout(){
@@ -639,6 +735,19 @@ function updateThoughtSuggestion(){
   }
 }
 
+function visibleCanvasPlacement(seed=0){
+  const zoom=Math.max(.1,canvasZoom||1);
+  const originX=Number(els.graphSurface?.dataset.originX||360);
+  const originY=Number(els.graphSurface?.dataset.originY||680);
+  const left=(els.graphViewport?.scrollLeft||0)/zoom;
+  const top=(els.graphViewport?.scrollTop||0)/zoom;
+  const width=(els.graphViewport?.clientWidth||900)/zoom;
+  const height=(els.graphViewport?.clientHeight||620)/zoom;
+  const offsets=[[-90,-50],[70,-35],[-45,65],[95,55],[0,0]];
+  const [ox,oy]=offsets[Math.abs(seed)%offsets.length];
+  return {x:Math.max(-300,left+width*.5-originX-115+ox),y:Math.max(-500,top+height*.48-originY-50+oy)};
+}
+
 function addFreeThought(){
   const text=els.freeThoughtInput.value.trim(); if(!text)return;
   checkpoint('add reasoning node');
@@ -647,12 +756,11 @@ function addFreeThought(){
   const type=els.thoughtTypeSelect.value||classification.type||'interpretation';
   const selectedHotspotId=state.selectedHotspotId;
   const scoped=scopedTrace(state);
-  const maxY=Math.max(0,...scoped.nodes.map(n=>Number(n.y)||0));
-  const depth={input:0,interpretation:1,grounding:2,consequence:3,evaluation:4,goal:5}[type]??1;
+  const placement=visibleCanvasPlacement(scoped.nodes.length);
   const branchId=active?.branchId||`free-${Date.now()}`;
   let created=null;
   updateState(s=>{
-    const node=createNode({type,label:text,branchId,x:70+depth*265,y:maxY+165,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:'TRACEWORK',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
+    const node=createNode({type,label:text,branchId,x:placement.x,y:placement.y,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:'TRACEWORK',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
     s.nodes.push(node);
     s.activeNodeId=node.id; s.activeBranchId=branchId;
     created=node;
@@ -669,10 +777,10 @@ function addLooseNote(){
   checkpoint('add note');
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
-  const scoped=scopedTrace(state); const maxY=Math.max(0,...scoped.nodes.map(n=>Number(n.y)||0));
+  const scoped=scopedTrace(state); const placement=visibleCanvasPlacement(scoped.nodes.length+2);
   let created=null;
   updateState(s=>{
-    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:335,y:maxY+165,meta:{hotspotId:s.selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
+    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:placement.x,y:placement.y,meta:{hotspotId:s.selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
     s.nodes.push(node); s.activeNodeId=node.id; created=node;
   });
   lastAddedNodeId=created?.id||null;
@@ -691,11 +799,11 @@ function convertNote(node,type){
 
 function connectNodes(source,target,result){
   if(!source || !target){
-    coach('Connection paused — here’s why','The wire needs to land on a node input because a TRACEWORK connection states an explicit reasoning dependency. Keep thinking — you can leave the thought floating until the relationship becomes clear.',{duration:8000});
+    coach('Connection paused — here’s why','The wire needs to land on another node. A TRACEWORK connection states an explicit reasoning dependency, so leave the thought floating if the relationship is not clear yet.',{duration:6500,pinnable:true});
     return;
   }
   if(!result?.ok){
-    coach('Connection paused — here’s why',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''}` ,{duration:9000});
+    coach('Connection paused — here’s why',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''}` ,{duration:7500,pinnable:true});
     return;
   }
   checkpoint('connect reasoning');
@@ -703,6 +811,7 @@ function connectNodes(source,target,result){
   updateState(s=>{
     if(s.edges.some(e=>e.source===source.id&&e.target===target.id))return;
     created=createEdge(source.id,target.id,{status:(source.meta?.provisional||target.meta?.provisional)?'provisional':'active'});
+    created.meta={...(created.meta||{}),pilotSignal:result?.signal||null};
     s.edges.push(created);
     s.activeNodeId=target.id;
   });
@@ -721,6 +830,18 @@ function handleWorkspaceKeydown(e){
     const target=e.target;
     if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
     e.preventDefault(); undoLast(); return;
+  }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){
+    const target=e.target;
+    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
+    e.preventDefault();openNodeSearch();return;
+  }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='g'){
+    const target=e.target;
+    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
+    e.preventDefault();toggleGroupSelected(Boolean(e.shiftKey));return;
   }
   if(!['Delete','Backspace'].includes(e.key))return;
   const target=e.target;
@@ -804,7 +925,7 @@ function openNodeContext(id,x,y){
     return `<button type="button" class="node-context-wire" data-edge-action="${e.id}">Disconnect wire ${outgoing?'to':'from'} “${short}”</button>`;
   }).join('');
   const groupAction=canGroup?`<button type="button" data-node-action="group">${sameGroup?'Ungroup selected':'Group selected'} (${selected.length})</button>`:(groupMembers.length>1?`<button type="button" data-node-action="ungroup">Ungroup this group (${groupMembers.length})</button>`:'');
-  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · middle-click quickly locks/unlocks.'}</small>`;
+  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · Ctrl+G groups them · Ctrl+F finds a node.'}</small>`;
   document.body.appendChild(menu);
   const rect=menu.getBoundingClientRect();
   menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
@@ -838,22 +959,81 @@ function openNodeContext(id,x,y){
   if(del&&!del.disabled)del.onclick=()=>{checkpoint('delete reasoning node');updateState(s=>{s.nodes=s.nodes.filter(n=>n.id!==id);s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);if(s.activeNodeId===id)s.activeNodeId=null;});selectedNodeIds.delete(id);closeNodeContext();renderWorkspace();toast('Node deleted. Ctrl+Z restores it.');};
 }
 
-function quickNodeAction(id,event){
-  if(event?.shiftKey && selectedNodeIds.size>1){
-    const state=getState();
-    const selected=[...selectedNodeIds].map(nid=>state.nodes.find(n=>n.id===nid)).filter(Boolean);
-    const sameGroup=selected.length>1 && selected.every(n=>n.meta?.groupId && n.meta.groupId===selected[0].meta?.groupId);
-    checkpoint(sameGroup?'ungroup selected':'group selected');
-    updateState(s=>{
-      const ids=new Set(selectedNodeIds);
-      if(sameGroup){s.nodes.forEach(n=>{if(ids.has(n.id)){n.meta={...n.meta};delete n.meta.groupId;}});}
-      else {const gid=`group-${Date.now()}`;s.nodes.forEach(n=>{if(ids.has(n.id))n.meta={...n.meta,groupId:gid};});}
-    });
-    renderWorkspace();toast(sameGroup?'Nodes ungrouped.':'Nodes grouped — drag one to move the group.');
-    return;
-  }
-  toggleNodeLock(id);
+function toggleGroupSelected(forceUngroup=false){
+  const state=getState();
+  const ids=[...selectedNodeIds].filter(id=>state.nodes.some(n=>n.id===id));
+  if(ids.length<2){ toast('Shift-click at least two nodes before grouping.'); return; }
+  const selected=ids.map(id=>state.nodes.find(n=>n.id===id)).filter(Boolean);
+  const sharedGroup=selected[0]?.meta?.groupId && selected.every(n=>n.meta?.groupId===selected[0].meta.groupId);
+  const ungroup=forceUngroup||Boolean(sharedGroup);
+  checkpoint(ungroup?'ungroup selected':'group selected');
+  updateState(s=>{
+    const set=new Set(ids);
+    if(ungroup){
+      s.nodes.forEach(n=>{if(set.has(n.id)){n.meta={...n.meta};delete n.meta.groupId;}});
+    }else{
+      const gid=`group-${Date.now()}`;
+      s.nodes.forEach(n=>{if(set.has(n.id))n.meta={...n.meta,groupId:gid};});
+    }
+  });
+  renderWorkspace();
+  toast(ungroup?'Nodes ungrouped.':'Nodes grouped. Ctrl+Shift+G releases them.');
 }
+
+function openNodeSearch(){
+  document.getElementById('nodeSearchPopover')?.remove();
+  const scoped=scopedTrace(getState());
+  const panel=document.createElement('aside');
+  panel.id='nodeSearchPopover';
+  panel.className='node-search-popover';
+  panel.innerHTML=`<div class="node-search-head"><strong>Find reasoning</strong><button type="button" aria-label="Close">×</button></div><input class="field-input" id="nodeSearchInput" placeholder="Type a remembered word or phrase…"><div class="node-search-results" id="nodeSearchResults"></div>`;
+  document.body.appendChild(panel);
+  const input=panel.querySelector('#nodeSearchInput');
+  const results=panel.querySelector('#nodeSearchResults');
+  const draw=()=>{
+    const q=input.value.trim().toLowerCase();
+    const hits=(q?scoped.nodes.filter(n=>(n.label||'').toLowerCase().includes(q)):scoped.nodes).slice(0,10);
+    results.innerHTML=hits.length?hits.map(n=>`<button type="button" data-find-node="${escapeHtml(n.id)}"><span>${escapeHtml(typeLabels[n.type]||n.type)}</span><strong>${escapeHtml(n.label)}</strong></button>`).join(''):'<small>No matching reasoning in this trace.</small>';
+    results.querySelectorAll('[data-find-node]').forEach(b=>b.onclick=()=>{
+      const id=b.dataset.findNode;
+      panel.remove();
+      showView('workspace');
+      selectNode(id);
+      requestAnimationFrame(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${CSS.escape(id)}"]`),canvasZoom));
+    });
+  };
+  panel.querySelector('button').onclick=()=>panel.remove();
+  input.oninput=draw;
+  draw();
+  input.focus();
+}
+
+function openNodeStatusMenu(id,x,y){
+  document.getElementById('nodeStatusMenu')?.remove();
+  const node=getState().nodes.find(n=>n.id===id);
+  if(!node||node.type==='note'||node.status==='rejected')return;
+  const current=node.meta?.provisional?'provisional':'active';
+  const menu=document.createElement('div');
+  menu.id='nodeStatusMenu';
+  menu.className='node-status-menu';
+  menu.innerHTML=`<small>Working status</small><button type="button" data-status="active" class="${current==='active'?'selected':''}">Active<span>Retained in the working reasoning</span></button><button type="button" data-status="provisional" class="${current==='provisional'?'selected':''}">Provisional<span>Kept open for testing or revision</span></button>`;
+  document.body.appendChild(menu);
+  const rect=menu.getBoundingClientRect();
+  menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
+  menu.style.top=`${Math.max(8,Math.min(y,window.innerHeight-rect.height-8))}px`;
+  menu.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>{
+    const next=b.dataset.status;
+    checkpoint(`set ${next} status`);
+    updateState(s=>{
+      const n=s.nodes.find(n=>n.id===id);
+      if(n)n.meta={...n.meta,provisional:next==='provisional'};
+    });
+    menu.remove();
+    renderWorkspace();
+    toast(`Node marked ${next}.`);
+  });
+}
+
 function toggleNodeLock(id){
   const node=getState().nodes.find(n=>n.id===id);if(!node)return;
   const locked=Boolean(node.meta?.locked);

@@ -48,3 +48,13 @@
   .thought-actions { justify-content:flex-end; }
   .thought-reading small { display:none; }
 }
+
+@media (max-width:700px){
+  .brief-start-head { align-items:flex-start; flex-direction:column; }
+  .brief-mode-toggle { width:100%; }
+  .brief-mode-button { flex:1; }
+  .document-brief-tools { align-items:flex-start; flex-direction:column; }
+  .brief-chunk-nav { align-items:flex-start; flex-direction:column; }
+  .brief-chunk-actions { width:100%; }
+  .brief-chunk-actions select { flex:1; max-width:none; }
+}
