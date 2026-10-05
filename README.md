@@ -73,3 +73,11 @@ Following first-use testing, Round 1.1 keeps the established visual system while
 - case-study prompts are feature-led and link to credible project sources/image galleries.
 
 Manual graph wiring, convergence and node locking remain the core of Round 2 rather than being mixed into this stabilisation patch.
+
+## Round 1.2 — Network bridge / stabilisation
+- Primary navigation now opens Pathway Bank, My Trace and Discussion from the landing state; project-dependent views explain when a trace is required.
+- Trace Check temporarily halos open/unlinked nodes on the canvas.
+- Added Grasshopper-style input/output ports and manual wire creation with connection validation.
+- Click a connection and press Delete/Backspace to disconnect it; select a non-Input node and press Delete/Backspace to remove only that node while leaving downstream reasoning available for reconnection.
+- New-node halo is stronger but temporary; ordinary selection is quieter.
+- Added Hide types / Show types to reduce category-label clutter while keeping reasoning content visible.

@@ -12,6 +12,7 @@ import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
 import { renderGraph } from './graph/graph-renderer.js';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
+import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
@@ -29,7 +30,10 @@ let caseStudies = [];
 let saveTimer = null;
 let canvasZoom = 1;
 let showHotspotSuggestions = true;
+let showNodeTypes = true;
 let lastAddedNodeId = null;
+let selectedEdgeId = null;
+let traceIssueNodeIds = new Set();
 
 async function init(){
   cacheEls();
@@ -61,7 +65,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton')
   });
 }
 
@@ -78,6 +82,7 @@ function bindGlobalEvents(){
   $('#addPhraseButton').onclick=manualPhrase;
   els.toggleHotspotsButton.onclick=()=>{ showHotspotSuggestions=!showHotspotSuggestions; els.toggleHotspotsButton.textContent=showHotspotSuggestions?'Hide suggestions':'Show suggestions'; renderWorkspace(); };
   els.traceCheckButton.onclick=openTraceCheck;
+  els.toggleNodeTypesButton.onclick=()=>{ showNodeTypes=!showNodeTypes; els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide types':'Show types'; renderGraphState(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
@@ -91,6 +96,7 @@ function bindGlobalEvents(){
   els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
   els.addFreeThoughtButton.onclick=addFreeThought;
   els.addLooseNoteButton.onclick=addLooseNote;
+  document.addEventListener('keydown',handleDeleteShortcut);
 }
 
 async function startFromBrief(raw){
@@ -104,7 +110,7 @@ async function startFromBrief(raw){
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; traceIssueNodeIds.clear(); updateZoomLabel();
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
@@ -112,13 +118,21 @@ function enterApp(autoSelect=true){
   if(autoSelect && getState().hotspots.length) selectHotspot(getState().hotspots[0].id);
 }
 
-function showLanding(){ els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf(); }
+function showLanding(){
+  els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf();
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='workspace'));
+}
+
 
 function showView(view){
   const allowed=new Set(['workspace','pathways','trace','discussion']);
   if(!allowed.has(view)) view='workspace';
-  if(!getState().brief && view!=='workspace'){showLanding();return;}
+  const hasProject=Boolean(getState().brief);
 
+  if(view==='workspace' && !hasProject){ showLanding(); return; }
+
+  els.landing.classList.add('hidden');
+  els.app.classList.remove('hidden');
   patchState({view},{silent:true});
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
 
@@ -136,10 +150,11 @@ function showView(view){
   });
 
   if(view==='workspace') renderWorkspace();
-  else if(view==='pathways') renderPathwayCards($('#pathwaySearch')?.value||'');
-  else if(view==='trace') renderTraceDashboard(getState());
-  else if(view==='discussion') renderDiscussion();
+  else if(view==='pathways') hasProject?renderPathwayCards($('#pathwaySearch')?.value||''):renderPathwayBlank();
+  else if(view==='trace') hasProject?renderTraceDashboard(getState()):renderSavedTraceLibrary();
+  else if(view==='discussion') hasProject?renderDiscussion():renderDiscussionBlank();
 
+  const exportButton=$('#exportJsonButton'); if(exportButton) exportButton.disabled=!hasProject;
   window.scrollTo({top:0,behavior:'auto'});
 }
 
@@ -169,8 +184,14 @@ function renderGraphState(){
   const scoped=scopedTrace(state);
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:id=>selectNode(id),
+    onEdgeClick:id=>selectEdge(id),
+    onConnect:(source,target,result)=>connectNodes(source,target,result),
+    canConnect:(source,target,edges)=>connectionCheck(source,target,edges),
     onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
-    getScale:()=>canvasZoom
+    getScale:()=>canvasZoom,
+    selectedEdgeId,
+    issueNodeIds:[...traceIssueNodeIds],
+    showNodeTypes
   });
   applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
   if(els.graphViewport.dataset.needsInitialPosition==='1'){
@@ -237,7 +258,8 @@ function captureContext(text,prompt,inputNodeId){
     });
 }
 
-function selectNode(id){ patchState({activeNodeId:id},{silent:true}); renderWorkspace(); }
+function selectNode(id){ selectedEdgeId=null; patchState({activeNodeId:id},{silent:true}); renderWorkspace(); }
+function selectEdge(id){ selectedEdgeId=id; renderGraphState(); toast('Connection selected · press Delete to disconnect.'); }
 
 function nodeHandlers(){
   return {
@@ -344,7 +366,33 @@ function textOffsetWithin(root,node,offset){
   return total;
 }
 
+function renderPathwayBlank(){
+  const root=$('#pathwayGrid');
+  if(!root)return;
+  const search=$('#pathwaySearch'); if(search){search.value='';search.disabled=true;}
+  root.innerHTML='<div class="front-subview-note">Start or open a trace in Workspace first. Pathway Bank will then respond to the language and reasoning in that project rather than showing generic pathways.</div>';
+}
+
+function renderSavedTraceLibrary(){
+  const root=$('#traceDashboard'); if(!root)return;
+  const projects=listProjects();
+  if(!projects.length){ root.innerHTML='<div class="empty-state-card" style="grid-column:1/-1">No traces are saved in this browser yet. Start one in Workspace and it will appear here.</div>'; return; }
+  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
+  root.querySelectorAll('[data-open-library-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openLibraryProject));
+  root.querySelectorAll('[data-delete-library-project]').forEach(b=>b.onclick=()=>confirmDeleteSavedProject(b.dataset.deleteLibraryProject));
+}
+
+function renderDiscussionBlank(){
+  const list=$('#discussionList'),scope=$('#discussionScope'),text=$('#discussionText'),button=$('#addDiscussionButton'),preview=$('#discussionAnchorPreview');
+  if(list)list.innerHTML='<div class="empty-state-card" style="padding:28px">Open or start a trace first. Discussion belongs to a specific project, so nothing is shared or attached globally.</div>';
+  if(scope){scope.innerHTML='<option>Open a trace to attach a note</option>';scope.disabled=true;}
+  if(text){text.value='';text.disabled=true;text.placeholder='Open a trace first…';}
+  if(button)button.disabled=true;
+  if(preview){preview.classList.add('hidden');preview.innerHTML='';}
+}
+
 async function renderPathwayCards(query=''){
+  const search=$('#pathwaySearch'); if(search)search.disabled=false;
   const items=await searchPathways(query); const root=$('#pathwayGrid');
   root.innerHTML=items.length?items.map(pathCard).join(''):'<div class="empty-state-card">No starter pathways match that search.</div>';
   root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(items.find(p=>p.id===b.dataset.inspectPath)));
@@ -472,6 +520,7 @@ function confirmDeleteSavedProject(id){
 
 function renderDiscussion(){
   const state=getState(),list=$('#discussionList'),scope=$('#discussionScope'),preview=$('#discussionAnchorPreview');
+  const text=$('#discussionText'),button=$('#addDiscussionButton'); if(text){text.disabled=false;text.placeholder='Question, critique, rationale or note for another designer…';} if(button)button.disabled=false; if(scope)scope.disabled=false;
   if(!list||!scope)return;
 
   const active=state.nodes.find(n=>n.id===state.activeNodeId && n.type!=='input');
@@ -606,6 +655,56 @@ function convertNote(node,type){
   logEvent('Note classified',`${typeLabels[type]||type} · ${node.label}`); renderWorkspace(); toast(`Converted to ${typeLabels[type]||type}.`);
 }
 
+function connectNodes(source,target,result){
+  if(!source || !target){ toast('Drop the wire onto a node input.'); return; }
+  if(!result?.ok){ toast(result?.reason||'Those reasoning moves cannot be connected yet.'); return; }
+  let created=null;
+  updateState(s=>{
+    if(s.edges.some(e=>e.source===source.id&&e.target===target.id))return;
+    created=createEdge(source.id,target.id,{status:(source.meta?.provisional||target.meta?.provisional)?'provisional':'active'});
+    s.edges.push(created);
+    s.activeNodeId=target.id;
+  });
+  if(!created)return;
+  selectedEdgeId=null;
+  traceIssueNodeIds.clear();
+  logEvent('Reasoning connected',`${typeLabels[source.type]||source.type} → ${typeLabels[target.type]||target.type}`);
+  renderWorkspace();
+  toast('Reasoning moves connected.');
+}
+
+function handleDeleteShortcut(e){
+  if(!['Delete','Backspace'].includes(e.key))return;
+  const target=e.target;
+  if(target && (target.matches?.('input,textarea,select,[contenteditable="true"]') || target.closest?.('.modal')))return;
+  if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
+
+  if(selectedEdgeId){
+    const edge=getState().edges.find(x=>x.id===selectedEdgeId);
+    if(!edge)return;
+    e.preventDefault();
+    updateState(s=>{s.edges=s.edges.filter(x=>x.id!==selectedEdgeId);});
+    selectedEdgeId=null;traceIssueNodeIds.clear();
+    logEvent('Connection removed','A reasoning connection was disconnected manually.');
+    renderWorkspace();toast('Connection removed.');return;
+  }
+
+  const id=getState().activeNodeId;
+  if(!id)return;
+  const node=getState().nodes.find(n=>n.id===id);
+  if(!node)return;
+  e.preventDefault();
+  if(node.type==='input'){ toast('Source/Input nodes stay tied to the selected brief language. Delete or change the hotspot instead.'); return; }
+  updateState(s=>{
+    s.nodes=s.nodes.filter(n=>n.id!==id);
+    s.edges=s.edges.filter(edge=>edge.source!==id&&edge.target!==id);
+    s.activeNodeId=null;
+  });
+  traceIssueNodeIds.delete(id);
+  logEvent('Reasoning node deleted',node.label||typeLabels[node.type]||node.type);
+  renderWorkspace();toast('Node deleted. Downstream reasoning remains available to reconnect.');
+}
+
 function inspectCaseStudy(id){
   const c=caseStudies.find(x=>x.id===id); if(!c)return;
   openModal(`<h2 id="modalTitle">${escapeHtml(c.name)}</h2><p>${escapeHtml(c.designer)} · ${escapeHtml(String(c.year))}${c.feature?` · ${escapeHtml(c.feature)}`:''}</p>
@@ -653,6 +752,15 @@ function updateTraceCheck(){
 
 function openTraceCheck(){
   const issues=traceIssues();
+  traceIssueNodeIds=new Set(issues.map(i=>i.node.id));
+  if(!$('#workspaceView')?.classList.contains('hidden')) renderGraphState();
+  if(issues.length){
+    setTimeout(()=>{
+      if(!traceIssueNodeIds.size)return;
+      traceIssueNodeIds.clear();
+      if(!$('#workspaceView')?.classList.contains('hidden') && getState().nodes.length) renderGraphState();
+    },6500);
+  }
   const body=issues.length
     ? `<div class="trace-issue-list">${issues.map(i=>`<button class="trace-issue" data-trace-issue="${escapeHtml(i.node.id)}"><span>${escapeHtml(typeLabels[i.node.type]||i.node.type)}</span><strong>${escapeHtml(i.node.label)}</strong><small>${escapeHtml(i.message)}</small></button>`).join('')}</div>`
     : `<div class="trace-clear"><strong>No obvious loose ends in this selected trace.</strong><p>TRACEWORK is only checking continuity here, not whether the reasoning is correct.</p></div>`;

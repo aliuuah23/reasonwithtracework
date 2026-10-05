@@ -41,3 +41,24 @@
   0%,28% { box-shadow:0 0 0 7px rgba(91,91,214,.18),0 12px 28px rgba(34,40,61,.14); border-color:var(--accent); }
   100% { box-shadow:0 5px 18px rgba(34,40,61,.06); }
 }
+
+/* Round 1.2 · network bridge: connection ports, edge selection, trace-check halos */
+.graph-node.selected { box-shadow:0 8px 22px rgba(34,40,61,.10); border-color:color-mix(in srgb,var(--node-color) 58%,var(--border)); }
+.graph-node.just-added { animation:newNodeHalo 1.25s ease-out; }
+@keyframes newNodeHalo {
+  0%,35% { box-shadow:0 0 0 10px rgba(91,91,214,.25),0 14px 32px rgba(34,40,61,.18); border-color:var(--accent); }
+  100% { box-shadow:0 8px 22px rgba(34,40,61,.10); }
+}
+.graph-node.trace-open { box-shadow:0 0 0 7px rgba(218,153,54,.22),0 12px 28px rgba(34,40,61,.12); border-color:#d79a3e; }
+.node-port { position:absolute; z-index:8; top:50%; width:13px; height:13px; margin-top:-7px; border-radius:50%; border:2px solid var(--surface); background:var(--node-color); box-shadow:0 0 0 1px color-mix(in srgb,var(--node-color) 44%,var(--border)); cursor:crosshair; padding:0; opacity:.72; transition:.13s ease; }
+.node-port:hover { opacity:1; transform:scale(1.15); box-shadow:0 0 0 4px color-mix(in srgb,var(--node-color) 18%,transparent); }
+.port-in { left:-7px; }
+.port-out { right:-7px; }
+.graph-nodes.connecting .port-in { opacity:.95; }
+.graph-nodes.connecting .port-in.compatible { box-shadow:0 0 0 5px rgba(76,166,112,.20); }
+.graph-nodes.connecting .port-in.incompatible { opacity:.22; cursor:not-allowed; }
+.trace-edge { pointer-events:stroke; cursor:pointer; }
+.trace-edge.selected { stroke:var(--accent-dark); stroke-width:4; filter:drop-shadow(0 0 3px rgba(91,91,214,.28)); }
+.trace-edge.draft-connection { stroke:var(--accent); stroke-width:2.4; stroke-dasharray:5 4; pointer-events:none; }
+.graph-surface.hide-node-types .node-type { display:none; }
+.graph-surface.hide-node-types .node-label { margin-top:1px; }

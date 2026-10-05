@@ -45,7 +45,7 @@ export function bindCanvasPan(viewport){
   let drag=null;
   viewport.addEventListener('pointerdown',e=>{
     if(e.button!==0) return;
-    if(e.target.closest('.graph-node,button,input,textarea,select,a')) return;
+    if(e.target.closest('.graph-node,.trace-edge,.node-port,button,input,textarea,select,a')) return;
     drag={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,scrollLeft:viewport.scrollLeft,scrollTop:viewport.scrollTop,moved:false};
     viewport.setPointerCapture(e.pointerId);
     viewport.classList.add('pan-ready');

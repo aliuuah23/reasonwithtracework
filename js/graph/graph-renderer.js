@@ -5,10 +5,14 @@ import { nodeGuidance } from '../core/node-guidance.js';
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
 
-export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMove,getScale=()=>1}){
+export function renderGraph({nodes,edges,activeNodeId},els,{
+  onNodeClick,onNodeMove,onEdgeClick,onConnect,canConnect,getScale=()=>1,
+  selectedEdgeId=null,issueNodeIds=[],showNodeTypes=true
+}){
   const world=autoLayout(nodes);
   const laid=world.map(n=>({...n,x:(Number(n.x)||0)+CANVAS_ORIGIN_X,y:(Number(n.y)||0)+CANVAS_ORIGIN_Y}));
   const positions=new Map(laid.map(n=>[n.id,{...n}]));
+  const nodesById=new Map(laid.map(n=>[n.id,n]));
   const size=surfaceSize(laid);
   const minX=Math.min(...laid.map(n=>n.x),CANVAS_ORIGIN_X);
   const minY=Math.min(...laid.map(n=>n.y),CANVAS_ORIGIN_Y);
@@ -25,9 +29,11 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
   els.surface.dataset.contentMinY=String(minY);
   els.surface.dataset.contentMaxX=String(maxX);
   els.surface.dataset.contentMaxY=String(maxY);
+  els.surface.classList.toggle('hide-node-types',!showNodeTypes);
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
-  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges)).join('');
-  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId)).join('');
+  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId)).join('');
+  const issueSet=new Set(issueNodeIds||[]);
+  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId,issueSet.has(n.id))).join('');
 
   const redrawEdges=()=>{
     els.svg.querySelectorAll('.trace-edge').forEach(path=>{
@@ -38,8 +44,13 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
     });
   };
 
+  els.svg.querySelectorAll('.trace-edge').forEach(path=>{
+    path.addEventListener('click',e=>{e.stopPropagation();onEdgeClick?.(path.dataset.edgeId);});
+  });
+
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
-    el.addEventListener('click',()=>{
+    el.addEventListener('click',e=>{
+      if(e.target.closest('.node-port'))return;
       if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id);
     });
 
@@ -54,30 +65,35 @@ export function renderGraph({nodes,edges,activeNodeId},els,{onNodeClick,onNodeMo
       getScale
     });
   });
+
+  bindConnectionPorts({surface:els.surface,svg:els.svg,nodesRoot:els.nodes,positions,nodesById,edges,onConnect,canConnect,getScale});
 }
 
-function nodeMarkup(n,selected){
+function nodeMarkup(n,selected,issue){
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
   const help=nodeGuidance[n.type]?.use||'';
-  return `<article class="graph-node ${selected?'selected':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" style="left:${n.x}px;top:${n.y}px">
-    <div class="node-accent"></div><div class="node-body">
+  const ports=n.type==='note'?'':`${n.type!=='input'?'<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Connect into this node"></button>':''}${n.type!=='goal'?'<button class="node-port port-out" type="button" aria-label="Connect from this node" title="Connect from this node"></button>':''}`;
+  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" style="left:${n.x}px;top:${n.y}px">
+    ${ports}<div class="node-accent"></div><div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       <div class="node-foot"><span>${escapeHtml(meta)}</span><span class="node-branch">${n.type==='note'?'Unclassified':shortBranch(n.branchId)}</span></div>
     </div></article>`;
 }
 
-function edgeMarkup(e,pos,activeNodeId,edges){
+function edgeMarkup(e,pos,activeNodeId,edges,selectedEdgeId){
   const d=edgePath(e,pos);
   if(!d) return '';
   const active=isOnActivePath(e,activeNodeId,edges);
-  return `<path data-edge-id="${e.id}" class="trace-edge ${active?'active':''} ${e.status==='provisional'?'provisional':''} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
+  return `<path data-edge-id="${e.id}" class="trace-edge ${active?'active':''} ${e.id===selectedEdgeId?'selected':''} ${e.status==='provisional'?'provisional':''} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
 }
 
 function edgePath(e,pos){
   const a=pos.get(e.source), b=pos.get(e.target);
   if(!a||!b) return '';
-  const x1=a.x+230,y1=a.y+46,x2=b.x,y2=b.y+46;
+  return curvePath(a.x+230,a.y+46,b.x,b.y+46);
+}
+function curvePath(x1,y1,x2,y2){
   const distance=Math.abs(x2-x1);
   const dx=Math.max(50,distance*.45);
   const direction=x2>=x1?1:-1;
@@ -87,11 +103,13 @@ function edgePath(e,pos){
 function isOnActivePath(edge,activeNodeId,edges){
   let current=activeNodeId;
   const path=new Set();
-  while(current){
-    const e=edges.find(x=>x.target===current);
-    if(!e) break;
-    path.add(e.id);
-    current=e.source;
+  const visited=new Set();
+  while(current&&!visited.has(current)){
+    visited.add(current);
+    const incoming=edges.filter(x=>x.target===current);
+    if(!incoming.length)break;
+    incoming.forEach(e=>path.add(e.id));
+    current=incoming[0].source;
   }
   return path.has(edge.id);
 }
@@ -100,7 +118,7 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale}){
   let start=null,origin=null,moved=false;
 
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0)return;
+    if(e.button!==0||e.target.closest('.node-port'))return;
     e.stopPropagation();
     start={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
     origin={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};
@@ -140,5 +158,54 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale}){
   el.addEventListener('pointercancel',finish);
 }
 
-function shortBranch(id){ return id==='branch-1'?'Path 1':`Path ${id.slice(-3).toUpperCase()}`; }
-function escapeHtml(t=''){ return t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,onConnect,canConnect,getScale}){
+  const outputs=nodesRoot.querySelectorAll('.port-out');
+  outputs.forEach(port=>{
+    port.addEventListener('pointerdown',e=>{
+      if(e.button!==0)return;
+      e.preventDefault();e.stopPropagation();
+      const sourceEl=port.closest('.graph-node');
+      const sourceId=sourceEl?.dataset.id;
+      const source=nodesById.get(sourceId);
+      if(!source)return;
+      const start=positions.get(sourceId);
+      const temp=document.createElementNS('http://www.w3.org/2000/svg','path');
+      temp.setAttribute('class','trace-edge draft-connection');
+      svg.appendChild(temp);
+      nodesRoot.classList.add('connecting');
+      nodesRoot.querySelectorAll('.port-in').forEach(targetPort=>{
+        const targetId=targetPort.closest('.graph-node')?.dataset.id;
+        const target=nodesById.get(targetId);
+        const result=canConnect?.(source,target,edges) ?? {ok:true};
+        targetPort.classList.add(result.ok?'compatible':'incompatible');
+      });
+
+      const pointFromEvent=evt=>{
+        const rect=surface.getBoundingClientRect();
+        const scale=Math.max(.01,Number(getScale?.()||1));
+        return {x:(evt.clientX-rect.left)/scale,y:(evt.clientY-rect.top)/scale};
+      };
+      const move=evt=>{
+        const p=pointFromEvent(evt);
+        temp.setAttribute('d',curvePath(start.x+230,start.y+46,p.x,p.y));
+      };
+      const finish=evt=>{
+        window.removeEventListener('pointermove',move,true);
+        window.removeEventListener('pointerup',finish,true);
+        temp.remove();nodesRoot.classList.remove('connecting');
+        nodesRoot.querySelectorAll('.port-in').forEach(p=>p.classList.remove('compatible','incompatible'));
+        const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.port-in');
+        const targetId=hit?.closest('.graph-node')?.dataset.id;
+        const target=nodesById.get(targetId);
+        const result=canConnect?.(source,target,edges) ?? {ok:Boolean(target)};
+        onConnect?.(source,target,result);
+      };
+      window.addEventListener('pointermove',move,true);
+      window.addEventListener('pointerup',finish,true);
+      move(e);
+    });
+  });
+}
+
+function shortBranch(id){ return id==='branch-1'?'Path 1':`Path ${String(id||'').slice(-3).toUpperCase()}`; }
+function escapeHtml(t=''){ return String(t).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
