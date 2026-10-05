@@ -320,3 +320,26 @@
 .aggregate-action { border:0; background:transparent; color:var(--muted-2); border-radius:999px; padding:5px 7px; font-size:9px; font-weight:750; cursor:pointer; }
 .aggregate-action:hover { background:var(--surface-soft); color:var(--text); }
 
+
+/* Tutorial system */
+.brief-start-controls,.tutorial-kicker-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brief-start-controls{justify-content:flex-end}
+.tutorial-link{appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.78);color:var(--muted);border-radius:999px;padding:6px 10px;font:inherit;font-size:10px;font-weight:700;letter-spacing:.02em;cursor:pointer;white-space:nowrap;transition:border-color .16s ease,color .16s ease,background .16s ease,transform .16s ease}
+.tutorial-link:hover{border-color:rgba(96,86,218,.36);color:var(--accent);background:#fff;transform:translateY(-1px)}
+.tutorial-shell{min-height:330px}
+.tutorial-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.tutorial-eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--accent)}
+.tutorial-close{border:0;background:transparent;color:var(--muted);font-size:25px;line-height:1;cursor:pointer;padding:0 2px}
+.tutorial-shell>h2{max-width:440px}
+.tutorial-progress{display:flex;gap:6px;margin:18px 0 22px}
+.tutorial-progress-dot{width:26px;height:3px;border-radius:99px;background:var(--border);transition:background .16s ease,transform .16s ease}
+.tutorial-progress-dot.done{background:rgba(96,86,218,.28)}
+.tutorial-progress-dot.active{background:var(--accent);transform:scaleY(1.25)}
+.tutorial-step{min-height:155px;padding:18px;border:1px solid var(--border);background:var(--surface-soft,#f7f8fb);border-radius:14px}
+.tutorial-step-number{display:inline-block;margin-bottom:10px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.08em}
+.tutorial-step h3{margin:0 0 8px;font-size:17px;letter-spacing:-.02em}
+.tutorial-step p{margin:0;color:var(--muted);font-size:13px;line-height:1.65}
+.tutorial-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}
+.tutorial-nav-actions{display:flex;gap:8px}
+.tutorial-revisit-note{margin:12px 0 0!important;font-size:10px!important;color:var(--muted)!important;text-align:right}
+@media(max-width:720px){.brief-start-controls{width:100%;justify-content:space-between}.tutorial-actions{align-items:flex-end}.tutorial-revisit-note{text-align:left}.tutorial-step{min-height:180px}}

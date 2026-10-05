@@ -44,9 +44,12 @@
       <div class="start-card">
         <div class="brief-start-head">
           <label for="landingBrief">Start with a real design brief</label>
-          <div class="brief-mode-toggle" aria-label="Brief input mode">
-            <button type="button" class="brief-mode-button active" data-brief-mode="quick">Quick brief</button>
-            <button type="button" class="brief-mode-button" data-brief-mode="document">Long brief / document</button>
+          <div class="brief-start-controls">
+            <button type="button" class="tutorial-link" data-tutorial="landing">? Tutorial</button>
+            <div class="brief-mode-toggle" aria-label="Brief input mode">
+              <button type="button" class="brief-mode-button active" data-brief-mode="quick">Quick brief</button>
+              <button type="button" class="brief-mode-button" data-brief-mode="document">Long brief / document</button>
+            </div>
           </div>
         </div>
         <div class="project-name-field">
@@ -139,7 +142,7 @@
         <section class="canvas-panel panel">
           <div class="canvas-toolbar">
             <div>
-              <span class="panel-kicker">02 · Reasoning field</span>
+              <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" data-tutorial="workspace">? Tutorial</button></div>
               <div class="canvas-title-row">
                 <h2 id="canvasTitle">Your trace</h2>
                 <span class="branch-count" id="branchCount">1 path</span>
@@ -224,7 +227,7 @@
       <section class="subview hidden" id="pathwaysView">
         <div class="subview-head">
           <div>
-            <span class="panel-kicker">Pathway Bank</span>
+            <div class="tutorial-kicker-row"><span class="panel-kicker">Pathway Bank</span><button type="button" class="tutorial-link" data-tutorial="pathways">? Tutorial</button></div>
             <h2>See how similar language can travel differently.</h2>
             <p>Browse prior reasoning pathways to see how similar design language has been interpreted, grounded and translated spatially. Use them as prompts and precedents — never prescribed answers.</p>
           </div>
@@ -239,7 +242,7 @@
       <section class="subview hidden" id="traceView">
         <div class="subview-head">
           <div>
-            <span class="panel-kicker">My Trace</span>
+            <div class="tutorial-kicker-row"><span class="panel-kicker">My Trace</span><button type="button" class="tutorial-link" data-tutorial="trace">? Tutorial</button></div>
             <h2>Your project's reasoning memory.</h2>
             <p>Chosen, alternative, unresolved and rejected paths stay visible so the design can be discussed later.</p>
           </div>
@@ -254,7 +257,7 @@
       <section class="subview hidden" id="discussionView">
         <div class="subview-head">
           <div>
-            <span class="panel-kicker">Discussion</span>
+            <div class="tutorial-kicker-row"><span class="panel-kicker">Discussion</span><button type="button" class="tutorial-link" data-tutorial="discussion">? Tutorial</button></div>
             <h2>Make the reasoning discussable.</h2>
             <p>Leave notes on the project or anchor a comment to the currently selected reasoning move. For this prototype, discussion is saved locally; later, accounts can keep projects private or share them inside invited studios and classrooms.</p>
           </div>

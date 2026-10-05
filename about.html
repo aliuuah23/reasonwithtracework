@@ -19,7 +19,7 @@
   </header>
   <main class="about-page">
     <section class="about-hero">
-      <span class="product-kicker">About TRACEWORK</span>
+      <div class="tutorial-kicker-row"><span class="product-kicker">About TRACEWORK</span><button type="button" class="tutorial-link" data-tutorial="about">? Tutorial</button></div>
       <h1>Make the interval between words and design decisions discussable.</h1>
       <p>TRACEWORK is a design-reasoning prototype for architects and designers. It does not decide what a design term means. It helps a designer externalise an interpretation, trace what grounds it, and see the spatial consequences that follow.</p>
     </section>
@@ -37,12 +37,18 @@
       <div id="referenceList" class="reference-list"></div>
     </section>
   </main>
+  <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+  </div>
   <script type="module">
     import { loadReferences } from './js/evidence/references.js';
+    import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './js/ui/tutorials.js';
     const el = document.getElementById('referenceList');
     loadReferences().then(items => {
       el.innerHTML = items.map(r => `<article><strong>${r.author}</strong><span>${r.title}</span><p>${r.relevance}</p></article>`).join('');
     });
+    bindTutorialTriggers();
+    maybeOpenFirstVisitTutorial('about');
   </script>
 </body>
 </html>

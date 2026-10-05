@@ -25,6 +25,7 @@ import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } fro
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -63,6 +64,7 @@ async function init(){
   pilotEvidence = await loadPilotEvidence();
   renderLegend(ontology);
   bindGlobalEvents();
+  bindTutorialTriggers();
   updateUndoButton();
   bindCanvasPan(els.graphViewport);
   bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo});
@@ -86,6 +88,7 @@ async function init(){
     clearTimeout(saveTimer);
     saveTimer=setTimeout(()=>{ saveProject(state); setSaveStatus('Saved locally',false); renderProjectShelf(); },220);
   });
+  maybeOpenFirstVisitTutorial('welcome');
 }
 
 function cacheEls(){
