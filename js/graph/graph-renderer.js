@@ -4,15 +4,17 @@ import { nodeGuidance } from '../core/node-guidance.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
+const TYPE_ORDER=['input','interpretation','grounding','consequence','evaluation','goal'];
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeMove,onNodeContext,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
-  selectedEdgeId=null,issueNodeIds=[],showNodeTypes=true
+  onNodeClick,onNodeMove,onNodeContext,onNodeQuickLock,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true
 }){
   const world=autoLayout(nodes);
   const laid=world.map(n=>({...n,x:(Number(n.x)||0)+CANVAS_ORIGIN_X,y:(Number(n.y)||0)+CANVAS_ORIGIN_Y}));
   const positions=new Map(laid.map(n=>[n.id,{...n}]));
   const nodesById=new Map(laid.map(n=>[n.id,n]));
+  const selectedSet=new Set(selectedNodeIds||[]);
   const size=surfaceSize(laid);
   const minX=Math.min(...laid.map(n=>n.x),CANVAS_ORIGIN_X);
   const minY=Math.min(...laid.map(n=>n.y),CANVAS_ORIGIN_Y);
@@ -30,10 +32,11 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.surface.dataset.contentMaxX=String(maxX);
   els.surface.dataset.contentMaxY=String(maxY);
   els.surface.classList.toggle('hide-node-types',!showNodeTypes);
+  els.surface.classList.toggle('hide-wire-signals',!showWireSignals);
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   const issueSet=new Set(issueNodeIds||[]);
-  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,n.id===activeNodeId,issueSet.has(n.id))).join('');
-  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId)).join('');
+  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id))).join('');
+  els.svg.innerHTML=edges.map(e=>edgeMarkup(e,positions,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals)).join('');
 
   const nodeAnchor=(id,side='out')=>{
     const el=els.nodes.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
@@ -41,10 +44,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
       const n=positions.get(id); if(!n)return null;
       return {x:n.x+(side==='out'?230:0),y:n.y+46};
     }
-    return {
-      x:el.offsetLeft+(side==='out'?el.offsetWidth:0),
-      y:el.offsetTop+el.offsetHeight/2
-    };
+    return {x:el.offsetLeft+(side==='out'?el.offsetWidth:0),y:el.offsetTop+el.offsetHeight/2};
   };
 
   const pathForEdge=edge=>{
@@ -72,19 +72,42 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
     });
   });
 
+  const groupIdsFor=(id)=>{
+    const node=nodesById.get(id);
+    if(!node)return [id];
+    const groupId=node.meta?.groupId;
+    if(groupId){
+      const ids=laid.filter(n=>n.meta?.groupId===groupId && !n.meta?.locked).map(n=>n.id);
+      return ids.length?ids:[id];
+    }
+    if(selectedSet.has(id) && selectedSet.size>1){
+      const ids=[...selectedSet].filter(x=>nodesById.has(x) && !nodesById.get(x)?.meta?.locked);
+      return ids.length?ids:[id];
+    }
+    return [id];
+  };
+
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
     el.addEventListener('click',e=>{
       if(e.target.closest('.node-port'))return;
-      if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id);
+      if(!el.classList.contains('dragging')) onNodeClick?.(el.dataset.id,e);
     });
     el.addEventListener('contextmenu',e=>{
       e.preventDefault();e.stopPropagation();
       onNodeContext?.(el.dataset.id,e);
     });
+    el.addEventListener('auxclick',e=>{
+      if(e.button!==1||e.target.closest('.node-port'))return;
+      e.preventDefault();e.stopPropagation();
+      onNodeQuickLock?.(el.dataset.id,e);
+    });
 
     bindDrag(el,{
       bounds:size,
       locked:el.dataset.locked==='true',
+      getDragIds:()=>groupIdsFor(el.dataset.id),
+      nodesRoot:els.nodes,
+      positions,
       onLiveMove:(id,x,y)=>{
         const pos=positions.get(id);
         if(pos){pos.x=x;pos.y=y;}
@@ -100,22 +123,42 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
 function nodeMarkup(n,selected,issue){
   const locked=Boolean(n.meta?.locked);
+  const grouped=Boolean(n.meta?.groupId);
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
+  const statusHelp=n.type==='note'
+    ? 'Loose note = intentionally uncategorised. Convert it only when its reasoning role becomes clear.'
+    : n.status==='rejected'
+      ? 'Rejected = retained as reasoning history, but no longer treated as an active route.'
+      : n.meta?.provisional
+        ? 'Provisional = an alternative, imported or forked move that has not yet been treated as the main route.'
+        : 'Active = currently retained as part of the working reasoning network.';
   const help=nodeGuidance[n.type]?.use||'';
   const ports=n.type==='note'?'':`${n.type!=='input'?'<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drop a connection here"></button>':''}${n.type!=='goal'?'<button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect another reasoning move"></button>':''}`;
-  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
-    ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}<div class="node-body">
+  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
+    ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
-      <div class="node-foot"><span>${escapeHtml(meta)}</span><span class="node-branch">${n.type==='note'?'Unclassified':shortBranch(n.branchId)}</span></div>
+      <div class="node-foot"><span class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}</span></div>
     </div></article>`;
 }
 
-function edgeMarkup(e,pos,activeNodeId,edges,selectedEdgeId){
+function edgeMarkup(e,pos,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals){
   const d=edgePath(e,pos);
   if(!d)return '';
   const active=isOnActivePath(e,activeNodeId,edges);
-  return `<path data-edge-id="${e.id}" class="trace-edge-hit" d="${d}"/><path data-edge-id="${e.id}" class="trace-edge ${active?'active':''} ${e.id===selectedEdgeId?'selected':''} ${e.status==='provisional'?'provisional':''} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
+  const muted=Boolean(selectedEdgeId && e.id!==selectedEdgeId);
+  const signal=wireSignal(e,nodesById);
+  const signalClass=showWireSignals && signal==='exploratory'?'exploratory':'';
+  return `<path data-edge-id="${e.id}" class="trace-edge-hit" d="${d}"/><path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${e.id===selectedEdgeId?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" d="${d}"/>`;
+}
+
+function wireSignal(edge,nodesById){
+  const a=nodesById.get(edge.source),b=nodesById.get(edge.target);
+  if(!a||!b)return 'direct';
+  const ai=TYPE_ORDER.indexOf(a.type),bi=TYPE_ORDER.indexOf(b.type);
+  if(edge.status==='provisional')return 'exploratory';
+  if(ai<0||bi<0)return 'direct';
+  return bi-ai===1?'direct':'exploratory';
 }
 
 function edgePath(e,pos){
@@ -144,15 +187,21 @@ function isOnActivePath(edge,activeNodeId,edges){
   return path.has(edge.id);
 }
 
-function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false}){
-  let start=null,origin=null,moved=false;
+function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
+  let start=null,origins=null,moved=false,dragIds=[];
 
   el.addEventListener('pointerdown',e=>{
     if(e.button!==0||e.target.closest('.node-port'))return;
     if(locked)return;
     e.stopPropagation();
+    dragIds=getDragIds?.()||[el.dataset.id];
+    origins=new Map();
+    dragIds.forEach(id=>{
+      const target=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
+      if(target)origins.set(id,{el:target,x:parseFloat(target.style.left),y:parseFloat(target.style.top)});
+    });
+    if(!origins.size)return;
     start={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
-    origin={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};
     moved=false;
     el.setPointerCapture(e.pointerId);
   });
@@ -160,23 +209,36 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false}){
   el.addEventListener('pointermove',e=>{
     if(!start||e.pointerId!==start.pointerId)return;
     const scale=Math.max(.01,Number(getScale?.()||1));
-    const dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
-    if(Math.abs(dx)+Math.abs(dy)<=4&&!moved)return;
+    let dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
+    if(Math.abs(dx)+Math.abs(dy)<=2&&!moved)return;
     moved=true;
-    el.classList.add('dragging');
-    const maxX=Math.max(20,bounds.width-250);
-    const maxY=Math.max(20,bounds.height-112);
-    const x=Math.min(maxX,Math.max(20,origin.x+dx));
-    const y=Math.min(maxY,Math.max(20,origin.y+dy));
-    el.style.left=`${x}px`;el.style.top=`${y}px`;
-    onLiveMove?.(el.dataset.id,x,y);
+    origins.forEach(({el:target})=>target.classList.add('dragging'));
+    const maxX=Math.max(20,bounds.width-250),maxY=Math.max(20,bounds.height-112);
+    const minOriginX=Math.min(...[...origins.values()].map(o=>o.x));
+    const minOriginY=Math.min(...[...origins.values()].map(o=>o.y));
+    const maxOriginX=Math.max(...[...origins.values()].map(o=>o.x));
+    const maxOriginY=Math.max(...[...origins.values()].map(o=>o.y));
+    dx=Math.min(maxX-maxOriginX,Math.max(20-minOriginX,dx));
+    dy=Math.min(maxY-maxOriginY,Math.max(20-minOriginY,dy));
+    origins.forEach((o,id)=>{
+      const x=o.x+dx,y=o.y+dy;
+      o.el.style.left=`${x}px`;o.el.style.top=`${y}px`;
+      const pos=positions.get(id); if(pos){pos.x=x;pos.y=y;}
+      onLiveMove?.(id,x,y);
+    });
   });
 
   const finish=e=>{
     if(!start||e.pointerId!==start.pointerId)return;
-    if(moved){const x=parseFloat(el.style.left),y=parseFloat(el.style.top);onMove?.(el.dataset.id,x,y);}
+    if(moved){
+      origins.forEach((o,id)=>{
+        const x=parseFloat(o.el.style.left),y=parseFloat(o.el.style.top);
+        onMove?.(id,x,y);
+      });
+    }
     try{el.releasePointerCapture(e.pointerId);}catch{}
-    start=null;setTimeout(()=>el.classList.remove('dragging'),0);
+    start=null;
+    setTimeout(()=>origins?.forEach(({el:target})=>target.classList.remove('dragging')),0);
   };
   el.addEventListener('pointerup',finish);
   el.addEventListener('pointercancel',finish);
@@ -230,6 +292,5 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
   });
 }
 
-function shortBranch(id){return id==='branch-1'?'Path 1':`Path ${String(id||'').slice(-3).toUpperCase()}`;}
 function escapeHtml(t=''){return String(t).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));}
 function cssEscape(value=''){return globalThis.CSS?.escape?CSS.escape(String(value)):String(value).replace(/[^a-zA-Z0-9_-]/g,'\\$&');}

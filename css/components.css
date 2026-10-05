@@ -217,3 +217,8 @@
 .trace-check-popover-item strong { display:block; margin-top:3px; font-size:10px; line-height:1.35; }
 .trace-check-popover-item small { display:block; margin-top:3px; color:var(--muted); font-size:9px; line-height:1.4; }
 .canvas-title-row .trace-check-button + .trace-check-button { margin-left:3px; }
+
+/* Round 2A · richer node context actions */
+.node-context-divider { height:1px; background:var(--border); margin:3px 4px; }
+.node-context-menu .node-context-wire { color:var(--muted); font-size:10px; }
+.node-context-menu .node-context-wire:hover { color:var(--text); }

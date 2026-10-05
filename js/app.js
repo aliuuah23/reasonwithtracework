@@ -31,8 +31,10 @@ let saveTimer = null;
 let canvasZoom = 1;
 let showHotspotSuggestions = true;
 let showNodeTypes = true;
+let showWireSignals = true;
 let lastAddedNodeId = null;
 let selectedEdgeId = null;
+let selectedNodeIds = new Set();
 let traceIssueNodeIds = new Set();
 const undoStack = [];
 const MAX_UNDO = 30;
@@ -68,7 +70,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),briefEditor:$('#briefEditor'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),undoButton:$('#undoButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton')
   });
 }
 
@@ -86,6 +88,7 @@ function bindGlobalEvents(){
   els.toggleHotspotsButton.onclick=()=>{ showHotspotSuggestions=!showHotspotSuggestions; els.toggleHotspotsButton.textContent=showHotspotSuggestions?'Hide suggestions':'Show suggestions'; renderWorkspace(); };
   els.traceCheckButton.onclick=openTraceCheck;
   els.toggleNodeTypesButton.onclick=()=>{ showNodeTypes=!showNodeTypes; els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide node types':'Show node types'; renderGraphState(); };
+  if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderGraphState(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
@@ -102,6 +105,11 @@ function bindGlobalEvents(){
   if(els.undoButton) els.undoButton.onclick=undoLast;
   document.addEventListener('keydown',handleWorkspaceKeydown);
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); });
+  els.graphViewport.addEventListener('click',e=>{
+    if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
+    clearNewNodeHalo(); selectedEdgeId=null; selectedNodeIds.clear();
+    patchState({activeNodeId:null},{silent:true}); renderWorkspace();
+  });
 }
 
 async function startFromBrief(raw){
@@ -115,7 +123,7 @@ async function startFromBrief(raw){
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; selectedEdgeId=null; traceIssueNodeIds.clear(); undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); undoStack.length=0; updateUndoButton(); updateZoomLabel();
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   showView('workspace');
@@ -189,17 +197,20 @@ function renderGraphState(){
   const state=getState();
   const scoped=scopedTrace(state);
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
-    onNodeClick:id=>selectNode(id),
+    onNodeClick:(id,e)=>selectNode(id,e),
     onEdgeClick:id=>selectEdge(id),
     onEdgeQuickDisconnect:id=>disconnectEdge(id),
     onNodeContext:(id,e)=>openNodeContext(id,e.clientX,e.clientY),
+    onNodeQuickLock:(id,e)=>quickNodeAction(id,e),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges),
     onNodeMove:(id,x,y)=>updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n){n.x=x;n.y=y;}}),
     getScale:()=>canvasZoom,
     selectedEdgeId,
+    selectedNodeIds:[...selectedNodeIds],
     issueNodeIds:[...traceIssueNodeIds],
-    showNodeTypes
+    showNodeTypes,
+    showWireSignals
   });
   applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
   if(els.graphViewport.dataset.needsInitialPosition==='1'){
@@ -266,8 +277,19 @@ function captureContext(text,prompt,inputNodeId){
     });
 }
 
-function selectNode(id){ clearNewNodeHalo(); selectedEdgeId=null; patchState({activeNodeId:id},{silent:true}); renderWorkspace(); }
-function selectEdge(id){ clearNewNodeHalo(); selectedEdgeId=id; renderGraphState(); toast('Connection selected · press Delete/Backspace, or Shift-click the wire, to disconnect.'); }
+function selectNode(id,event){
+  clearNewNodeHalo(); selectedEdgeId=null;
+  if(event?.shiftKey){
+    if(selectedNodeIds.has(id)) selectedNodeIds.delete(id); else selectedNodeIds.add(id);
+    const active=selectedNodeIds.has(id)?id:([...[...selectedNodeIds]].pop()||null);
+    patchState({activeNodeId:active},{silent:true});
+  }else{
+    selectedNodeIds.clear(); selectedNodeIds.add(id);
+    patchState({activeNodeId:id},{silent:true});
+  }
+  renderWorkspace();
+}
+function selectEdge(id){ clearNewNodeHalo(); selectedNodeIds.clear(); selectedEdgeId=id; renderGraphState(); toast('Only this connection is selected · press Delete/Backspace, or Shift-click it, to disconnect.'); }
 
 function nodeHandlers(){
   return {
@@ -636,6 +658,7 @@ function addFreeThought(){
     created=node;
   });
   lastAddedNodeId=created?.id||null;
+  if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);}
   logEvent('Free reasoning added',`${typeLabels[type]||type} · ${text}`);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; updateThoughtSuggestion(); renderWorkspace();
   toast(`Added as ${typeLabels[type]||type}.`);
@@ -653,6 +676,7 @@ function addLooseNote(){
     s.nodes.push(node); s.activeNodeId=node.id; created=node;
   });
   lastAddedNodeId=created?.id||null;
+  if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);}
   logEvent('Loose note added',text);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; updateThoughtSuggestion(); renderWorkspace();
   toast('Added as an unclassified note.');
@@ -667,11 +691,11 @@ function convertNote(node,type){
 
 function connectNodes(source,target,result){
   if(!source || !target){
-    coach('Connection needs a node input','Drop the wire onto the left-hand connection shoulder of another reasoning node. TRACEWORK treats the wire as an explicit dependency, so landing on the card body would be ambiguous.');
+    coach('Connection paused — here’s why','The wire needs to land on a node input because a TRACEWORK connection states an explicit reasoning dependency. Keep thinking — you can leave the thought floating until the relationship becomes clear.',{duration:8000});
     return;
   }
   if(!result?.ok){
-    coach('Connection not made',result?.reason||'Those reasoning moves cannot be connected yet.');
+    coach('Connection paused — here’s why',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''}` ,{duration:9000});
     return;
   }
   checkpoint('connect reasoning');
@@ -684,6 +708,7 @@ function connectNodes(source,target,result){
   });
   if(!created)return;
   selectedEdgeId=null;
+  selectedNodeIds.clear(); selectedNodeIds.add(target.id);
   traceIssueNodeIds.clear();
   clearNewNodeHalo();
   logEvent('Reasoning connected',`${typeLabels[source.type]||source.type} → ${typeLabels[target.type]||target.type}`);
@@ -725,6 +750,7 @@ function handleWorkspaceKeydown(e){
     s.edges=s.edges.filter(edge=>edge.source!==id&&edge.target!==id);
     s.activeNodeId=null;
   });
+  selectedNodeIds.delete(id);
   traceIssueNodeIds.delete(id);
   logEvent('Reasoning node deleted',node.label||typeLabels[node.type]||node.type);
   renderWorkspace();toast('Node deleted. Downstream reasoning remains available to reconnect.');
@@ -739,7 +765,7 @@ function undoLast(){
   const entry=undoStack.pop();
   if(!entry){toast('Nothing to undo yet.');return;}
   replaceState(entry.state);
-  selectedEdgeId=null;traceIssueNodeIds.clear();closeNodeContext();
+  selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();closeNodeContext();
   updateUndoButton();
   renderWorkspace();
   toast(`Undid ${entry.label}.`);
@@ -758,24 +784,82 @@ function disconnectEdge(id){
 
 function openNodeContext(id,x,y){
   closeNodeContext();
-  const node=getState().nodes.find(n=>n.id===id); if(!node)return;
+  const state=getState();
+  const node=state.nodes.find(n=>n.id===id); if(!node)return;
+  if(!selectedNodeIds.has(id)){ selectedNodeIds.clear(); selectedNodeIds.add(id); }
   const menu=document.createElement('div');
   menu.id='nodeContextMenu';menu.className='node-context-menu';
   const locked=Boolean(node.meta?.locked);
   const protectedSource=node.type==='input'&&node.meta?.source==='brief';
-  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button><button type="button" data-node-action="disconnect">Disconnect all wires</button><button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Delete/Backspace also removes the selected node.'}</small>`;
+  const selected=[...selectedNodeIds].map(nid=>state.nodes.find(n=>n.id===nid)).filter(Boolean);
+  const groupMembers=node.meta?.groupId?state.nodes.filter(n=>n.meta?.groupId===node.meta.groupId):[];
+  const canGroup=selected.length>1;
+  const sameGroup=canGroup && selected.every(n=>n.meta?.groupId && n.meta.groupId===selected[0].meta?.groupId);
+  const connected=state.edges.filter(e=>e.source===id||e.target===id);
+  const wireActions=connected.map(e=>{
+    const outgoing=e.source===id;
+    const other=state.nodes.find(n=>n.id===(outgoing?e.target:e.source));
+    const label=(other?.label||typeLabels[other?.type]||'connected node').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const short=label.length>38?`${label.slice(0,35)}…`:label;
+    return `<button type="button" class="node-context-wire" data-edge-action="${e.id}">Disconnect wire ${outgoing?'to':'from'} “${short}”</button>`;
+  }).join('');
+  const groupAction=canGroup?`<button type="button" data-node-action="group">${sameGroup?'Ungroup selected':'Group selected'} (${selected.length})</button>`:(groupMembers.length>1?`<button type="button" data-node-action="ungroup">Ungroup this group (${groupMembers.length})</button>`:'');
+  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · middle-click quickly locks/unlocks.'}</small>`;
   document.body.appendChild(menu);
   const rect=menu.getBoundingClientRect();
   menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
   menu.style.top=`${Math.max(8,Math.min(y,window.innerHeight-rect.height-8))}px`;
-  menu.querySelector('[data-node-action="lock"]').onclick=()=>{checkpoint(locked?'unlock node':'lock node');updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n)n.meta={...n.meta,locked:!locked};});closeNodeContext();renderWorkspace();toast(locked?'Node unlocked.':'Node position locked.');};
+  menu.querySelector('[data-node-action="lock"]').onclick=()=>{toggleNodeLock(id);closeNodeContext();};
+  menu.querySelector('[data-node-action="group"]')?.addEventListener('click',()=>{
+    checkpoint(sameGroup?'ungroup selected':'group selected');
+    updateState(s=>{
+      const ids=new Set(selectedNodeIds);
+      if(sameGroup){
+        s.nodes.forEach(n=>{if(ids.has(n.id)){n.meta={...n.meta};delete n.meta.groupId;}});
+      }else{
+        const gid=`group-${Date.now()}`;
+        s.nodes.forEach(n=>{if(ids.has(n.id))n.meta={...n.meta,groupId:gid};});
+      }
+    });
+    closeNodeContext();renderWorkspace();toast(sameGroup?'Nodes ungrouped.':'Nodes grouped — drag one to move the group.');
+  });
+  menu.querySelector('[data-node-action="ungroup"]')?.addEventListener('click',()=>{
+    const gid=node.meta?.groupId;if(!gid)return;
+    checkpoint('ungroup nodes');updateState(s=>s.nodes.forEach(n=>{if(n.meta?.groupId===gid){n.meta={...n.meta};delete n.meta.groupId;}}));
+    closeNodeContext();renderWorkspace();toast('Group released.');
+  });
   menu.querySelector('[data-node-action="disconnect"]').onclick=()=>{
     const count=getState().edges.filter(e=>e.source===id||e.target===id).length;
     if(!count){toast('This node has no wires to disconnect.');closeNodeContext();return;}
     checkpoint('disconnect node');updateState(s=>{s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);});closeNodeContext();renderWorkspace();toast(`${count} ${count===1?'wire':'wires'} disconnected.`);
   };
+  menu.querySelectorAll('[data-edge-action]').forEach(b=>b.onclick=()=>{const edgeId=b.dataset.edgeAction;closeNodeContext();disconnectEdge(edgeId);});
   const del=menu.querySelector('[data-node-action="delete"]');
-  if(del&&!del.disabled)del.onclick=()=>{checkpoint('delete reasoning node');updateState(s=>{s.nodes=s.nodes.filter(n=>n.id!==id);s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);if(s.activeNodeId===id)s.activeNodeId=null;});closeNodeContext();renderWorkspace();toast('Node deleted. Ctrl+Z restores it.');};
+  if(del&&!del.disabled)del.onclick=()=>{checkpoint('delete reasoning node');updateState(s=>{s.nodes=s.nodes.filter(n=>n.id!==id);s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);if(s.activeNodeId===id)s.activeNodeId=null;});selectedNodeIds.delete(id);closeNodeContext();renderWorkspace();toast('Node deleted. Ctrl+Z restores it.');};
+}
+
+function quickNodeAction(id,event){
+  if(event?.shiftKey && selectedNodeIds.size>1){
+    const state=getState();
+    const selected=[...selectedNodeIds].map(nid=>state.nodes.find(n=>n.id===nid)).filter(Boolean);
+    const sameGroup=selected.length>1 && selected.every(n=>n.meta?.groupId && n.meta.groupId===selected[0].meta?.groupId);
+    checkpoint(sameGroup?'ungroup selected':'group selected');
+    updateState(s=>{
+      const ids=new Set(selectedNodeIds);
+      if(sameGroup){s.nodes.forEach(n=>{if(ids.has(n.id)){n.meta={...n.meta};delete n.meta.groupId;}});}
+      else {const gid=`group-${Date.now()}`;s.nodes.forEach(n=>{if(ids.has(n.id))n.meta={...n.meta,groupId:gid};});}
+    });
+    renderWorkspace();toast(sameGroup?'Nodes ungrouped.':'Nodes grouped — drag one to move the group.');
+    return;
+  }
+  toggleNodeLock(id);
+}
+function toggleNodeLock(id){
+  const node=getState().nodes.find(n=>n.id===id);if(!node)return;
+  const locked=Boolean(node.meta?.locked);
+  checkpoint(locked?'unlock node':'lock node');
+  updateState(s=>{const n=s.nodes.find(n=>n.id===id);if(n)n.meta={...n.meta,locked:!locked};});
+  renderWorkspace();toast(locked?'Node unlocked.':'Node position locked.');
 }
 function closeNodeContext(){document.getElementById('nodeContextMenu')?.remove();}
 

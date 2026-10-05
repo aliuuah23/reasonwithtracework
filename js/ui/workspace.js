@@ -36,7 +36,7 @@ export function highlightBrief(text,hotspots,selectedId){
   return out+escapeHtml(text.slice(cursor));
 }
 export function renderLegend(ontology){
-  document.getElementById('ontologyLegend').innerHTML=ontology.map(o=>`<span class="legend-item" style="--legend-color:${o.color}"><i></i>${o.short}</span>`).join('');
+  document.getElementById('ontologyLegend').innerHTML=ontology.map(o=>`<span class="legend-item" style="--legend-color:${o.color}"><i></i>${escapeHtml(o.label||o.id)}</span>`).join('');
 }
 export function toggleBriefEditor(open,state){
   document.getElementById('briefEditorWrap').classList.toggle('hidden',!open);

@@ -88,3 +88,13 @@ Manual graph wiring, convergence and node locking remain the core of Round 2 rat
 - Select a wire and press Delete/Backspace, or Shift-click the wire, to disconnect it.
 - Ctrl/Cmd+Z restores recent canvas mutations such as node deletion, disconnection, locking, or manual additions.
 - Trace Check uses non-blocking on-canvas halos and a compact issue panel.
+
+## Round 2A — Canvas control and signal
+- Shift-click multi-select and multi-node dragging.
+- Group/ungroup selected nodes; grouped nodes move together.
+- Middle-click quick lock/unlock; Shift + middle-click groups/ungroups a current multi-selection.
+- Individually selectable wires, per-wire disconnect actions, and Ctrl+Z restoration.
+- More explicit connection refusal explanations.
+- Neutral category-hidden mode, exact ontology names in the legend, and status hover help.
+- Blank-canvas click clears selection.
+- Optional wire signal: solid = direct adjacent reasoning; dashed = exploratory/skipped-stage/provisional. This is structural guidance, not empirical frequency or correctness.
