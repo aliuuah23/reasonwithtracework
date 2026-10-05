@@ -138,3 +138,10 @@ Manual graph wiring, convergence and node locking remain the core of Round 2 rat
 This cumulative patch is built directly on Round 2B.4 and preserves the existing workspace. It adds a Focus map / Aggregate map switch. Aggregate map merges all hotspot-specific reasoning maps in the current project into one large navigable field while keeping individual focus-map positions separate from aggregate-map positions.
 
 Aggregate tools include hotspot, brief-section, node-type and status filters; Focus path works inside the aggregate map; clicking a hotspot returns to its individual Focus map; Arrange map restores a loose hotspot-cluster overview without changing the individual maps.
+
+
+## Round 3A.1 — aggregate-map testing
+- Aggregate toolbar now has an always-visible **Show all** control.
+- **Load demo map** temporarily seeds every hotspot with a dense reasoning chain plus cross-hotspot links; **Remove demo** removes only those temporary nodes/edges.
+- Arrange map now uses a project-wide, type-column field rather than separated hotspot boxes. Focus-map coordinates remain untouched.
+- Split/half-window responsive layout keeps the source panel and canvas usable at narrower desktop widths.

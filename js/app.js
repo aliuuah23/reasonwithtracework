@@ -87,7 +87,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),toggleAggregateDemoButton:$('#toggleAggregateDemoButton'),arrangeAggregateButton:$('#arrangeAggregateButton')
   });
 }
 
@@ -133,6 +133,7 @@ function bindGlobalEvents(){
   if(els.aggregateTypeFilter) els.aggregateTypeFilter.onchange=()=>{ aggregateTypeFilter=els.aggregateTypeFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.onchange=()=>{ aggregateStatusFilter=els.aggregateStatusFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
+  if(els.toggleAggregateDemoButton) els.toggleAggregateDemoButton.onclick=toggleAggregateDemoPreset;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   document.addEventListener('keydown',handleWorkspaceKeydown);
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
@@ -1489,6 +1490,14 @@ function updateAggregateControls(state){
     els.aggregateTypeFilter.value=aggregateTypeFilter;
   }
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.value=aggregateStatusFilter;
+  if(els.toggleAggregateDemoButton){
+    const hasDemo=state.nodes.some(n=>n.meta?.aggregateDemoPreset);
+    els.toggleAggregateDemoButton.textContent=hasDemo?'Remove demo':'Load demo map';
+    els.toggleAggregateDemoButton.classList.toggle('active',hasDemo);
+    els.toggleAggregateDemoButton.title=hasDemo
+      ? 'Remove only the temporary demo reasoning added for aggregate-map testing'
+      : 'Temporarily populate every hotspot with a dense demo reasoning network for layout testing';
+  }
 }
 
 function aggregateInitialPositions(state){
@@ -1497,25 +1506,33 @@ function aggregateInitialPositions(state){
   const seen=new Set();
   (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
   nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
+
+  // The aggregate is arranged as one continuous project field rather than a set of boxed mini-maps.
+  // Type columns keep it readable; hotspot lanes and deterministic offsets stop it feeling like a rigid tree.
+  const typeX={input:70,interpretation:360,grounding:660,consequence:980,evaluation:1300,goal:1600,note:815};
+  const laneGap=205;
   const positions=new Map();
-  const columns=Math.max(2,Math.min(4,Math.ceil(Math.sqrt(Math.max(1,hotspotOrder.length)))));
-  const clusterW=720,clusterH=500;
-  hotspotOrder.forEach((hotspotId,clusterIndex)=>{
+  const counts=new Map();
+  const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
+
+  hotspotOrder.forEach((hotspotId,laneIndex)=>{
     const cluster=nodes.filter(n=>(n.meta?.hotspotId||'__loose__')===hotspotId);
-    if(!cluster.length)return;
-    const finite=cluster.filter(n=>Number.isFinite(Number(n.x))&&Number.isFinite(Number(n.y)));
-    const minX=finite.length?Math.min(...finite.map(n=>Number(n.x))):0;
-    const minY=finite.length?Math.min(...finite.map(n=>Number(n.y))):0;
-    const col=clusterIndex%columns,row=Math.floor(clusterIndex/columns);
-    const baseX=col*clusterW+(row%2?90:0);
-    const baseY=row*clusterH+(col%2?38:0);
-    cluster.forEach((n,i)=>{
+    cluster.sort((a,b)=>{
+      const order={input:0,interpretation:1,grounding:2,note:2.5,consequence:3,evaluation:4,goal:5};
+      return (order[a.type]??9)-(order[b.type]??9) || String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+    });
+    cluster.forEach(n=>{
       if(Number.isFinite(Number(n.meta?.aggregateX))&&Number.isFinite(Number(n.meta?.aggregateY))){
         positions.set(n.id,{x:Number(n.meta.aggregateX),y:Number(n.meta.aggregateY)}); return;
       }
-      const localX=Number.isFinite(Number(n.x))?Number(n.x)-minX:(i%3)*245;
-      const localY=Number.isFinite(Number(n.y))?Number(n.y)-minY:Math.floor(i/3)*140;
-      positions.set(n.id,{x:baseX+localX*.78,y:baseY+localY*.78});
+      const key=`${hotspotId}:${n.type}`;
+      const nth=counts.get(key)||0; counts.set(key,nth+1);
+      const jitterX=(hash(n.id)%43)-21;
+      const jitterY=(hash(`${n.id}-y`)%35)-17;
+      const baseY=70+laneIndex*laneGap;
+      const x=(typeX[n.type]??815)+jitterX+(laneIndex%2?22:0);
+      const y=baseY+nth*82+jitterY+(n.type==='grounding'||n.type==='evaluation'?28:0);
+      positions.set(n.id,{x,y});
     });
   });
   return positions;
@@ -1545,16 +1562,123 @@ function workspaceTrace(state){
   return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
 }
 
-function arrangeAggregateMap(){
+function demoReasoningForHotspot(text=''){
+  const t=String(text).trim();
+  const l=t.toLowerCase();
+  if(/privacy|private|exposure|enclos/.test(l)) return {
+    interpretation:'Privacy can operate as degrees of exposure rather than complete enclosure.',
+    grounding:'Duration, group size and proximity to movement change how much separation is useful.',
+    consequence:'Use layered edges, partial screening and recessed occupation to vary exposure.',
+    evaluation:'More separation can improve comfort but may reduce openness and visual connection.',
+    goal:'Balance privacy with continued connection to surrounding activity.'
+  };
+  if(/movement|route|circulation|unobstruct|approach|access/.test(l)) return {
+    interpretation:'Movement means passing through without disturbing people who are staying.',
+    grounding:'Peak periods create crossings between through-movement and occupied areas.',
+    consequence:'Keep a legible route through the pavilion while occupation gathers beside it.',
+    evaluation:'A protected route improves flow but can reduce the amount of freely reconfigurable space.',
+    goal:'Keep circulation clear without making occupation feel secondary.'
+  };
+  if(/seat|individual|group|collective|occup/.test(l)) return {
+    interpretation:'Occupation needs to shift between individual use and changing group sizes.',
+    grounding:'Short pauses and longer stays place different demands on seating, proximity and flexibility.',
+    consequence:'Combine fixed edge seating with movable central pieces that can separate or cluster.',
+    evaluation:'Flexibility supports changing groups but may make circulation and order less predictable.',
+    goal:'Support both individual and collective occupation without fixing one use pattern.'
+  };
+  if(/shelter|shade|open|rain|heat|vent|weather/.test(l)) return {
+    interpretation:'Shelter should protect from climate without turning the pavilion into a closed room.',
+    grounding:'Heat, rain and ventilation need to be negotiated together rather than solved separately.',
+    consequence:'Use a broad protective canopy with open edges and porous environmental boundaries.',
+    evaluation:'Greater cover improves weather protection but can reduce daylight and air movement.',
+    goal:'Create climatic comfort while preserving openness.'
+  };
+  if(/footprint|capacity|twenty|20|compact/.test(l)) return {
+    interpretation:'Added capacity should come from using the existing footprint more intensely, not simply enlarging it.',
+    grounding:'The sheltered boundary is fixed, so new occupation has to reuse, overlap or reconfigure existing space.',
+    consequence:'Layer, subdivide or reconfigure seating so the same sheltered area supports more people.',
+    evaluation:'Higher capacity can improve usefulness but may increase crowding and reduce personal space.',
+    goal:'Increase capacity without increasing the sheltered footprint.'
+  };
+  if(/pause|duration|stay|rest/.test(l)) return {
+    interpretation:'A pause can range from a brief stop to a longer period of rest, study or conversation.',
+    grounding:'Different durations change expectations of comfort, privacy and access to shared surfaces.',
+    consequence:'Create a gradient from accessible short-stay edges to deeper longer-stay places.',
+    evaluation:'Greater differentiation supports varied use but can make the pavilion less spatially neutral.',
+    goal:'Support different durations of occupation within one pavilion.'
+  };
+  return {
+    interpretation:`“${t}” can be read as a design condition that needs to be made spatially explicit.`,
+    grounding:`The meaning of “${t}” changes with users, context, duration and neighbouring requirements.`,
+    consequence:`Translate “${t}” into an adjustable spatial relationship rather than a single fixed object.`,
+    evaluation:`This translation makes “${t}” visible but may compete with other project priorities.`,
+    goal:`Keep “${t}” traceable while allowing the design to remain adaptable.`
+  };
+}
+
+function toggleAggregateDemoPreset(){
+  const state=getState();
+  const existingDemoIds=new Set(state.nodes.filter(n=>n.meta?.aggregateDemoPreset).map(n=>n.id));
+  if(existingDemoIds.size){
+    checkpoint('remove aggregate demo preset');
+    updateState(s=>{
+      s.nodes=s.nodes.filter(n=>!n.meta?.aggregateDemoPreset);
+      s.edges=s.edges.filter(e=>!e.aggregateDemoPreset && !existingDemoIds.has(e.source) && !existingDemoIds.has(e.target));
+      if(existingDemoIds.has(s.activeNodeId))s.activeNodeId=null;
+    });
+    selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
+    resetAggregateFilters({render:false});
+    renderWorkspace();
+    setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
+    toast('Temporary aggregate demo removed. Your own reasoning was left untouched.');
+    return;
+  }
+  if(!(state.hotspots||[]).length){ toast('Add or detect some hotspots first, then load the aggregate demo.'); return; }
+  checkpoint('load aggregate demo preset');
+  updateState(s=>{
+    const createdByHotspot=[];
+    s.hotspots.forEach((h,index)=>{
+      let input=s.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===h.id);
+      if(!input){
+        input=createNode({type:'input',label:h.text,branchId:`trace-${h.id}`,meta:{hotspotId:h.id,source:'brief',aggregateDemoPreset:true}});
+        s.nodes.push(input);
+      }
+      const copy=demoReasoningForHotspot(h.text);
+      let previous=input;
+      const chain=[];
+      [['interpretation',copy.interpretation],['grounding',copy.grounding],['consequence',copy.consequence],['evaluation',copy.evaluation],['goal',copy.goal]].forEach(([type,label])=>{
+        const node=createNode({type,label,branchId:`demo-${h.id}`,meta:{hotspotId:h.id,aggregateDemoPreset:true,demoLabel:'aggregate layout test'}});
+        s.nodes.push(node);
+        const edge={...createEdge(previous.id,node.id,{status:'active'}),aggregateDemoPreset:true};
+        s.edges.push(edge); previous=node; chain.push(node);
+      });
+      createdByHotspot.push({hotspot:h,input,interpretation:chain[0],grounding:chain[1],consequence:chain[2],evaluation:chain[3],goal:chain[4]});
+    });
+    // Cross-hotspot links make the preset behave like a project network rather than parallel mini trees.
+    createdByHotspot.forEach((entry,i,all)=>{
+      const next=all[(i+1)%all.length];
+      const next2=all[(i+2)%all.length];
+      if(next && next!==entry) s.edges.push({...createEdge(entry.grounding.id,next.consequence.id,{status:'provisional'}),aggregateDemoPreset:true});
+      if(next2 && next2!==entry) s.edges.push({...createEdge(entry.evaluation.id,next2.goal.id,{status:'provisional'}),aggregateDemoPreset:true});
+    });
+  });
+  resetAggregateFilters({render:false});
+  selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
+  renderWorkspace();
+  setTimeout(()=>arrangeAggregateMap({recordUndo:false,quiet:true}),25);
+  toast('Dense demo map loaded for layout testing only · use Remove demo when finished.');
+}
+
+function arrangeAggregateMap({recordUndo=true,quiet=false}={}){
   if(workspaceMapMode!=='aggregate')return;
-  checkpoint('arrange aggregate map');
+  if(recordUndo) checkpoint('arrange aggregate map');
   const state=getState();
   const positions=aggregateInitialPositions({...state,nodes:state.nodes.map(n=>({...n,meta:{...(n.meta||{}),aggregateX:undefined,aggregateY:undefined}}))});
   updateState(s=>{ s.nodes.forEach(n=>{ const pos=positions.get(n.id); if(pos)n.meta={...(n.meta||{}),aggregateX:pos.x,aggregateY:pos.y}; }); });
   selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
   renderWorkspace();
   setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
-  toast('Aggregate map rearranged into loose hotspot clusters. Focus-map layouts were not changed.');
+  if(!quiet) toast('Aggregate map rearranged as one project-wide reasoning field. Focus-map layouts were not changed.');
 }
 
 function scopedTrace(state){
