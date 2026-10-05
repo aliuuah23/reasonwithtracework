@@ -1,0 +1,1051 @@
+{
+  "version": 3,
+  "projectId": "tracework-test-aggregate-pavilion-v1",
+  "projectName": "Aggregate test trace — Student pavilion",
+  "brief": "PROJECT AIM\n\nDesign a small pavilion for university students on campus. The pavilion should support everyday pause, rest and informal use between classes.\n\nUSERS\n\nThe pavilion should accommodate both individuals and small groups. Students may work alone, talk, eat or gather in changing group sizes.\n\nENVIRONMENT\n\nThe pavilion should respond to heat, rain, natural ventilation, shade and existing vegetation. It should remain visually open while still providing shelter.\n\nMOVEMENT\n\nStudents should be able to approach and move through the pavilion easily. The main circulation route should remain unobstructed.\n\nPRIVACY\n\nDifferent degrees of privacy should be possible without completely enclosing the pavilion.\n\nSEATING\n\nProvide seating that can support both individual and collective occupation. The pavilion should later accommodate twenty additional users without increasing its sheltered footprint.\n\nDURATION\n\nSupport short pauses between classes as well as longer periods of study, rest and social occupation.",
+  "briefMode": "document",
+  "briefFileName": "",
+  "briefChunks": [
+    {
+      "id": "chunk-1",
+      "title": "Project Aim",
+      "text": "Design a small pavilion for university students on campus. The pavilion should support everyday pause, rest and informal use between classes.",
+      "start": 0,
+      "end": 154,
+      "manual": false
+    },
+    {
+      "id": "chunk-2",
+      "title": "Users",
+      "text": "The pavilion should accommodate both individuals and small groups. Students may work alone, talk, eat or gather in changing group sizes.",
+      "start": 156,
+      "end": 299,
+      "manual": false
+    },
+    {
+      "id": "chunk-3",
+      "title": "Environment",
+      "text": "The pavilion should respond to heat, rain, natural ventilation, shade and existing vegetation. It should remain visually open while still providing shelter.",
+      "start": 301,
+      "end": 470,
+      "manual": false
+    },
+    {
+      "id": "chunk-4",
+      "title": "Movement",
+      "text": "Students should be able to approach and move through the pavilion easily. The main circulation route should remain unobstructed.",
+      "start": 472,
+      "end": 610,
+      "manual": false
+    },
+    {
+      "id": "chunk-5",
+      "title": "Privacy",
+      "text": "Different degrees of privacy should be possible without completely enclosing the pavilion.",
+      "start": 612,
+      "end": 711,
+      "manual": false
+    },
+    {
+      "id": "chunk-6",
+      "title": "Seating",
+      "text": "Provide seating that can support both individual and collective occupation. The pavilion should later accommodate twenty additional users without increasing its sheltered footprint.",
+      "start": 713,
+      "end": 903,
+      "manual": false
+    },
+    {
+      "id": "chunk-7",
+      "title": "Duration",
+      "text": "Support short pauses between classes as well as longer periods of study, rest and social occupation.",
+      "start": 905,
+      "end": 1015,
+      "manual": false
+    }
+  ],
+  "activeBriefChunkId": "chunk-5",
+  "hotspots": [
+    {
+      "id": "agg-hot-1",
+      "text": "pause",
+      "concept": "pause",
+      "start": 109,
+      "end": 114,
+      "reason": "Everyday pause can imply different activities and durations.",
+      "chunkId": "chunk-1",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-2",
+      "text": "individuals and small groups",
+      "concept": "individuals and small groups",
+      "start": 200,
+      "end": 228,
+      "reason": "Different social scales may require different spatial relationships.",
+      "chunkId": "chunk-2",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-3",
+      "text": "visually open",
+      "concept": "visually open",
+      "start": 426,
+      "end": 439,
+      "reason": "Openness must be balanced against shelter and comfort.",
+      "chunkId": "chunk-3",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-4",
+      "text": "unobstructed",
+      "concept": "unobstructed",
+      "start": 597,
+      "end": 609,
+      "reason": "The acceptable relationship between circulation and occupation must be interpreted.",
+      "chunkId": "chunk-4",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-5",
+      "text": "degrees of privacy",
+      "concept": "degrees of privacy",
+      "start": 631,
+      "end": 649,
+      "reason": "Privacy is relational rather than a single enclosed condition.",
+      "chunkId": "chunk-5",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-6",
+      "text": "twenty additional users",
+      "concept": "twenty additional users",
+      "start": 836,
+      "end": 859,
+      "reason": "Peak capacity must be absorbed without increasing the sheltered footprint.",
+      "chunkId": "chunk-6",
+      "source": "suggested"
+    },
+    {
+      "id": "agg-hot-7",
+      "text": "short pauses",
+      "concept": "short pauses",
+      "start": 923,
+      "end": 935,
+      "reason": "Time changes what kinds of occupation and separation are useful.",
+      "chunkId": "chunk-7",
+      "source": "suggested"
+    }
+  ],
+  "selectedHotspotId": "agg-hot-5",
+  "nodes": [
+    {
+      "id": "agg-1-input",
+      "type": "input",
+      "label": "pause",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-1-interpretation",
+      "type": "interpretation",
+      "label": "Pause includes eating, chatting, waiting and short periods of work rather than one fixed activity.",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-1-grounding",
+      "type": "grounding",
+      "label": "Between-class use changes quickly and students may only occupy the pavilion for a few minutes.",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-1-consequence",
+      "type": "consequence",
+      "label": "Provide several small occupation zones that can support sitting, leaning, eating and brief work.",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-1-evaluation",
+      "type": "evaluation",
+      "label": "A range of small zones supports varied use but can fragment the pavilion if circulation is not kept legible.",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-1-goal",
+      "type": "goal",
+      "label": "Support everyday pause without prescribing a single activity.",
+      "branchId": "agg-branch-1",
+      "meta": {
+        "hotspotId": "agg-hot-1"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-input",
+      "type": "input",
+      "label": "individuals and small groups",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-interpretation",
+      "type": "interpretation",
+      "label": "Individual and group use should coexist rather than be split into completely separate rooms.",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-grounding",
+      "type": "grounding",
+      "label": "Students shift between working alone and joining small groups throughout the day.",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-consequence",
+      "type": "consequence",
+      "label": "Combine quieter edge seating with a more adaptable central area for small groups.",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-evaluation",
+      "type": "evaluation",
+      "label": "Mixed occupation improves flexibility but needs enough separation to avoid constant disturbance.",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-2-goal",
+      "type": "goal",
+      "label": "Allow social scale to change without forcing users to leave the pavilion.",
+      "branchId": "agg-branch-2",
+      "meta": {
+        "hotspotId": "agg-hot-2"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-input",
+      "type": "input",
+      "label": "visually open",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-interpretation",
+      "type": "interpretation",
+      "label": "Visual openness should preserve awareness of the campus while shelter still protects users from weather.",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-grounding",
+      "type": "grounding",
+      "label": "Heat, rain and ventilation require enclosure to remain porous rather than sealed.",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-consequence",
+      "type": "consequence",
+      "label": "Use a broad roof, open perimeter and selective screening instead of full walls.",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-evaluation",
+      "type": "evaluation",
+      "label": "A porous edge improves airflow and visibility but may reduce weather protection during heavy rain.",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-3-goal",
+      "type": "goal",
+      "label": "Balance climatic protection with openness and natural ventilation.",
+      "branchId": "agg-branch-3",
+      "meta": {
+        "hotspotId": "agg-hot-3"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-input",
+      "type": "input",
+      "label": "unobstructed",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-interpretation",
+      "type": "interpretation",
+      "label": "Unobstructed movement means through-routes should remain legible even when the pavilion is occupied.",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-grounding",
+      "type": "grounding",
+      "label": "Peak periods create conflict between seated users and students simply passing through.",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-consequence",
+      "type": "consequence",
+      "label": "Keep a continuous circulation spine while placing occupation along widened edges and pockets.",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-evaluation",
+      "type": "evaluation",
+      "label": "Protecting a clear route improves movement but reduces the area available for loose furniture.",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-4-goal",
+      "type": "goal",
+      "label": "Keep circulation clear without making occupation secondary.",
+      "branchId": "agg-branch-4",
+      "meta": {
+        "hotspotId": "agg-hot-4"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-input",
+      "type": "input",
+      "label": "degrees of privacy",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-interpretation",
+      "type": "interpretation",
+      "label": "Privacy can operate as degrees of exposure rather than complete enclosure.",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-grounding",
+      "type": "grounding",
+      "label": "Longer stays and focused work may require more separation than a short pause.",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-consequence",
+      "type": "consequence",
+      "label": "Create a gradient from exposed perimeter seating to recessed or partially screened seating.",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-evaluation",
+      "type": "evaluation",
+      "label": "Greater separation can improve comfort but may weaken visual connection and natural surveillance.",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-5-goal",
+      "type": "goal",
+      "label": "Provide choice in privacy while keeping the pavilion socially connected.",
+      "branchId": "agg-branch-5",
+      "meta": {
+        "hotspotId": "agg-hot-5"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-input",
+      "type": "input",
+      "label": "twenty additional users",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-interpretation",
+      "type": "interpretation",
+      "label": "Additional capacity can be temporary and distributed rather than permanently increasing the pavilion footprint.",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-grounding",
+      "type": "grounding",
+      "label": "The brief requires twenty additional users during higher-demand periods while the sheltered area stays fixed.",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-consequence",
+      "type": "consequence",
+      "label": "Combine fixed perimeter seating with movable or deployable central seating for peak periods.",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-evaluation",
+      "type": "evaluation",
+      "label": "Deployable seating increases capacity but can obstruct movement if storage and deployment are poorly managed.",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-6-goal",
+      "type": "goal",
+      "label": "Absorb peak demand without sacrificing everyday circulation or sheltered footprint.",
+      "branchId": "agg-branch-6",
+      "meta": {
+        "hotspotId": "agg-hot-6"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-input",
+      "type": "input",
+      "label": "short pauses",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7",
+        "source": "brief"
+      },
+      "status": "active",
+      "x": 70,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-interpretation",
+      "type": "interpretation",
+      "label": "Duration should influence how exposed, supported and adaptable a place of occupation becomes.",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7"
+      },
+      "status": "active",
+      "x": 370,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-grounding",
+      "type": "grounding",
+      "label": "A two-minute wait and a one-hour study session create different comfort and privacy needs.",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7",
+        "sourceKind": "Designer rationale"
+      },
+      "status": "active",
+      "x": 670,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-consequence",
+      "type": "consequence",
+      "label": "Place quick-access perches near circulation and more supported seating deeper in the pavilion.",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7",
+        "tags": [
+          "aggregate test",
+          "pavilion"
+        ]
+      },
+      "status": "active",
+      "x": 970,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-evaluation",
+      "type": "evaluation",
+      "label": "Duration-based zoning improves fit between use and space but could over-separate activities that often overlap.",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7"
+      },
+      "status": "active",
+      "x": 1270,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    },
+    {
+      "id": "agg-7-goal",
+      "type": "goal",
+      "label": "Support both quick pause and longer occupation within one continuous pavilion.",
+      "branchId": "agg-branch-7",
+      "meta": {
+        "hotspotId": "agg-hot-7"
+      },
+      "status": "active",
+      "x": 1570,
+      "y": 150,
+      "createdAt": "2026-10-05T15:50:00.000Z",
+      "updatedAt": "2026-10-05T15:50:00.000Z"
+    }
+  ],
+  "edges": [
+    {
+      "id": "agg-edge-1-1",
+      "source": "agg-1-input",
+      "target": "agg-1-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-1-2",
+      "source": "agg-1-interpretation",
+      "target": "agg-1-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-1-3",
+      "source": "agg-1-grounding",
+      "target": "agg-1-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-1-4",
+      "source": "agg-1-consequence",
+      "target": "agg-1-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-1-5",
+      "source": "agg-1-evaluation",
+      "target": "agg-1-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-2-1",
+      "source": "agg-2-input",
+      "target": "agg-2-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-2-2",
+      "source": "agg-2-interpretation",
+      "target": "agg-2-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-2-3",
+      "source": "agg-2-grounding",
+      "target": "agg-2-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-2-4",
+      "source": "agg-2-consequence",
+      "target": "agg-2-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-2-5",
+      "source": "agg-2-evaluation",
+      "target": "agg-2-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-3-1",
+      "source": "agg-3-input",
+      "target": "agg-3-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-3-2",
+      "source": "agg-3-interpretation",
+      "target": "agg-3-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-3-3",
+      "source": "agg-3-grounding",
+      "target": "agg-3-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-3-4",
+      "source": "agg-3-consequence",
+      "target": "agg-3-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-3-5",
+      "source": "agg-3-evaluation",
+      "target": "agg-3-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-4-1",
+      "source": "agg-4-input",
+      "target": "agg-4-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-4-2",
+      "source": "agg-4-interpretation",
+      "target": "agg-4-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-4-3",
+      "source": "agg-4-grounding",
+      "target": "agg-4-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-4-4",
+      "source": "agg-4-consequence",
+      "target": "agg-4-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-4-5",
+      "source": "agg-4-evaluation",
+      "target": "agg-4-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-5-1",
+      "source": "agg-5-input",
+      "target": "agg-5-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-5-2",
+      "source": "agg-5-interpretation",
+      "target": "agg-5-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-5-3",
+      "source": "agg-5-grounding",
+      "target": "agg-5-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-5-4",
+      "source": "agg-5-consequence",
+      "target": "agg-5-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-5-5",
+      "source": "agg-5-evaluation",
+      "target": "agg-5-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-6-1",
+      "source": "agg-6-input",
+      "target": "agg-6-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-6-2",
+      "source": "agg-6-interpretation",
+      "target": "agg-6-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-6-3",
+      "source": "agg-6-grounding",
+      "target": "agg-6-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-6-4",
+      "source": "agg-6-consequence",
+      "target": "agg-6-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-6-5",
+      "source": "agg-6-evaluation",
+      "target": "agg-6-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-7-1",
+      "source": "agg-7-input",
+      "target": "agg-7-interpretation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-7-2",
+      "source": "agg-7-interpretation",
+      "target": "agg-7-grounding",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-7-3",
+      "source": "agg-7-grounding",
+      "target": "agg-7-consequence",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-7-4",
+      "source": "agg-7-consequence",
+      "target": "agg-7-evaluation",
+      "status": "active"
+    },
+    {
+      "id": "agg-edge-7-5",
+      "source": "agg-7-evaluation",
+      "target": "agg-7-goal",
+      "status": "active"
+    },
+    {
+      "id": "agg-cross-1",
+      "source": "agg-2-grounding",
+      "target": "agg-5-interpretation",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-2",
+      "source": "agg-5-consequence",
+      "target": "agg-4-evaluation",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-3",
+      "source": "agg-4-consequence",
+      "target": "agg-6-evaluation",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-4",
+      "source": "agg-6-consequence",
+      "target": "agg-2-evaluation",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-5",
+      "source": "agg-7-grounding",
+      "target": "agg-5-grounding",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-6",
+      "source": "agg-3-consequence",
+      "target": "agg-1-evaluation",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-7",
+      "source": "agg-3-goal",
+      "target": "agg-4-goal",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-8",
+      "source": "agg-5-goal",
+      "target": "agg-2-goal",
+      "status": "provisional"
+    },
+    {
+      "id": "agg-cross-9",
+      "source": "agg-4-goal",
+      "target": "agg-6-goal",
+      "status": "provisional"
+    }
+  ],
+  "activeNodeId": "agg-5-interpretation",
+  "activeBranchId": "agg-branch-5",
+  "view": "workspace",
+  "history": [
+    {
+      "id": "agg-h1",
+      "action": "Aggregate test trace prepared",
+      "detail": "Preset project for testing project-wide focus-map aggregation without modifying a working trace.",
+      "time": "2026-10-05T15:50:00.000Z"
+    }
+  ],
+  "createdAt": "2026-10-05T15:50:00.000Z",
+  "updatedAt": "2026-10-05T15:50:00.000Z"
+}

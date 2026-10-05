@@ -320,6 +320,3 @@
 .aggregate-action { border:0; background:transparent; color:var(--muted-2); border-radius:999px; padding:5px 7px; font-size:9px; font-weight:750; cursor:pointer; }
 .aggregate-action:hover { background:var(--surface-soft); color:var(--text); }
 
-/* Round 3A.1 · aggregate-map testing controls */
-.aggregate-demo-action { color:var(--accent-dark); background:rgba(99,94,232,.055); }
-.aggregate-demo-action:hover,.aggregate-demo-action.active { background:var(--accent-soft); color:var(--accent-dark); }

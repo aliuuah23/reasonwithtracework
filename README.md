@@ -145,3 +145,9 @@ Aggregate tools include hotspot, brief-section, node-type and status filters; Fo
 - **Load demo map** temporarily seeds every hotspot with a dense reasoning chain plus cross-hotspot links; **Remove demo** removes only those temporary nodes/edges.
 - Arrange map now uses a project-wide, type-column field rather than separated hotspot boxes. Focus-map coordinates remain untouched.
 - Split/half-window responsive layout keeps the source panel and canvas usable at narrower desktop widths.
+
+## Round 3A.2 — aggregate finishing fixes
+- Removed the in-workspace aggregate demo injector and automatically strips any legacy temporary demo nodes from a project when it is reopened.
+- Added a separate seeded `Aggregate test trace — Student pavilion` on the Home project shelf for safe aggregate-map testing.
+- Restored the free reasoning command line in Aggregate Map mode.
+- Tightened desktop/half-window responsiveness so the three workspace columns compress before any overlay behaviour begins.

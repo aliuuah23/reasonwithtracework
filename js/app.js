@@ -67,12 +67,17 @@ async function init(){
   bindCanvasPan(els.graphViewport);
   bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo});
   await seedTestProject();
+  await seedAggregateTestProject();
   renderProjectShelf();
   renderEmptyInspector();
   const params=new URLSearchParams(window.location.search);
   if(params.get('resume')==='1'){
     const active=loadProject();
-    if(active){ repairSharedInputs(active); replaceState(active); enterApp(false); }
+    if(active){
+      repairSharedInputs(active);
+      if(stripLegacyAggregateDemo(active)) saveProject(active);
+      replaceState(active); enterApp(false);
+    }
     history.replaceState(null,'',window.location.pathname);
   }
   subscribe(state => {
@@ -87,7 +92,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),toggleAggregateDemoButton:$('#toggleAggregateDemoButton'),arrangeAggregateButton:$('#arrangeAggregateButton')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton')
   });
 }
 
@@ -133,7 +138,6 @@ function bindGlobalEvents(){
   if(els.aggregateTypeFilter) els.aggregateTypeFilter.onchange=()=>{ aggregateTypeFilter=els.aggregateTypeFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.onchange=()=>{ aggregateStatusFilter=els.aggregateStatusFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
-  if(els.toggleAggregateDemoButton) els.toggleAggregateDemoButton.onclick=toggleAggregateDemoPreset;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   document.addEventListener('keydown',handleWorkspaceKeydown);
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
@@ -348,8 +352,9 @@ function renderWorkspace(){
     els.focusPathButton.classList.toggle('active',Boolean(focusPathRootId));
     els.focusPathButton.title=focusPathRootId?'Restore the full visible reasoning field':'Isolate the ancestors and descendants of the selected node';
   }
-  els.thoughtDock.classList.toggle('hidden',workspaceMapMode==='aggregate' || !state.selectedHotspotId);
-  if(workspaceMapMode==='focus' && state.selectedHotspotId) updateThoughtSuggestion();
+  const thoughtDockAvailable=workspaceMapMode==='aggregate' || Boolean(state.selectedHotspotId);
+  els.thoughtDock.classList.toggle('hidden',!thoughtDockAvailable);
+  if(thoughtDockAvailable) updateThoughtSuggestion();
   if(active) renderNodeInspector(active,state,nodeHandlers());
   else if(workspaceMapMode==='focus' && state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,hotspotHandlers()); }
   else renderEmptyInspector();
@@ -707,7 +712,7 @@ function renderSavedTraceLibrary(){
   const root=$('#traceDashboard'); if(!root)return;
   const projects=listProjects();
   if(!projects.length){ root.innerHTML='<div class="empty-state-card" style="grid-column:1/-1">No traces are saved in this browser yet. Start one in Workspace and it will appear here.</div>'; return; }
-  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
+  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
   root.querySelectorAll('[data-open-library-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openLibraryProject));
   root.querySelectorAll('[data-delete-library-project]').forEach(b=>b.onclick=()=>confirmDeleteSavedProject(b.dataset.deleteLibraryProject));
 }
@@ -815,12 +820,31 @@ async function seedTestProject(){
   }catch(err){ console.warn('TRACEWORK test project could not be seeded.',err); }
 }
 
+async function seedAggregateTestProject(){
+  try{
+    if(localStorage.getItem('tracework.dismissedAggregateTestProject.v1')==='1') return;
+    const project=await (await fetch('./data/aggregate-test-project.json')).json();
+    ensureProject(project);
+  }catch(err){ console.warn('TRACEWORK aggregate test project could not be seeded.',err); }
+}
+
+function stripLegacyAggregateDemo(project){
+  if(!project?.nodes?.length) return false;
+  const demoIds=new Set(project.nodes.filter(n=>n?.meta?.aggregateDemoPreset).map(n=>n.id));
+  if(!demoIds.size && !(project.edges||[]).some(e=>e?.aggregateDemoPreset)) return false;
+  project.nodes=(project.nodes||[]).filter(n=>!demoIds.has(n.id));
+  project.edges=(project.edges||[]).filter(e=>!e?.aggregateDemoPreset && !demoIds.has(e.source) && !demoIds.has(e.target));
+  if(demoIds.has(project.activeNodeId)) project.activeNodeId=null;
+  project.updatedAt=new Date().toISOString();
+  return true;
+}
+
 function renderProjectShelf(){
   const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
   if(!wrap||!root)return;
   const projects=listProjects().slice(0,8);
   wrap.classList.toggle('hidden',!projects.length);
-  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${p.projectId==='tracework-test-pavilion'?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
   root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
   root.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); confirmDeleteSavedProject(b.dataset.deleteProject); });
 }
@@ -829,6 +853,7 @@ function openSavedProject(id){
   const project=loadProject(id);
   if(!project)return;
   repairSharedInputs(project);
+  if(stripLegacyAggregateDemo(project)) saveProject(project);
   replaceState(project);
   enterApp(false);
   if(project.selectedHotspotId) renderWorkspace();
@@ -841,6 +866,7 @@ function confirmDeleteSavedProject(id){
     onOpen:m=>m.querySelector('#confirmDeleteTrace').onclick=()=>{
       deleteProject(id);
       if(id==='tracework-test-pavilion') localStorage.setItem('tracework.dismissedTestProject.v1','1');
+      if(id==='tracework-test-aggregate-pavilion-v1') localStorage.setItem('tracework.dismissedAggregateTestProject.v1','1');
       if(getState().projectId===id) resetState();
       closeModal();
       renderProjectShelf();
@@ -959,8 +985,8 @@ function addFreeThought(){
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
   const type=els.thoughtTypeSelect.value||classification.type||'interpretation';
-  const selectedHotspotId=state.selectedHotspotId;
-  const scoped=scopedTrace(state);
+  const selectedHotspotId=workspaceMapMode==='aggregate' ? (active?.meta?.hotspotId || state.selectedHotspotId || null) : state.selectedHotspotId;
+  const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state);
   const placement=visibleCanvasPlacement(scoped.nodes.length);
   const branchId=active?.branchId||`free-${Date.now()}`;
   let created=null;
@@ -983,10 +1009,11 @@ function addLooseNote(){
   checkpoint('add note');
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
-  const scoped=scopedTrace(state); const placement=visibleCanvasPlacement(scoped.nodes.length+2);
+  const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state); const placement=visibleCanvasPlacement(scoped.nodes.length+2);
+  const selectedHotspotId=workspaceMapMode==='aggregate' ? (active?.meta?.hotspotId || state.selectedHotspotId || null) : state.selectedHotspotId;
   let created=null;
   updateState(s=>{
-    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:placement.x,y:placement.y,meta:{hotspotId:s.selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
+    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:placement.x,y:placement.y,meta:{hotspotId:selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence}});
     s.nodes.push(node); s.activeNodeId=node.id; created=node;
   });
   lastAddedNodeId=created?.id||null;
@@ -1490,14 +1517,7 @@ function updateAggregateControls(state){
     els.aggregateTypeFilter.value=aggregateTypeFilter;
   }
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.value=aggregateStatusFilter;
-  if(els.toggleAggregateDemoButton){
-    const hasDemo=state.nodes.some(n=>n.meta?.aggregateDemoPreset);
-    els.toggleAggregateDemoButton.textContent=hasDemo?'Remove demo':'Load demo map';
-    els.toggleAggregateDemoButton.classList.toggle('active',hasDemo);
-    els.toggleAggregateDemoButton.title=hasDemo
-      ? 'Remove only the temporary demo reasoning added for aggregate-map testing'
-      : 'Temporarily populate every hotspot with a dense demo reasoning network for layout testing';
-  }
+
 }
 
 function aggregateInitialPositions(state){
@@ -1560,113 +1580,6 @@ function aggregateTrace(state,{ignoreFilters=false}={}){
 
 function workspaceTrace(state){
   return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
-}
-
-function demoReasoningForHotspot(text=''){
-  const t=String(text).trim();
-  const l=t.toLowerCase();
-  if(/privacy|private|exposure|enclos/.test(l)) return {
-    interpretation:'Privacy can operate as degrees of exposure rather than complete enclosure.',
-    grounding:'Duration, group size and proximity to movement change how much separation is useful.',
-    consequence:'Use layered edges, partial screening and recessed occupation to vary exposure.',
-    evaluation:'More separation can improve comfort but may reduce openness and visual connection.',
-    goal:'Balance privacy with continued connection to surrounding activity.'
-  };
-  if(/movement|route|circulation|unobstruct|approach|access/.test(l)) return {
-    interpretation:'Movement means passing through without disturbing people who are staying.',
-    grounding:'Peak periods create crossings between through-movement and occupied areas.',
-    consequence:'Keep a legible route through the pavilion while occupation gathers beside it.',
-    evaluation:'A protected route improves flow but can reduce the amount of freely reconfigurable space.',
-    goal:'Keep circulation clear without making occupation feel secondary.'
-  };
-  if(/seat|individual|group|collective|occup/.test(l)) return {
-    interpretation:'Occupation needs to shift between individual use and changing group sizes.',
-    grounding:'Short pauses and longer stays place different demands on seating, proximity and flexibility.',
-    consequence:'Combine fixed edge seating with movable central pieces that can separate or cluster.',
-    evaluation:'Flexibility supports changing groups but may make circulation and order less predictable.',
-    goal:'Support both individual and collective occupation without fixing one use pattern.'
-  };
-  if(/shelter|shade|open|rain|heat|vent|weather/.test(l)) return {
-    interpretation:'Shelter should protect from climate without turning the pavilion into a closed room.',
-    grounding:'Heat, rain and ventilation need to be negotiated together rather than solved separately.',
-    consequence:'Use a broad protective canopy with open edges and porous environmental boundaries.',
-    evaluation:'Greater cover improves weather protection but can reduce daylight and air movement.',
-    goal:'Create climatic comfort while preserving openness.'
-  };
-  if(/footprint|capacity|twenty|20|compact/.test(l)) return {
-    interpretation:'Added capacity should come from using the existing footprint more intensely, not simply enlarging it.',
-    grounding:'The sheltered boundary is fixed, so new occupation has to reuse, overlap or reconfigure existing space.',
-    consequence:'Layer, subdivide or reconfigure seating so the same sheltered area supports more people.',
-    evaluation:'Higher capacity can improve usefulness but may increase crowding and reduce personal space.',
-    goal:'Increase capacity without increasing the sheltered footprint.'
-  };
-  if(/pause|duration|stay|rest/.test(l)) return {
-    interpretation:'A pause can range from a brief stop to a longer period of rest, study or conversation.',
-    grounding:'Different durations change expectations of comfort, privacy and access to shared surfaces.',
-    consequence:'Create a gradient from accessible short-stay edges to deeper longer-stay places.',
-    evaluation:'Greater differentiation supports varied use but can make the pavilion less spatially neutral.',
-    goal:'Support different durations of occupation within one pavilion.'
-  };
-  return {
-    interpretation:`“${t}” can be read as a design condition that needs to be made spatially explicit.`,
-    grounding:`The meaning of “${t}” changes with users, context, duration and neighbouring requirements.`,
-    consequence:`Translate “${t}” into an adjustable spatial relationship rather than a single fixed object.`,
-    evaluation:`This translation makes “${t}” visible but may compete with other project priorities.`,
-    goal:`Keep “${t}” traceable while allowing the design to remain adaptable.`
-  };
-}
-
-function toggleAggregateDemoPreset(){
-  const state=getState();
-  const existingDemoIds=new Set(state.nodes.filter(n=>n.meta?.aggregateDemoPreset).map(n=>n.id));
-  if(existingDemoIds.size){
-    checkpoint('remove aggregate demo preset');
-    updateState(s=>{
-      s.nodes=s.nodes.filter(n=>!n.meta?.aggregateDemoPreset);
-      s.edges=s.edges.filter(e=>!e.aggregateDemoPreset && !existingDemoIds.has(e.source) && !existingDemoIds.has(e.target));
-      if(existingDemoIds.has(s.activeNodeId))s.activeNodeId=null;
-    });
-    selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
-    resetAggregateFilters({render:false});
-    renderWorkspace();
-    setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
-    toast('Temporary aggregate demo removed. Your own reasoning was left untouched.');
-    return;
-  }
-  if(!(state.hotspots||[]).length){ toast('Add or detect some hotspots first, then load the aggregate demo.'); return; }
-  checkpoint('load aggregate demo preset');
-  updateState(s=>{
-    const createdByHotspot=[];
-    s.hotspots.forEach((h,index)=>{
-      let input=s.nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===h.id);
-      if(!input){
-        input=createNode({type:'input',label:h.text,branchId:`trace-${h.id}`,meta:{hotspotId:h.id,source:'brief',aggregateDemoPreset:true}});
-        s.nodes.push(input);
-      }
-      const copy=demoReasoningForHotspot(h.text);
-      let previous=input;
-      const chain=[];
-      [['interpretation',copy.interpretation],['grounding',copy.grounding],['consequence',copy.consequence],['evaluation',copy.evaluation],['goal',copy.goal]].forEach(([type,label])=>{
-        const node=createNode({type,label,branchId:`demo-${h.id}`,meta:{hotspotId:h.id,aggregateDemoPreset:true,demoLabel:'aggregate layout test'}});
-        s.nodes.push(node);
-        const edge={...createEdge(previous.id,node.id,{status:'active'}),aggregateDemoPreset:true};
-        s.edges.push(edge); previous=node; chain.push(node);
-      });
-      createdByHotspot.push({hotspot:h,input,interpretation:chain[0],grounding:chain[1],consequence:chain[2],evaluation:chain[3],goal:chain[4]});
-    });
-    // Cross-hotspot links make the preset behave like a project network rather than parallel mini trees.
-    createdByHotspot.forEach((entry,i,all)=>{
-      const next=all[(i+1)%all.length];
-      const next2=all[(i+2)%all.length];
-      if(next && next!==entry) s.edges.push({...createEdge(entry.grounding.id,next.consequence.id,{status:'provisional'}),aggregateDemoPreset:true});
-      if(next2 && next2!==entry) s.edges.push({...createEdge(entry.evaluation.id,next2.goal.id,{status:'provisional'}),aggregateDemoPreset:true});
-    });
-  });
-  resetAggregateFilters({render:false});
-  selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
-  renderWorkspace();
-  setTimeout(()=>arrangeAggregateMap({recordUndo:false,quiet:true}),25);
-  toast('Dense demo map loaded for layout testing only · use Remove demo when finished.');
 }
 
 function arrangeAggregateMap({recordUndo=true,quiet=false}={}){
