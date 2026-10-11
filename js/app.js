@@ -94,7 +94,26 @@ async function init(){
   maybeOpenFirstVisitTutorial('welcome');
 }
 
+function ensureFrameworkLockButton(){
+  let button=document.getElementById('frameworkLockButton');
+  const select=document.getElementById('frameworkSelect');
+  if(button || !select) return button;
+  const wrap=select.closest('.framework-control-wrap') || select.parentElement?.parentElement;
+  if(!wrap) return null;
+  button=document.createElement('button');
+  button.className='framework-lock-button';
+  button.id='frameworkLockButton';
+  button.type='button';
+  button.setAttribute('aria-pressed','false');
+  button.setAttribute('aria-label','Lock framework for this project');
+  button.title="Lock this project's framework so it cannot be changed accidentally";
+  button.innerHTML='<span class="framework-lock-glyph" aria-hidden="true"></span>';
+  wrap.appendChild(button);
+  return button;
+}
+
 function cacheEls(){
+  ensureFrameworkLockButton();
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
@@ -1636,6 +1655,7 @@ function updateFrameworkControls(state){
     els.frameworkLockButton.title=locked
       ? `Unlock ${framework.label} to choose a different framework for this project`
       : `Lock ${framework.label} so this project's framework cannot be changed accidentally`;
+    els.frameworkLockButton.setAttribute('aria-label',locked?`Unlock ${framework.label}`:`Lock ${framework.label}`);
     const text=els.frameworkLockButton.querySelector('.framework-lock-text');
     if(text) text.textContent=locked?'Locked':'Lock';
   }

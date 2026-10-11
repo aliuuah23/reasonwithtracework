@@ -162,3 +162,9 @@
 .canvas-footer{position:relative;z-index:28;overflow:visible}
 .canvas-footer .legend{position:relative;z-index:32;overflow:visible}
 .thought-dock{z-index:12}
+
+/* Round A2.4 · structured workspace ribbon */
+.canvas-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch}
+.canvas-toolbar>div:first-child{width:100%;min-width:0}
+.canvas-title-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 14px;width:100%}
+.toolbar-actions{width:100%;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border)}

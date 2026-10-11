@@ -481,3 +481,23 @@ html.tutorial-tour-active{overflow:hidden}
 .framework-lock-button:not(.locked) .framework-lock-glyph::before{transform:translateX(2px) rotate(22deg);transform-origin:0 100%}
 .framework-lock-text{white-space:nowrap}
 @media(max-width:1180px){.framework-lock-text{display:none}.framework-lock-button{width:30px;padding:4px}.framework-control-wrap{gap:3px}}
+
+/* Round A2.4 · workspace ribbon + always-visible framework lock */
+.canvas-heading-group{display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}
+.canvas-control-group{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;flex-wrap:wrap}
+.canvas-state-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.framework-control-wrap{flex:0 0 auto}
+.framework-lock-button{
+  width:32px;min-width:32px;height:32px;min-height:32px;padding:0;border-radius:10px;
+  background:#fff;border-color:var(--border-strong);color:var(--muted);box-shadow:0 1px 3px rgba(25,29,42,.04)
+}
+.framework-lock-button:hover{background:var(--surface-soft);border-color:#b8b7c5;color:var(--text)}
+.framework-lock-button.locked{background:#f1f0ff;border-color:#bdb9f3;color:var(--accent-dark);box-shadow:0 0 0 2px rgba(91,82,214,.06)}
+.framework-lock-glyph{width:11px;height:9px;margin-top:4px;border-width:1.6px}
+.framework-lock-glyph::before{left:1px;top:-7px;width:6px;height:7px;border-width:1.6px}
+.framework-lock-button:not(.locked) .framework-lock-glyph::before{transform:translateX(3px) rotate(24deg);transform-origin:0 100%}
+
+/* Keep the aggregate ribbon as a full-width, predictable row. */
+.aggregate-controls{max-width:none;width:100%;margin-top:8px;column-gap:7px;row-gap:7px}
+.aggregate-controls select{flex:0 1 150px;max-width:170px}
+.aggregate-controls .arrange-blend{flex:0 0 auto}

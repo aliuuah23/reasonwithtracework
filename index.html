@@ -144,33 +144,39 @@
             <div>
               <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" id="workspaceTutorialButton" data-tutorial="workspace">? Tutorial</button></div>
               <div class="canvas-title-row">
-                <h2 id="canvasTitle">Your trace</h2>
-                <span class="branch-count" id="branchCount">1 path</span>
-                <div class="map-mode-toggle" aria-label="Reasoning map view">
-                  <button class="map-mode-button active" id="focusMapModeButton" type="button" title="Show only the reasoning around the selected hotspot">Focus map</button>
-                  <button class="map-mode-button" id="aggregateMapModeButton" type="button" title="Merge every focus map in this project into one reasoning field">Aggregate map</button>
+                <div class="canvas-heading-group">
+                  <h2 id="canvasTitle">Your trace</h2>
+                  <span class="branch-count" id="branchCount">1 path</span>
+                  <div class="map-mode-toggle" aria-label="Reasoning map view">
+                    <button class="map-mode-button active" id="focusMapModeButton" type="button" title="Show only the reasoning around the selected hotspot">Focus map</button>
+                    <button class="map-mode-button" id="aggregateMapModeButton" type="button" title="Merge every focus map in this project into one reasoning field">Aggregate map</button>
+                  </div>
                 </div>
-                <div class="framework-control-wrap">
-                  <label class="framework-control" title="Change the structuring lens without changing or deleting the reasoning itself.">
-                    <span>Framework</span>
-                    <select id="frameworkSelect" aria-label="Reasoning framework">
-                    <option value="tracework">TRACEWORK Grammar</option>
-                    <optgroup label="Literature frameworks">
-                      <option value="requirements">Requirements Elicitation</option>
-                      <option value="fivewhys">Five Whys</option>
-                      <option value="laddering">Laddering / Means–End</option>
-                      <option value="framing">Design Framing</option>
-                      <option value="reflective">Reflective Practice</option>
-                      <option value="semantics">Design Semantics</option>
-                    </optgroup>
-                      <option value="freeform">Freeform / Low-Structure</option>
-                    </select>
-                  </label>
-                  <button class="framework-lock-button" id="frameworkLockButton" type="button" aria-pressed="false" title="Lock this project's framework so it cannot be changed accidentally"><span class="framework-lock-glyph" aria-hidden="true"></span><span class="framework-lock-text">Lock</span></button>
+                <div class="canvas-control-group">
+                  <div class="framework-control-wrap">
+                    <label class="framework-control" title="Change the structuring lens without changing or deleting the reasoning itself.">
+                      <span>Framework</span>
+                      <select id="frameworkSelect" aria-label="Reasoning framework">
+                      <option value="tracework">TRACEWORK Grammar</option>
+                      <optgroup label="Literature frameworks">
+                        <option value="requirements">Requirements Elicitation</option>
+                        <option value="fivewhys">Five Whys</option>
+                        <option value="laddering">Laddering / Means–End</option>
+                        <option value="framing">Design Framing</option>
+                        <option value="reflective">Reflective Practice</option>
+                        <option value="semantics">Design Semantics</option>
+                      </optgroup>
+                        <option value="freeform">Freeform / Low-Structure</option>
+                      </select>
+                    </label>
+                    <button class="framework-lock-button" id="frameworkLockButton" type="button" aria-pressed="false" aria-label="Lock framework for this project" title="Lock this project's framework so it cannot be changed accidentally"><span class="framework-lock-glyph" aria-hidden="true"></span></button>
+                  </div>
+                  <div class="canvas-state-actions">
+                    <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
+                    <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
+                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
+                  </div>
                 </div>
-                <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
-                <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
-                <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
               </div>
               <div class="aggregate-controls hidden" id="aggregateControls" aria-label="Aggregate map filters">
                 <span class="aggregate-label">ALL PROJECT REASONING</span>
