@@ -208,14 +208,14 @@ export function classifyFrameworkThought(text,frameworkId,{canonicalType=null,af
     bump((fallback||framework.categories[0]).id,.45,'weak default');
     ranked=framework.categories.map(c=>({category:c,score:scores[c.id]})).sort((a,b)=>b.score-a.score);
   }
-  const positive=ranked.filter(x=>x.score>0);
-  const total=Math.max(.1,positive.reduce((sum,x)=>sum+x.score,0));
   const best=ranked[0],second=ranked[1]||{score:0};
   const margin=Math.max(0,best.score-second.score);
-  const confidence=Math.max(.28,Math.min(.88,.34+(best.score*.055)+(margin*.045)));
+  const confidence=Math.max(.28,Math.min(.9,.32+(best.score*.06)+(margin*.04)));
   const matches=ranked.slice(0,4).map((item,index)=>{
-    const share=item.score<=0?0:item.score/total;
-    const strength=item.score<=0?0:Math.max(8,Math.min(86,Math.round(18+share*68)));
+    // Match strengths are deliberately absolute-ish rather than shares of a 100% pie.
+    // A sentence can strongly fit more than one role without making the strongest role
+    // appear weaker simply because another useful reading also becomes visible.
+    const strength=item.score<=0?0:Math.max(8,Math.min(92,Math.round(18+item.score*9)));
     return {role:item.category.id,category:item.category,strength,cues:[...new Set(reasons[item.category.id])].slice(0,3),strongest:index===0};
   });
   const cues=[...new Set(reasons[best.category.id])].slice(0,4);
@@ -224,7 +224,7 @@ export function classifyFrameworkThought(text,frameworkId,{canonicalType=null,af
     role:best.category.id,
     category:best.category,
     confidence,
-    reason:`${cueText} Percentages show relative fit inside ${framework.label}, not certainty; change the role whenever the framework reading does not match your intent.`,
+    reason:`${cueText} Match strengths show how strongly the wording fits each role inside ${framework.label}; they are not probabilities and do not need to add to 100. Change the role whenever the framework reading does not match your intent.`,
     matches
   };
 }
@@ -267,13 +267,14 @@ function applyFrameworkHeuristics(value,frameworkId,{bump,afterRole}){
     if(has(/\b(the problem is|the idea is|i think|i am treating|current frame|understand this as)\b/)) bump('frame',4,'current framing');
   }
   if(frameworkId==='semantics'){
-    if(has(/\b(could mean|might mean|may mean|does not necessarily mean|doesn't necessarily mean|means|i interpret|reading of|implies)\b/)) bump('meaning',5.5,'explicit meaning/interpretation language');
+    if(has(/\b(could mean|might mean|may mean|does not necessarily mean|doesn't necessarily mean|means|i interpret|reading of|implies)\b/)) bump('meaning',5.2,'explicit meaning/interpretation language');
     if(has(/\b(in this context|for these users|on this site|depending on|culture|situated|circumstance)\b/)) bump('context',4,'contextual construction of meaning');
     if(has(/\b(use|experience|behavio|occupation|occupy|interaction|activity|how people)\b/)) bump('use',3.8,'use/experience implication');
     if(has(/\b(value|relationship|relation|priority|what matters|important because|between)\b/)) bump('value_relation',3.8,'value or relation');
     if(has(/\b(feels?|atmosphere|sense of|quality|welcoming|quiet|comfort|character)\b/)) bump('atmosphere',3.8,'atmospheric/qualitative meaning');
-    if(has(/\b(spatial|architect|enclos|visual connection|threshold|screen|layout|seating|route|circulation|opening|wall|edge|centre|center|form|section|plan)\b/)) bump('implication',5,'architectural/spatial implication');
-    if(afterRole==='meaning' && has(/\b(enclos|visual|threshold|screen|layout|seating|route|circulation|form|space)\b/)) bump('implication',2.5,'meaning developing toward architecture');
+    if(has(/\b(spatial|architect|enclos|visual connection|partial enclosure|threshold|screen|layout|seating|route|circulation|opening|wall|edge|centre|center|form|section|plan)\b/)) bump('implication',6.5,'architectural/spatial implication');
+    if(has(/\b(maintain(?:ing)? visual connection|partial(?:ly)? enclos|screen(?:ing)?|threshold|spatially|architectural consequence)\b/)) bump('implication',3.5,'developed architectural consequence');
+    if(afterRole==='meaning' && has(/\b(enclos|visual|threshold|screen|layout|seating|route|circulation|form|space)\b/)) bump('implication',3,'meaning developing toward architecture');
     if(!afterRole && !has(/\bmean|context|use|experience|value|atmosphere|spatial|architect|enclos|visual|threshold|layout|seating|route|form\b/)) bump('expression',1.5,'unresolved expression/term');
   }
 }
@@ -329,7 +330,81 @@ export function frameworkGuidance(frameworkId,currentRoleId,{sourceText=''}={}){
   const current=byRole[currentRoleId]||byRole[f.categories?.[0]?.id]||null;
   if(!current)return null;
   const roleOptions=(current.roleOptions||[current.nextRole]).filter(Boolean);
-  return {...current,roleOptions,sourceText,framework:f};
+  const source=String(sourceText||'').trim();
+  const quoted=source ? `“${source.length>92?`${source.slice(0,89)}…`:source}”` : 'this thought';
+  const backwardMap={
+    requirements:{refinement:'statement',goal:'refinement',scenario:'goal',constraint:'scenario',requirement:'constraint',validation:'requirement'},
+    fivewhys:{reason:'surface',deeper:'reason',root:'deeper'},
+    laddering:{consequence:'attribute',value:'consequence'},
+    framing:{frame:'situation',value:'frame',response:'value'},
+    reflective:{move:'frame',backtalk:'move',reflection:'backtalk',reframe:'reflection'},
+    semantics:{meaning:'expression',context:'meaning',use:'meaning',value_relation:'meaning',atmosphere:'meaning',implication:'meaning'}
+  };
+  const backwardRole=backwardMap[f.id]?.[currentRoleId]||null;
+  const backwardQuestions={
+    requirements:`What earlier statement, goal or situation makes ${quoted} necessary?`,
+    fivewhys:`What claim or reason immediately led to ${quoted}?`,
+    laddering:`What earlier attribute or consequence gives rise to ${quoted}?`,
+    framing:`What situation or frame makes ${quoted} a meaningful move?`,
+    reflective:`What frame, move or back-talk immediately produced ${quoted}?`,
+    semantics:`What expression or prior meaning is ${quoted} developing from?`
+  };
+  const forwardQuestion=source ? contextualForwardQuestion(f.id,currentRoleId,current.question,quoted) : current.question;
+  return {
+    ...current,
+    question:forwardQuestion,
+    roleOptions,sourceText:source,framework:f,
+    backward:backwardRole?{role:backwardRole,question:backwardQuestions[f.id]||`What led to ${quoted}?`,placeholder:`Write what led to ${quoted}…`}:null,
+    forward:{role:current.nextRole,question:forwardQuestion,placeholder:current.placeholder,roleOptions}
+  };
+}
+
+function contextualForwardQuestion(frameworkId,currentRoleId,fallback,quoted){
+  const map={
+    requirements:{
+      statement:`What in ${quoted} is still unclear, assumed or underspecified?`,
+      refinement:`What need or goal does ${quoted} reveal?`,
+      goal:`In what concrete situation should ${quoted} still hold?`,
+      scenario:`What could obstruct or conflict with ${quoted}?`,
+      constraint:`What operational requirement could answer ${quoted}?`,
+      requirement:`How could ${quoted} be tested or negotiated?`,
+      validation:`What should be revised after what ${quoted} revealed?`
+    },
+    fivewhys:{
+      surface:`Why is ${quoted} happening — or why does it matter?`,
+      reason:`Why is ${quoted} the case?`,
+      deeper:`Why does ${quoted} exist?`,
+      root:`Does ${quoted} feel like the root concern, or is there another “why” beneath it?`
+    },
+    laddering:{
+      attribute:`What does ${quoted} enable, prevent or change?`,
+      consequence:`Why is ${quoted} important to the user?`,
+      value:`What other attribute or consequence could also serve ${quoted}?`
+    },
+    framing:{
+      situation:`What way of seeing ${quoted} would make it designable?`,
+      frame:`What does ${quoted} make newly visible — and what might it hide?`,
+      value:`What design response becomes possible if ${quoted} is prioritised?`,
+      response:`What alternative frame could produce a genuinely different response to ${quoted}?`
+    },
+    reflective:{
+      frame:`What move would actually test ${quoted}?`,
+      move:`What did the situation do back in response to ${quoted}?`,
+      backtalk:`What does ${quoted} make worth reconsidering?`,
+      reflection:`How should the frame or next move change because of ${quoted}?`,
+      reframe:`What next move would test ${quoted} rather than merely restating it?`
+    },
+    semantics:{
+      expression:`What possible meaning does ${quoted} carry here?`,
+      meaning:`What context, use, value, atmosphere or architectural consequence develops ${quoted}?`,
+      context:`How does ${quoted} qualify or change the meaning?`,
+      use:`What architectural implication follows from ${quoted}?`,
+      value_relation:`How could ${quoted} become spatially consequential?`,
+      atmosphere:`What architectural condition could support or challenge ${quoted}?`,
+      implication:`What meaning does ${quoted} reinforce, challenge or reveal?`
+    }
+  };
+  return map[frameworkId]?.[currentRoleId]||fallback;
 }
 
 export function frameworkTutorialSteps(frameworkId='tracework'){

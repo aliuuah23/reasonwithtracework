@@ -388,14 +388,16 @@ function renderGraphState(){
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence,{frameworkId:getState().frameworkId}),
     onNodeMove:(id,x,y)=>{
+      let materialised=null;
+      if(workspaceMapMode==='aggregate' && aggregateArrangeSession)materialised=currentAggregateArrangement(getState());
       if(workspaceMapMode==='aggregate'){aggregateArrangeSession=null;aggregateArrangeBlend=100;els.arrangeBlendControl?.classList.add('hidden');}
       updateState(s=>{
+        if(workspaceMapMode==='aggregate' && materialised){
+          s.nodes.forEach(node=>{const pos=materialised.get(node.id);if(pos)node.meta={...(node.meta||{}),aggregateOriginalPosition:{x:pos.x,y:pos.y}};});
+        }
         const n=s.nodes.find(n=>n.id===id); if(!n)return;
-        if(workspaceMapMode==='aggregate'){
-          const frameworkId=s.frameworkId||'tracework';
-          n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x,y}}};
-          if(frameworkId==='tracework'){ n.meta.aggregateX=x; n.meta.aggregateY=y; }
-        }else { n.x=x; n.y=y; }
+        if(workspaceMapMode==='aggregate')n.meta={...(n.meta||{}),aggregateOriginalPosition:{x,y}};
+        else { n.x=x; n.y=y; }
       });
     },
     getScale:()=>canvasZoom,
@@ -526,20 +528,18 @@ function addHotspotInterpretation(text,prompt,inputNodeId){
   const fallback=visibleCanvasPlacement(getState().nodes.length+1);
   updateState(s=>{
     const input=s.nodes.find(n=>n.id===inputNodeId);
-    created=addInterpretation(s,inputNodeId,value,input?.branchId||s.activeBranchId,{guided:true,sourcePrompt:prompt?.question||'',provenance:'designer'});
-    if(created){
-      const baseX=Number.isFinite(Number(input?.x))?Number(input.x):fallback.x;
-      const baseY=Number.isFinite(Number(input?.y))?Number(input.y):fallback.y;
-      created.x=baseX+270;
-      created.y=baseY;
-      s.activeNodeId=created.id;
-    }
+    const baseX=Number.isFinite(Number(input?.x))?Number(input.x):fallback.x;
+    const baseY=Number.isFinite(Number(input?.y))?Number(input.y):fallback.y;
+    created=createNode({type:'interpretation',label:value,branchId:input?.branchId||s.activeBranchId,x:baseX+270,y:baseY,meta:{guided:true,sourcePrompt:prompt?.question||'',provenance:'designer',hotspotId:input?.meta?.hotspotId||s.selectedHotspotId}});
+    s.nodes.push(created);
+    s.activeNodeId=created.id;
+    s.activeBranchId=created.branchId;
   });
   lastAddedNodeId=created?.id||null;
   if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
   logEvent('Interpretation added',value);
   renderWorkspace();
-  if(created)toast('Interpretation added and linked. Continue from the new node, or leave it open.');
+  if(created)toast('Interpretation added beside the source. Connect it manually when that relationship is intentional.');
 }
 
 function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
@@ -552,6 +552,7 @@ function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
   if(!role)return;
   checkpoint(`add ${framework.shortLabel} guided step`);
   let created=null;
+  let autoLinked=false;
   const fallback=visibleCanvasPlacement(getState().nodes.length+1);
   updateState(s=>{
     const parent=s.nodes.find(n=>n.id===parentId);
@@ -559,9 +560,16 @@ function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
     const type=canonicalTypeForFrameworkRole(frameworkId,roleId,'interpretation');
     const baseX=Number.isFinite(Number(parent.x))?Number(parent.x):fallback.x;
     const baseY=Number.isFinite(Number(parent.y))?Number(parent.y):fallback.y;
-    created=createNode({type,label:value,branchId:parent.branchId||s.activeBranchId,x:baseX+285,y:baseY+18,meta:{guided:true,frameworkGuided:true,hotspotId:parent.meta?.hotspotId||s.selectedHotspotId,provenance:'designer',sourcePrompt:extra?.question||'',frameworkRoles:{[frameworkId]:roleId}}});
+    const direction=extra?.direction==='backward'?-1:1;
+    created=createNode({type,label:value,branchId:parent.branchId||s.activeBranchId,x:baseX+(285*direction),y:baseY+18,meta:{guided:true,frameworkGuided:true,hotspotId:parent.meta?.hotspotId||s.selectedHotspotId,provenance:'designer',sourcePrompt:extra?.question||'',promptDirection:extra?.direction||'forward',frameworkRoles:{[frameworkId]:roleId}}});
     s.nodes.push(created);
-    s.edges.push(createEdge(parent.id,created.id));
+    const sourceLike=parent.type==='input'||parent.meta?.source==='brief';
+    if(!sourceLike){
+      const sourceId=extra?.direction==='backward'?created.id:parent.id;
+      const targetId=extra?.direction==='backward'?parent.id:created.id;
+      s.edges.push(createEdge(sourceId,targetId));
+      autoLinked=true;
+    }
     s.activeNodeId=created.id;
     s.activeBranchId=created.branchId;
   });
@@ -569,7 +577,7 @@ function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
   if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
   logEvent(`${framework.shortLabel} guided step`,`${role.label} · ${value}`);
   renderWorkspace();
-  if(created)toast(`${role.label} added through ${framework.shortLabel}. Underlying TRACEWORK role remains editable.`);
+  if(created)toast(autoLinked?`${role.label} added through ${framework.shortLabel}.`:`${role.label} added beside the source. Connect it manually if that relationship is intended.`);
 }
 
 function selectNode(id,event){
@@ -608,7 +616,10 @@ function nodeHandlers(){
       let created=null;
       const fallback=visibleCanvasPlacement(getState().nodes.length+1);
       updateState(s=>{
-        if(node.type==='input') created=addInterpretation(s,node.id,text,node.branchId||s.activeBranchId,{guided:true,sourcePrompt:'Input-node guidance'});
+        if(node.type==='input') {
+          created=createNode({type:'interpretation',label:text,branchId:node.branchId||s.activeBranchId,meta:{guided:true,sourcePrompt:'Input-node guidance',provenance:'designer',hotspotId:node.meta?.hotspotId||s.selectedHotspotId}});
+          s.nodes.push(created);
+        }
         else if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
         else if(node.type==='grounding') created=addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
         else if(node.type==='consequence') created=addEvaluation(s,node.id,text,node.branchId,extra.tags||[]);
@@ -626,7 +637,7 @@ function nodeHandlers(){
       if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
       const labels={input:'Interpretation added',interpretation:'Grounding added',grounding:'Spatial consequence added',consequence:'Evaluation added',evaluation:'Goal added'};
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
-      if(created) toast(`${typeLabels[created.type]||created.type} added and linked.`);
+      if(created) toast(node.type==='input'?`${typeLabels[created.type]||created.type} added beside the source. Connect it manually when intended.`:`${typeLabels[created.type]||created.type} added and linked.`);
     },
     onFrameworkNext:(node,text,roleId,extra)=>addFrameworkGuidedStep(node.id,text,roleId,extra),
     onBranch:id=>branchFrom(id),
@@ -1170,6 +1181,28 @@ function handleWorkspaceKeydown(e){
     renderWorkspace();toast('Connection removed.');return;
   }
 
+  if(selectedNodeIds.size>1){
+    const state=getState();
+    const ids=[...selectedNodeIds].filter(id=>state.nodes.some(n=>n.id===id));
+    if(!ids.length)return;
+    const protectedIds=new Set(ids.filter(id=>{const n=state.nodes.find(x=>x.id===id);return n?.type==='input'&&n?.meta?.source==='brief';}));
+    const deletable=ids.filter(id=>!protectedIds.has(id));
+    e.preventDefault();
+    if(!deletable.length){toast('Brief-source Inputs are protected. Change the hotspot/source rather than deleting those nodes.');return;}
+    checkpoint('delete selected reasoning nodes');
+    const remove=new Set(deletable);
+    updateState(s=>{
+      s.nodes=s.nodes.filter(n=>!remove.has(n.id));
+      s.edges=s.edges.filter(edge=>!remove.has(edge.source)&&!remove.has(edge.target));
+      if(remove.has(s.activeNodeId))s.activeNodeId=null;
+    });
+    deletable.forEach(id=>{selectedNodeIds.delete(id);traceIssueNodeIds.delete(id);});
+    selectedEdgeId=null;
+    renderWorkspace();
+    toast(`${deletable.length} selected node${deletable.length===1?'':'s'} deleted.${protectedIds.size?` ${protectedIds.size} brief-source Input${protectedIds.size===1?' was':'s were'} kept.`:''} Ctrl+Z restores the deletion.`);
+    return;
+  }
+
   const id=getState().activeNodeId;
   if(!id)return;
   const node=getState().nodes.find(n=>n.id===id);
@@ -1236,7 +1269,8 @@ function openNodeContext(id,x,y){
     return `<button type="button" class="node-context-wire" data-edge-action="${e.id}">Disconnect wire ${outgoing?'to':'from'} “${short}”</button>`;
   }).join('');
   const groupAction=canGroup?`<button type="button" data-node-action="group">${sameGroup?'Ungroup selected':'Group selected'} (${selected.length})</button>`:(groupMembers.length>1?`<button type="button" data-node-action="ungroup">Ungroup this group (${groupMembers.length})</button>`:'');
-  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="focus">${focusPathRootId===id?'Show full pathway field':'Focus this pathway'}</button><button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · Ctrl+G groups them · Ctrl+F finds a node.'}</small>`;
+  const multiDelete=selected.length>1?`<button type="button" data-node-action="delete-selected">Delete selected (${selected.length})</button>`:'';
+  menu.innerHTML=`<button type="button" data-node-action="lock">${locked?'Unlock position':'Lock position'}</button>${groupAction}<button type="button" data-node-action="focus">${focusPathRootId===id?'Show full pathway field':'Focus this pathway'}</button><button type="button" data-node-action="disconnect">Disconnect all wires</button>${wireActions?`<div class="node-context-divider"></div>${wireActions}`:''}${multiDelete}<button type="button" data-node-action="delete" ${protectedSource?'disabled':''}>Delete node</button><small>${protectedSource?'Brief-source Inputs are protected.':'Shift-click selects several nodes · Delete/Backspace removes the selection · Ctrl+G groups · Ctrl+F finds.'}</small>`;
   document.body.appendChild(menu);
   const rect=menu.getBoundingClientRect();
   menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
@@ -1273,6 +1307,18 @@ function openNodeContext(id,x,y){
     checkpoint('disconnect node');updateState(s=>{s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);});closeNodeContext();renderWorkspace();toast(`${count} ${count===1?'wire':'wires'} disconnected.`);
   };
   menu.querySelectorAll('[data-edge-action]').forEach(b=>b.onclick=()=>{const edgeId=b.dataset.edgeAction;closeNodeContext();disconnectEdge(edgeId);});
+  menu.querySelector('[data-node-action="delete-selected"]')?.addEventListener('click',()=>{
+    const current=getState();
+    const ids=[...selectedNodeIds].filter(nid=>current.nodes.some(n=>n.id===nid));
+    const protectedSet=new Set(ids.filter(nid=>{const n=current.nodes.find(x=>x.id===nid);return n?.type==='input'&&n?.meta?.source==='brief';}));
+    const deletable=ids.filter(nid=>!protectedSet.has(nid));
+    if(!deletable.length){toast('Brief-source Inputs are protected.');closeNodeContext();return;}
+    checkpoint('delete selected reasoning nodes');
+    const remove=new Set(deletable);
+    updateState(s=>{s.nodes=s.nodes.filter(n=>!remove.has(n.id));s.edges=s.edges.filter(e=>!remove.has(e.source)&&!remove.has(e.target));if(remove.has(s.activeNodeId))s.activeNodeId=null;});
+    deletable.forEach(nid=>selectedNodeIds.delete(nid));
+    closeNodeContext();renderWorkspace();toast(`${deletable.length} selected node${deletable.length===1?'':'s'} deleted. Ctrl+Z restores them.`);
+  });
   const del=menu.querySelector('[data-node-action="delete"]');
   if(del&&!del.disabled)del.onclick=()=>{checkpoint('delete reasoning node');updateState(s=>{s.nodes=s.nodes.filter(n=>n.id!==id);s.edges=s.edges.filter(e=>e.source!==id&&e.target!==id);if(s.activeNodeId===id)s.activeNodeId=null;});selectedNodeIds.delete(id);closeNodeContext();renderWorkspace();toast('Node deleted. Ctrl+Z restores it.');};
 }
@@ -1594,9 +1640,11 @@ function updateFrameworkControls(state){
     else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
   }
   if(els.arrangeAggregateButton){
-    els.arrangeAggregateButton.title=framework.id==='freeform'
-      ? 'Arrange the aggregate as a low-structure reasoning field'
-      : `Arrange the aggregate through ${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''}`;
+    const arranged=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id;
+    els.arrangeAggregateButton.textContent=arranged?'Original layout':'Arrange map';
+    els.arrangeAggregateButton.title=arranged
+      ? 'Return to the user-arranged Aggregate Map without changing any reasoning.'
+      : (framework.id==='freeform'?'Preview a low-structure arrangement while preserving the original layout.':`Preview an arrangement through ${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''} while preserving the original layout.`);
   }
   if(els.workspaceTutorialButton){
     if(framework.id==='tracework'){
@@ -1705,14 +1753,39 @@ function updateAggregateControls(state){
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.value=aggregateStatusFilter;
 }
 
-function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracework'){
+function aggregateOriginalPositions(state){
   const nodes=state.nodes||[];
-  const savedPosition=node=>{
-    const direct=node.meta?.aggregatePositions?.[frameworkId];
-    if(direct && Number.isFinite(Number(direct.x)) && Number.isFinite(Number(direct.y))) return {x:Number(direct.x),y:Number(direct.y)};
-    if(frameworkId==='tracework' && Number.isFinite(Number(node.meta?.aggregateX)) && Number.isFinite(Number(node.meta?.aggregateY))) return {x:Number(node.meta.aggregateX),y:Number(node.meta.aggregateY)};
-    return null;
-  };
+  const fallback=frameworkAggregateLayout(state,'tracework');
+  const out=new Map();
+  nodes.forEach(n=>{
+    const original=n.meta?.aggregateOriginalPosition;
+    if(original && Number.isFinite(Number(original.x)) && Number.isFinite(Number(original.y))){out.set(n.id,{x:Number(original.x),y:Number(original.y)});return;}
+    const legacy=n.meta?.aggregatePositions?.tracework;
+    if(legacy && Number.isFinite(Number(legacy.x)) && Number.isFinite(Number(legacy.y))){out.set(n.id,{x:Number(legacy.x),y:Number(legacy.y)});return;}
+    if(Number.isFinite(Number(n.meta?.aggregateX)) && Number.isFinite(Number(n.meta?.aggregateY))){out.set(n.id,{x:Number(n.meta.aggregateX),y:Number(n.meta.aggregateY)});return;}
+    out.set(n.id,fallback.get(n.id)||{x:Number(n.x)||80,y:Number(n.y)||80});
+  });
+  return out;
+}
+
+function currentAggregateArrangement(state){
+  const frameworkId=state.frameworkId||'tracework';
+  if(!aggregateArrangeSession || aggregateArrangeSession.frameworkId!==frameworkId)return aggregateOriginalPositions(state);
+  const t=Math.max(0,Math.min(100,Number(aggregateArrangeBlend)||0))/100;
+  const positions=new Map();
+  const ids=new Set([...aggregateArrangeSession.before.keys(),...aggregateArrangeSession.target.keys()]);
+  ids.forEach(id=>{
+    const a=aggregateArrangeSession.before.get(id)||aggregateArrangeSession.target.get(id);
+    const b=aggregateArrangeSession.target.get(id)||a;
+    if(a&&b)positions.set(id,{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  });
+  return positions;
+}
+
+function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracework'){
+  const nodes=state.nodes||[];
+  // Generate a fresh framework layout only when Arrange Map is explicitly requested.
+  const savedPosition=()=>null;
 
   if(frameworkId==='freeform'){
     const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
@@ -1825,7 +1898,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
 }
 
 function aggregateTrace(state,{ignoreFilters=false}={}){
-  const positions=aggregateInitialPositions(state);
+  const positions=currentAggregateArrangement(state);
   const hotspotById=new Map((state.hotspots||[]).map(h=>[h.id,h]));
   let nodes=(state.nodes||[]).map(n=>{ const pos=positions.get(n.id)||{x:n.x||0,y:n.y||0}; return {...n,x:pos.x,y:pos.y}; });
   if(!ignoreFilters){
@@ -1857,50 +1930,31 @@ function workspaceTrace(state){
 function arrangeAggregateMap({recordUndo=true,quiet=false}={}){
   if(workspaceMapMode!=='aggregate')return;
   const frameworkId=getState().frameworkId||'tracework';
-  if(recordUndo) checkpoint(`arrange aggregate map · ${frameworkId}`);
+  if(aggregateArrangeSession?.frameworkId===frameworkId){
+    aggregateArrangeSession=null;aggregateArrangeBlend=100;
+    selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
+    renderWorkspace();
+    if(!quiet)toast('Returned to the user’s original Aggregate Map arrangement.');
+    return;
+  }
+  if(recordUndo)checkpoint(`preview ${frameworkId} aggregate arrangement`);
   const state=getState();
-  const before=aggregateInitialPositions(state,frameworkId);
-  const clearedNodes=state.nodes.map(n=>{
-    const positions={...(n.meta?.aggregatePositions||{})}; delete positions[frameworkId];
-    const meta={...(n.meta||{}),aggregatePositions:positions};
-    if(frameworkId==='tracework'){ delete meta.aggregateX; delete meta.aggregateY; }
-    return {...n,meta};
-  });
-  const target=aggregateInitialPositions({...state,nodes:clearedNodes},frameworkId);
+  const before=aggregateOriginalPositions(state);
+  const target=frameworkAggregateLayout(state,frameworkId);
   aggregateArrangeSession={frameworkId,before:new Map(before),target:new Map(target)};
   aggregateArrangeBlend=100;
-  writeAggregatePositions(target,frameworkId);
-  selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
+  selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
   renderWorkspace();
-  setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
-  if(!quiet) toast(`${getFramework(frameworkId).label} arrangement applied. Use the Arrangement slider to blend back toward the layout you had before arranging.`);
-}
-
-function writeAggregatePositions(positionMap,frameworkId){
-  updateState(s=>{ s.nodes.forEach(n=>{
-    const pos=positionMap.get(n.id); if(!pos)return;
-    n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x:pos.x,y:pos.y}}};
-    if(frameworkId==='tracework'){n.meta.aggregateX=pos.x;n.meta.aggregateY=pos.y;}
-  }); });
+  setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
+  if(!quiet)toast(`${getFramework(frameworkId).label} arrangement previewed. The original user layout is preserved; use the slider or Arrange map again to return.`);
 }
 
 function applyAggregateArrangeBlend(value=100){
   if(workspaceMapMode!=='aggregate'||!aggregateArrangeSession)return;
   const frameworkId=getState().frameworkId||'tracework';
   if(aggregateArrangeSession.frameworkId!==frameworkId)return;
-  const blend=Math.max(0,Math.min(100,Number(value)||0));
-  aggregateArrangeBlend=blend;
-  const t=blend/100;
-  const positions=new Map();
-  const ids=new Set([...aggregateArrangeSession.before.keys(),...aggregateArrangeSession.target.keys()]);
-  ids.forEach(id=>{
-    const a=aggregateArrangeSession.before.get(id)||aggregateArrangeSession.target.get(id);
-    const b=aggregateArrangeSession.target.get(id)||a;
-    if(!a||!b)return;
-    positions.set(id,{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
-  });
-  writeAggregatePositions(positions,frameworkId);
-  if(els.arrangeBlendLabel) els.arrangeBlendLabel.textContent=blend<=0?'Original':blend>=100?'Framework 100%':`Framework ${Math.round(blend)}%`;
+  aggregateArrangeBlend=Math.max(0,Math.min(100,Number(value)||0));
+  if(els.arrangeBlendLabel)els.arrangeBlendLabel.textContent=aggregateArrangeBlend<=0?'Original':aggregateArrangeBlend>=100?'Framework 100%':`Framework ${Math.round(aggregateArrangeBlend)}%`;
   renderGraphState();
 }
 

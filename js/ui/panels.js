@@ -121,33 +121,61 @@ function caseStudyMarkup(items){
 
 function frameworkNextForm(node,framework,currentRole,guide){
   if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it to continue working from it, or branch from an earlier active node.</p></div>`;
-  if(!guide?.nextRole){
+  const forward=guide?.forward || (guide?.nextRole?{role:guide.nextRole,question:guide.question,placeholder:guide.placeholder,roleOptions:guide.roleOptions}:null);
+  const backward=guide?.backward||null;
+  if(!forward?.role && !backward?.role){
     return `<div class="inspector-section framework-guided-section"><span class="status-chip active">${esc(framework.shortLabel)} pause point</span><div class="prompt-question">${esc(guide?.question||'This framework route can pause here.')}</div><div class="guided-help-note">The framework is a lens, not a compulsory sequence. Return to an earlier node, add a free thought, or switch framework whenever another reading would be more useful.</div></div>`;
   }
-  const recommended=guide.nextRole;
-  const roles=framework.categories||[];
-  const options=roles.map(c=>`<option value="${attr(c.id)}" ${c.id===recommended?'selected':''}>${esc(c.label)}${c.id===recommended?' · suggested':''}</option>`).join('');
+  const initial=forward?.role?'forward':'backward';
+  const initialProbe=initial==='forward'?forward:backward;
+  const roleIds=(initialProbe?.roleOptions||[initialProbe?.role]).filter(Boolean);
+  const options=roleIds.map(id=>{const c=framework.categories.find(x=>x.id===id);return c?`<option value="${attr(c.id)}" ${c.id===initialProbe.role?'selected':''}>${esc(c.label)}${c.id===initialProbe.role?' · suggested':''}</option>`:'';}).join('');
+  const directions=forward?.role && backward?.role ? `<div class="probe-direction" role="group" aria-label="Prompt direction"><button type="button" class="probe-direction-button" data-probe-direction="backward">← What led here?</button><button type="button" class="probe-direction-button active" data-probe-direction="forward">What follows? →</button></div>` : '';
   return `<div class="inspector-section framework-guided-section">
-    <div class="framework-next-row"><span class="guided-next-label">${esc(framework.shortLabel)} next move</span><select id="frameworkNextRole" aria-label="Next framework role">${options}</select></div>
-    <div class="prompt-question">${esc(guide.question)}</div>
-    ${guide.choices?.length?`<div class="choice-list">${guide.choices.map(c=>`<button class="choice-chip framework-cue" data-framework-cue="${attr(c)}">${esc(c)}</button>`).join('')}</div>`:''}
-    <div class="guided-help-note">The suggested next role follows ${esc(framework.label)}, but it is editable. Keep the framework useful rather than forcing your reasoning to obey it.</div>
-    <label class="field-label">Write the next reasoning move</label>
-    <textarea class="field-textarea" id="nextText" placeholder="${attr(guide.placeholder||'Write the next reasoning move…')}"></textarea>
+    <div class="framework-next-row"><span class="guided-next-label">${esc(framework.shortLabel)} prompt</span><select id="frameworkNextRole" aria-label="Framework role">${options}</select></div>
+    ${directions}
+    <div class="prompt-question" id="frameworkPromptQuestion">${esc(initialProbe?.question||guide?.question||'What should be made explicit next?')}</div>
+    ${guide?.choices?.length?`<div class="choice-list framework-cues">${guide.choices.map(c=>`<button class="choice-chip framework-cue" data-framework-cue="${attr(c)}">${esc(c)}</button>`).join('')}</div>`:''}
+    <div class="guided-help-note">The selected node is the pause point. Probe backward to expose what led to it, or forward to develop what it implies. The suggested role remains editable.</div>
+    <label class="field-label">Write the reasoning this prompt exposes</label>
+    <textarea class="field-textarea" id="nextText" placeholder="${attr(initialProbe?.placeholder||'Write the reasoning this prompt exposes…')}"></textarea>
     <div class="guided-validation" id="nextValidation"></div>
-    <button class="primary-button compact" id="addFrameworkNext">Add ${esc(framework.categories.find(c=>c.id===recommended)?.label||'node')} →</button>
+    <button class="primary-button compact" id="addFrameworkNext">Add ${esc(framework.categories.find(c=>c.id===initialProbe?.role)?.label||'node')} →</button>
   </div>`;
 }
 
 function bindFrameworkNext(root,node,framework,currentRole,guide,onSubmit){
-  if(!guide?.nextRole)return;
+  const forward=guide?.forward || (guide?.nextRole?{role:guide.nextRole,question:guide.question,placeholder:guide.placeholder,roleOptions:guide.roleOptions}:null);
+  const backward=guide?.backward||null;
+  if(!forward?.role && !backward?.role)return;
   const area=root.querySelector('#nextText');
   const roleSelect=root.querySelector('#frameworkNextRole');
   const add=root.querySelector('#addFrameworkNext');
+  const question=root.querySelector('#frameworkPromptQuestion');
+  const cues=root.querySelector('.framework-cues');
+  let direction=forward?.role?'forward':'backward';
+  const probe=()=>direction==='backward'?backward:forward;
+  const setRoleOptions=()=>{
+    const p=probe();
+    const ids=(p?.roleOptions||[p?.role]).filter(Boolean);
+    if(roleSelect){
+      roleSelect.innerHTML=ids.map(id=>{const c=framework.categories.find(x=>x.id===id);return c?`<option value="${attr(c.id)}" ${c.id===p?.role?'selected':''}>${esc(c.label)}${c.id===p?.role?' · suggested':''}</option>`:'';}).join('');
+    }
+  };
   const updateButton=()=>{
     const role=framework.categories.find(c=>c.id===roleSelect?.value);
-    if(add)add.textContent=`Add ${role?.label||'node'} →`;
+    if(add)add.textContent=`Add ${role?.label||'node'} ${direction==='backward'?'←':'→'}`;
   };
+  const applyDirection=next=>{
+    direction=next;
+    root.querySelectorAll('[data-probe-direction]').forEach(b=>b.classList.toggle('active',b.dataset.probeDirection===direction));
+    const p=probe();
+    if(question)question.textContent=p?.question||guide?.question||'';
+    if(area)area.placeholder=p?.placeholder||'Write the reasoning this prompt exposes…';
+    if(cues)cues.classList.toggle('hidden',direction==='backward');
+    setRoleOptions();updateButton();
+  };
+  root.querySelectorAll('[data-probe-direction]').forEach(b=>b.addEventListener('click',()=>applyDirection(b.dataset.probeDirection)));
   roleSelect?.addEventListener('change',updateButton);
   root.querySelectorAll('[data-framework-cue]').forEach(b=>b.onclick=()=>{
     b.classList.toggle('selected');
@@ -163,10 +191,10 @@ function bindFrameworkNext(root,node,framework,currentRole,guide,onSubmit){
     const validation=root.querySelector('#nextValidation');
     if(!text){if(validation)validation.textContent='Write the reasoning you want to turn into a node.';area?.focus();return;}
     if(validation)validation.textContent='';
-    const roleId=roleSelect?.value||guide.nextRole;
-    onSubmit?.(text,roleId,{question:guide.question,currentRole:currentRole?.id||null});
+    const roleId=roleSelect?.value||probe()?.role;
+    onSubmit?.(text,roleId,{question:question?.textContent||guide?.question,currentRole:currentRole?.id||null,direction});
   });
-  updateButton();
+  applyDirection(direction);
 }
 
 function nextForm(node,state,inputPrompt=null){

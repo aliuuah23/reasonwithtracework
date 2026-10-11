@@ -397,3 +397,32 @@ body[data-framework="freeform"]:not(.framework-types-visible) .graph-node:not([d
 @media(max-width:760px){ .framework-reference-grid{grid-template-columns:1fr}.framework-next-row{align-items:flex-start;flex-direction:column}.framework-next-row select{max-width:100%;width:100%}.arrange-blend input{width:70px} }
 #workspaceTutorialButton { max-width:150px; overflow:hidden; text-overflow:ellipsis; }
 @media(max-width:1180px){ #workspaceTutorialButton{max-width:92px;padding-inline:8px} }
+
+/* Round A2.1 · contextual Adobe-like tutorials and framework probing */
+.probe-direction{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:4px 0 10px;padding:3px;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft)}
+.probe-direction-button{border:0;background:transparent;border-radius:7px;padding:6px 8px;color:var(--muted);font-size:8px;font-weight:760;cursor:pointer}
+.probe-direction-button:hover{color:var(--text)}
+.probe-direction-button.active{background:var(--surface);color:var(--accent-dark);box-shadow:0 1px 4px rgba(20,24,38,.08)}
+
+.tutorial-spotlight-root{position:fixed;inset:0;z-index:1000;pointer-events:none}
+.tutorial-mask{position:fixed;z-index:1000;background:rgba(21,24,33,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto}
+.tutorial-spotlight-ring{position:fixed;z-index:1001;border:2px solid rgba(255,255,255,.96);border-radius:12px;box-shadow:0 0 0 3px rgba(99,94,232,.30),0 14px 38px rgba(16,19,28,.28);pointer-events:none;transition:left .16s ease,top .16s ease,width .16s ease,height .16s ease}
+.tutorial-popover{position:fixed;z-index:1002;pointer-events:auto;background:#151821;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;box-shadow:0 22px 60px rgba(11,13,20,.34);max-height:min(480px,calc(100vh - 24px));overflow:auto}
+.tutorial-popover-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tutorial-popover .tutorial-eyebrow{color:#bcb8ff;font-size:8px}
+.tutorial-popover .tutorial-close{color:#d6d9e2}
+.tutorial-popover-progress{display:flex;gap:5px;margin:10px 0 12px}
+.tutorial-popover .tutorial-progress-dot{height:2px;flex:1;max-width:30px;background:rgba(255,255,255,.16)}
+.tutorial-popover .tutorial-progress-dot.done{background:rgba(189,184,255,.42)}
+.tutorial-popover .tutorial-progress-dot.active{background:#a8a1ff}
+.tutorial-popover .tutorial-step-number{color:#aaa4ff;font-size:8px;margin-bottom:6px}
+.tutorial-popover h3{margin:0 0 7px;font-size:16px;color:#fff;letter-spacing:-.02em}
+.tutorial-popover p{margin:0;color:#c8ccd8;font-size:10px;line-height:1.55;white-space:pre-line}
+.tutorial-popover-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.tutorial-popover-actions>div{display:flex;gap:6px}
+.tutorial-popover .secondary-button{background:#20242f;border-color:#353a47;color:#e8eaf0}
+.tutorial-popover .text-button{color:#c5c9d4}
+.tutorial-popover .primary-button{box-shadow:none}
+html.tutorial-tour-active{overflow:hidden}
+
+@media(max-width:760px){.tutorial-popover{width:min(320px,calc(100vw - 20px))!important}.probe-direction{grid-template-columns:1fr}}

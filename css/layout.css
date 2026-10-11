@@ -157,3 +157,8 @@
   .aggregate-controls { max-width:560px; }
   .aggregate-controls select { max-width:130px; }
 }
+
+/* Round A2.1 · keep legend help above the command line at compressed widths */
+.canvas-footer{position:relative;z-index:28;overflow:visible}
+.canvas-footer .legend{position:relative;z-index:32;overflow:visible}
+.thought-dock{z-index:12}

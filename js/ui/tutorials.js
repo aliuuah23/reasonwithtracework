@@ -1,74 +1,68 @@
 import { openModal, closeModal } from './modals.js';
 import { getFramework, frameworkTutorialSteps } from '../core/frameworks.js';
 
-const TUTORIAL_KEY = 'tracework:tutorial-seen:v2';
-const FRAMEWORK_KEY = id => `tracework:framework-tutorial:${id}:v1`;
+const TUTORIAL_KEY = 'tracework:tutorial-seen:v3';
+const FRAMEWORK_KEY = id => `tracework:framework-tutorial:${id}:v2`;
+let activeSpotlightCleanup=null;
 
 const tutorials = {
   welcome: {
-    eyebrow: 'FIRST-TIME TOUR',
-    title: 'Welcome to TRACEWORK',
-    steps: [
-      { title:'Start from real language', body:'Use Quick brief for a short statement, or Long brief / document for larger briefs. Long briefs can be split into editable chunks so each section can be read without losing the whole project.' },
-      { title:'Find what needs interpretation', body:'TRACEWORK suggests interpretive hotspots, but those suggestions are optional. Hide them, keep them, or select exact words and phrases from the brief yourself.' },
-      { title:'Choose a reasoning lens', body:'TRACEWORK Grammar is the default, but the same reasoning can also be inspected through Requirements Elicitation, Five Whys, Laddering, Design Framing, Reflective Practice or Design Semantics. Switching frameworks changes the lens, not the underlying thought.' },
-      { title:'Externalise the reasoning', body:'Use the right-hand guiding questions when a prompt helps, or use the command line to write freely. The prompt, legend, suggested roles and tutorial change with the active framework.' },
-      { title:'Work as a network', body:'Drag nodes, connect either port, edit roles, mark thoughts Active or Provisional, group or lock nodes, undo changes, and isolate a pathway whenever the field becomes dense.' },
-      { title:'Move between focus and overview', body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s focus maps together so overlaps, cross-links and shared spatial consequences can become visible. Arrange Map can organise that field through the active framework.' }
+    eyebrow:'FIRST-TIME TOUR', title:'Welcome to TRACEWORK',
+    steps:[
+      {selector:'.brief-mode-toggle',title:'Choose how the source enters',body:'Quick brief is for compact prompts. Long brief / document is for larger briefs that can be filed into editable chunks.'},
+      {selector:'#landingBrief',title:'Start from real language',body:'Paste the wording you actually received or are working with. TRACEWORK begins from language rather than assuming the design problem is already resolved.'},
+      {selector:'#startTracingButton',title:'Enter the reasoning workspace',body:'Start tracing creates the project locally in this browser. Nothing is published by opening a trace.'},
+      {selector:'#projectShelf',title:'Return to saved traces',body:'Projects saved in this browser remain available here. Opening one restores its reasoning without making it the active project forever.'}
     ]
   },
   landing: {
-    eyebrow: 'STARTING A TRACE',
-    title: 'Starting a project',
-    steps: [
-      { title:'Choose the source format', body:'Quick brief is best for a compact statement. Long brief / document supports uploads, detected sections and manually added chunks.' },
-      { title:'Name and organise it', body:'Give the trace a project name if useful. In Long brief mode, inspect, edit or add chunks before entering the workspace.' },
-      { title:'Nothing here is public', body:'This prototype saves projects in this browser. Opening a saved trace restores it; leaving the workspace closes the active session without deleting the project.' }
+    eyebrow:'STARTING A TRACE', title:'Starting a project',
+    steps:[
+      {selector:'.brief-mode-toggle',title:'Quick or long brief',body:'Use Quick brief for a short statement. Long brief / document supports uploads, detected sections and manually added chunks.'},
+      {selector:'#landingProjectName',title:'Name the trace',body:'A name makes saved projects easier to recognise. It can stay blank if the brief itself is enough.'},
+      {selector:'#briefChunkPreview',title:'File long briefs before tracing',body:'Detected sections can be opened, edited or supplemented with + Chunk before entering the Workspace.'},
+      {selector:'#startTracingButton',title:'Start when the source is ready',body:'TRACEWORK keeps the source attached to the project so later reasoning can remain traceable back to where it began.'}
     ]
   },
   workspace: {
-    eyebrow: 'WORKSPACE TOUR',
-    title: 'Reading and building a trace',
-    steps: [
-      { title:'Source panel', body:'Move between brief chunks, inspect suggested hotspots, or select exact text manually. The source stays traceable even as the reasoning network grows.' },
-      { title:'Frameworks are lenses', body:'The framework menu changes the legend, command-line roles, guidance questions and Arrange Map. It does not overwrite the designer’s thought. Open the framework-specific guide from this tutorial button whenever a lens is unfamiliar.' },
-      { title:'Two ways to continue', body:'Click a hotspot or node for framework-aware guided questions in the inspector, or write freely in the command line. Guided moves are scaffolded; free moves remain editable and connectable.' },
-      { title:'Edit the network directly', body:'Drag from either node port to connect. Double-click a reasoning node to edit it. Shift-click selects multiple nodes; Ctrl/Cmd+G groups them; right-click exposes lock, disconnect and delete controls.' },
-      { title:'Focus versus Aggregate', body:'Focus Map keeps one hotspot readable. Aggregate Map merges the project’s reasoning fields while preserving the individual Focus Map layouts. Arrange Map can be blended back toward the pre-arranged layout.' },
-      { title:'Checks are prompts, not answers', body:'Trace Check flags open reasoning. Wire signals can be hidden. Framework percentages are relative textual matches, not certainty, and every role can be changed manually.' }
+    eyebrow:'WORKSPACE TOUR', title:'Reading and building a trace',
+    steps:[
+      {selector:'.source-panel',title:'Source panel',body:'Move between brief chunks, inspect suggested hotspots, or select exact text manually. Source material stays separate from the reasoning you add.'},
+      {selector:'#frameworkSelect',title:'Choose a reasoning lens',body:'TRACEWORK Grammar is the default. Literature frameworks change the legend, prompts and classifications without rewriting the underlying thought.'},
+      {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port, double-click to edit, and right-click for lock, grouping or disconnection controls.'},
+      {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are cues, not certainty.'},
+      {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow from it. The questions change with the active framework.'},
+      {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together without changing the individual focus layouts.'}
     ]
   },
   pathways: {
-    eyebrow: 'PATHWAY BANK TOUR', title: 'Use precedent without prescription',
+    eyebrow:'PATHWAY BANK TOUR',title:'Use precedent without prescription',
     steps:[
-      { title:'Search by the problem at hand', body:'Pathway Bank responds to the active project and surfaces related reasoning or precedents rather than a universal answer list.' },
-      { title:'Compare how language travels', body:'Use related pathways to see alternative interpretations, grounding and spatial consequences. They are prompts for comparison, not instructions to copy.' },
-      { title:'Return to authorship', body:'Bring anything useful back into the Workspace by developing or challenging it in the project’s own reasoning network.' }
+      {selector:'#pathwaySearch',title:'Search by the problem at hand',body:'Search a concept, condition or spatial concern rather than looking for a single “correct” precedent.'},
+      {selector:'#pathwayGrid',title:'Compare how language travels',body:'Related pathways are prompts for comparison. They show other reasoning structures without prescribing what this project should do.'}
     ]
   },
   trace: {
-    eyebrow:'MY TRACE TOUR', title:'Read the project’s reasoning memory',
+    eyebrow:'MY TRACE TOUR',title:'Read the project’s reasoning memory',
     steps:[
-      { title:'Nothing has to disappear', body:'Active, provisional, alternative and rejected reasoning can remain visible as project history instead of being flattened into only the final decision.' },
-      { title:'Review before presentation', body:'Use My Trace to inspect what the project currently contains and where reasoning is still unresolved.' },
-      { title:'Export when needed', body:'Export Project creates a portable project record. Reset local data is destructive, so use it only when deliberately clearing browser-stored traces.' }
+      {selector:'#traceDashboard',title:'Keep the project history visible',body:'Active, provisional, alternative and rejected reasoning can remain visible rather than being flattened into only the final decision.'},
+      {selector:'#exportJsonButton',title:'Export when needed',body:'Export Project creates a portable project record. Reset local data is destructive, so use it only when deliberately clearing browser-stored traces.'}
     ]
   },
   discussion: {
-    eyebrow:'DISCUSSION TOUR', title:'Make the reasoning discussable',
+    eyebrow:'DISCUSSION TOUR',title:'Make the reasoning discussable',
     steps:[
-      { title:'Comment on the project', body:'Add a note to the whole project when the critique concerns the overall direction.' },
-      { title:'Anchor critique when possible', body:'Attach discussion to a selected reasoning move when the comment concerns a specific interpretation, consequence or decision.' },
-      { title:'Prototype privacy', body:'Discussion is local in this version. The longer-term model is private projects, invited collaborators, studios and classrooms rather than one public feed.' }
+      {selector:'#discussionList',title:'Read project discussion',body:'Comments can stay with the project instead of disappearing into separate critique notes.'},
+      {selector:'#discussionScope',title:'Anchor critique',body:'Attach discussion to the whole project or a selected reasoning move when the critique concerns something specific.'},
+      {selector:'#discussionText',title:'Write the critique or rationale',body:'Discussion is local in this prototype. The longer-term model is invited studios and collaborators rather than one public feed.'}
     ]
   },
   about: {
-    eyebrow:'ABOUT TOUR', title:'What TRACEWORK is — and is not',
+    eyebrow:'ABOUT TOUR',title:'What TRACEWORK is — and is not',
     steps:[
-      { title:'The problem', body:'Design language is often treated as though its meaning is shared. TRACEWORK makes the interpretive interval between words and spatial decisions inspectable.' },
-      { title:'The base model', body:'TRACEWORK Grammar uses Input, Interpretation, Grounding, Spatial Consequence, Evaluation and Goal as an operational structure. It is a default scaffold, not a claim that all design reasoning follows one sequence.' },
-      { title:'The literature lenses', body:'Six additional frameworks are used as reference lenses: Requirements Elicitation, Five Whys, Laddering, Design Framing, Reflective Practice and Design Semantics. Their role labels are source-anchored operational translations for the interface.' },
-      { title:'The stance', body:'TRACEWORK supports designer reasoning; it does not prescribe a correct interpretation or generate a final design on the designer’s behalf.' }
+      {selector:'.about-hero',title:'The problem TRACEWORK addresses',body:'TRACEWORK makes the interpretive interval between language and spatial decisions inspectable.'},
+      {selector:'.about-frameworks',title:'Read the framework reference',body:'The base grammar and six literature lenses are explained here in more depth than the Workspace needs.'},
+      {selector:'.about-research',title:'See the research foundations',body:'The interface is operational, but the categories and prompts are grounded in the research trajectory rather than presented as arbitrary UI labels.'}
     ]
   }
 };
@@ -78,43 +72,104 @@ function markSeen(){ try { localStorage.setItem(TUTORIAL_KEY,'1'); } catch {} }
 function hasSeenFramework(id){ try { return localStorage.getItem(FRAMEWORK_KEY(id))==='1'; } catch { return false; } }
 function markFrameworkSeen(id){ try { localStorage.setItem(FRAMEWORK_KEY(id),'1'); } catch {} }
 
-export function openTutorial(name='welcome',{firstVisit=false}={}){
-  const tutorial = tutorials[name] || tutorials.welcome;
-  let index = 0;
-  openModal(`
-    <div class="tutorial-shell">
-      <div class="tutorial-topline"><span class="tutorial-eyebrow">${tutorial.eyebrow}</span><button class="tutorial-close" type="button" aria-label="Close tutorial" data-close-modal>×</button></div>
-      <h2 id="modalTitle">${tutorial.title}</h2>
-      <div class="tutorial-progress" id="tutorialProgress" aria-label="Tutorial progress"></div>
-      <div class="tutorial-step" id="tutorialStep"></div>
-      <div class="tutorial-actions"><button class="text-button" id="tutorialSkip" type="button">${firstVisit?'Skip for now':'Close'}</button><div class="tutorial-nav-actions"><button class="secondary-button" id="tutorialBack" type="button">Back</button><button class="primary-button compact" id="tutorialNext" type="button">Next →</button></div></div>
-      <p class="tutorial-revisit-note">Tutorials can be reopened from the top of each TRACEWORK tab.</p>
-    </div>
-  `,{onOpen: modal => {
-    const stepEl = modal.querySelector('#tutorialStep'); const progressEl = modal.querySelector('#tutorialProgress');
-    const back = modal.querySelector('#tutorialBack'); const next = modal.querySelector('#tutorialNext'); const skip = modal.querySelector('#tutorialSkip');
-    const finish = () => { if(firstVisit) markSeen(); closeModal(); };
-    const render = () => { const step=tutorial.steps[index]; stepEl.innerHTML=`<span class="tutorial-step-number">${String(index+1).padStart(2,'0')}</span><h3>${step.title}</h3><p>${step.body}</p>`; progressEl.innerHTML=tutorial.steps.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join(''); back.disabled=index===0; next.textContent=index===tutorial.steps.length-1?'Done':'Next →'; };
-    back.onclick=()=>{if(index>0){index--;render();}}; next.onclick=()=>{if(index<tutorial.steps.length-1){index++;render();}else finish();}; skip.onclick=finish; render();
+function removeSpotlight(){
+  if(activeSpotlightCleanup){const fn=activeSpotlightCleanup;activeSpotlightCleanup=null;fn();}
+}
+
+function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],onFinish=null,skipLabel='Close'}={}){
+  removeSpotlight();
+  const usable=steps.filter(Boolean);
+  if(!usable.length)return;
+  let index=0;
+  const root=document.createElement('div');
+  root.className='tutorial-spotlight-root';
+  root.innerHTML=`
+    <div class="tutorial-mask tutorial-mask-top"></div><div class="tutorial-mask tutorial-mask-left"></div><div class="tutorial-mask tutorial-mask-right"></div><div class="tutorial-mask tutorial-mask-bottom"></div>
+    <div class="tutorial-spotlight-ring" aria-hidden="true"></div>
+    <section class="tutorial-popover" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+      <div class="tutorial-popover-top"><span class="tutorial-eyebrow">${escapeHtml(eyebrow)}</span><button type="button" class="tutorial-close tutorial-popover-close" aria-label="Close tutorial">×</button></div>
+      <div class="tutorial-popover-progress"></div>
+      <span class="tutorial-step-number"></span><h3></h3><p></p>
+      <div class="tutorial-popover-actions"><button type="button" class="text-button tutorial-popover-skip">${escapeHtml(skipLabel)}</button><div><button type="button" class="secondary-button tutorial-popover-back">Back</button><button type="button" class="primary-button compact tutorial-popover-next">Next →</button></div></div>
+    </section>`;
+  document.body.appendChild(root);
+  document.documentElement.classList.add('tutorial-tour-active');
+  const masks=[...root.querySelectorAll('.tutorial-mask')],ring=root.querySelector('.tutorial-spotlight-ring'),popover=root.querySelector('.tutorial-popover');
+  const back=root.querySelector('.tutorial-popover-back'),next=root.querySelector('.tutorial-popover-next'),skip=root.querySelector('.tutorial-popover-skip');
+  const finish=()=>{removeSpotlight();onFinish?.();};
+  const getTarget=step=>{
+    if(!step?.selector)return null;
+    const el=document.querySelector(step.selector);
+    if(!el || el.classList.contains('hidden') || el.getClientRects().length===0)return null;
+    return el;
+  };
+  const place=()=>{
+    const step=usable[index],target=getTarget(step);
+    const vw=window.innerWidth,vh=window.innerHeight,pad=8;
+    let rect=target?.getBoundingClientRect?.()||{left:vw*.5-80,right:vw*.5+80,top:vh*.5-40,bottom:vh*.5+40,width:160,height:80};
+    const offscreen=rect.bottom<0||rect.top>vh||rect.right<0||rect.left>vw;
+    if(target && offscreen){target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});setTimeout(place,180);return;}
+    rect=target?.getBoundingClientRect?.()||rect;
+    const left=Math.max(pad,rect.left-pad),right=Math.min(vw-pad,rect.right+pad),top=Math.max(pad,rect.top-pad),bottom=Math.min(vh-pad,rect.bottom+pad);
+    const width=Math.max(30,right-left),height=Math.max(30,bottom-top);
+    Object.assign(masks[0].style,{left:'0px',top:'0px',width:'100vw',height:`${Math.max(0,top)}px`});
+    Object.assign(masks[1].style,{left:'0px',top:`${top}px`,width:`${Math.max(0,left)}px`,height:`${height}px`});
+    Object.assign(masks[2].style,{left:`${right}px`,top:`${top}px`,width:`${Math.max(0,vw-right)}px`,height:`${height}px`});
+    Object.assign(masks[3].style,{left:'0px',top:`${bottom}px`,width:'100vw',height:`${Math.max(0,vh-bottom)}px`});
+    Object.assign(ring.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
+    const pw=Math.min(340,vw-24),ph=popover.offsetHeight||240,gap=14;
+    let px=right+gap,py=Math.max(12,Math.min(top,vh-ph-12));
+    if(px+pw>vw-12){px=left-pw-gap;}
+    if(px<12){px=Math.max(12,Math.min(left,vw-pw-12));py=bottom+gap;if(py+ph>vh-12)py=Math.max(12,top-ph-gap);}
+    popover.style.left=`${px}px`;popover.style.top=`${py}px`;popover.style.width=`${pw}px`;
+  };
+  const render=()=>{
+    const step=usable[index];
+    root.querySelector('.tutorial-step-number').textContent=String(index+1).padStart(2,'0');
+    root.querySelector('.tutorial-popover h3').textContent=step.title||title;
+    root.querySelector('.tutorial-popover p').textContent=step.body||'';
+    root.querySelector('.tutorial-popover-progress').innerHTML=usable.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join('');
+    back.disabled=index===0;next.textContent=index===usable.length-1?'Done':'Next →';
+    requestAnimationFrame(place);
+  };
+  back.onclick=()=>{if(index>0){index--;render();}};
+  next.onclick=()=>{if(index<usable.length-1){index++;render();}else finish();};
+  skip.onclick=finish;root.querySelector('.tutorial-popover-close').onclick=finish;
+  const onResize=()=>place(),onKey=e=>{if(e.key==='Escape')finish();};
+  window.addEventListener('resize',onResize);window.addEventListener('scroll',onResize,true);document.addEventListener('keydown',onKey);
+  activeSpotlightCleanup=()=>{window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onResize,true);document.removeEventListener('keydown',onKey);root.remove();document.documentElement.classList.remove('tutorial-tour-active');};
+  render();
+}
+
+function fallbackModal(tutorial,{firstVisit=false}={}){
+  let index=0;
+  openModal(`<div class="tutorial-shell"><div class="tutorial-topline"><span class="tutorial-eyebrow">${tutorial.eyebrow}</span><button class="tutorial-close" type="button" aria-label="Close tutorial" data-close-modal>×</button></div><h2 id="modalTitle">${tutorial.title}</h2><div class="tutorial-progress" id="tutorialProgress"></div><div class="tutorial-step" id="tutorialStep"></div><div class="tutorial-actions"><button class="text-button" id="tutorialSkip" type="button">${firstVisit?'Skip for now':'Close'}</button><div class="tutorial-nav-actions"><button class="secondary-button" id="tutorialBack" type="button">Back</button><button class="primary-button compact" id="tutorialNext" type="button">Next →</button></div></div></div>`,{onOpen:modal=>{
+    const stepEl=modal.querySelector('#tutorialStep'),progressEl=modal.querySelector('#tutorialProgress'),back=modal.querySelector('#tutorialBack'),next=modal.querySelector('#tutorialNext'),skip=modal.querySelector('#tutorialSkip');
+    const finish=()=>{if(firstVisit)markSeen();closeModal();};
+    const render=()=>{const step=tutorial.steps[index];stepEl.innerHTML=`<span class="tutorial-step-number">${String(index+1).padStart(2,'0')}</span><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.body)}</p>`;progressEl.innerHTML=tutorial.steps.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join('');back.disabled=index===0;next.textContent=index===tutorial.steps.length-1?'Done':'Next →';};
+    back.onclick=()=>{if(index>0){index--;render();}};next.onclick=()=>{if(index<tutorial.steps.length-1){index++;render();}else finish();};skip.onclick=finish;render();
   }});
 }
 
+export function openTutorial(name='welcome',{firstVisit=false}={}){
+  const tutorial=tutorials[name]||tutorials.welcome;
+  const anchored=tutorial.steps.some(step=>step.selector&&document.querySelector(step.selector));
+  if(!anchored){fallbackModal(tutorial,{firstVisit});return;}
+  openSpotlightTour({eyebrow:tutorial.eyebrow,title:tutorial.title,steps:tutorial.steps,skipLabel:firstVisit?'Skip for now':'Close',onFinish:()=>{if(firstVisit)markSeen();}});
+}
+
 export function openFrameworkTutorial(frameworkId,{firstEncounter=false}={}){
-  const data=frameworkTutorialSteps(frameworkId);
-  const framework=getFramework(frameworkId);
+  const data=frameworkTutorialSteps(frameworkId),framework=getFramework(frameworkId);
   if(!framework)return;
-  let index=0;
+  const roleSummary=data.roles.map(r=>`• ${r.label}: ${r.description}`).join('\n');
   const steps=[
-    {title:`What ${data.title} is doing`,body:`${data.note} ${data.description}`},
-    ...data.roles.map(r=>({title:r.label,body:r.description})),
-    {title:'Use it without surrendering authorship',body:'The framework role is a reading of the thought, not the thought itself. Change a role, switch lenses, or return to TRACEWORK Grammar whenever another structure is more useful.'}
+    {selector:'#frameworkSelect',title:`${data.title} · ${data.source||''}`,body:`${data.note}\n\n${data.description}`},
+    {selector:'#ontologyLegend',title:'Read this framework’s roles',body:roleSummary||'The legend changes with the active framework.'},
+    {selector:'#thoughtDock',title:'Classify without pretending certainty',body:`The command line now reads text through ${framework.shortLabel}. Match strengths can overlap; they are cues, not probabilities. You can always change the role.`},
+    {selector:'#inspectorPanel',title:'Probe the selected node',body:'The inspector reads the node you selected. Use “What led here?” to expose prior reasoning or “What follows?” to develop consequences, values, moves or revisions through this framework.'},
+    {selector:'#aggregateMapModeButton',title:'Use the framework without losing the original map',body:'Switching frameworks does not rearrange the Aggregate Map. Arrange Map is optional; when used, the slider lets you compare the framework layout with the user’s original arrangement.'}
   ];
-  openModal(`<div class="tutorial-shell framework-tutorial-shell"><div class="tutorial-topline"><span class="tutorial-eyebrow">FRAMEWORK GUIDE · ${escapeHtml(data.source||'')}</span><button class="tutorial-close" type="button" aria-label="Close tutorial" data-close-modal>×</button></div><h2 id="modalTitle">${escapeHtml(data.title)}</h2><div class="tutorial-progress" id="tutorialProgress"></div><div class="tutorial-step" id="tutorialStep"></div><div class="tutorial-actions"><button class="text-button" id="tutorialSkip" type="button">${firstEncounter?'Continue without tour':'Close'}</button><div class="tutorial-nav-actions"><button class="secondary-button" id="tutorialBack" type="button">Back</button><button class="primary-button compact" id="tutorialNext" type="button">Next →</button></div></div><p class="tutorial-revisit-note">This guide can be reopened from the Workspace tutorial button while ${escapeHtml(framework.label)} is active.</p></div>`,{onOpen:modal=>{
-    const stepEl=modal.querySelector('#tutorialStep'),progressEl=modal.querySelector('#tutorialProgress'),back=modal.querySelector('#tutorialBack'),next=modal.querySelector('#tutorialNext'),skip=modal.querySelector('#tutorialSkip');
-    const finish=()=>{markFrameworkSeen(frameworkId);closeModal();};
-    const render=()=>{const step=steps[index];stepEl.innerHTML=`<span class="tutorial-step-number">${String(index+1).padStart(2,'0')}</span><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.body)}</p>`;progressEl.innerHTML=steps.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join('');back.disabled=index===0;next.textContent=index===steps.length-1?'Done':'Next →';};
-    back.onclick=()=>{if(index>0){index--;render();}};next.onclick=()=>{if(index<steps.length-1){index++;render();}else finish();};skip.onclick=finish;render();
-  }});
+  openSpotlightTour({eyebrow:`FRAMEWORK GUIDE · ${data.source||''}`,title:data.title,steps,skipLabel:firstEncounter?'Skip guide':'Close',onFinish:()=>markFrameworkSeen(frameworkId)});
 }
 
 export function maybeOpenFrameworkTutorial(frameworkId){
@@ -123,20 +178,19 @@ export function maybeOpenFrameworkTutorial(frameworkId){
 }
 
 export function bindTutorialTriggers(root=document){
-  if(root.documentElement?.dataset.traceworkTutorialBound==='1') return;
-  if(root.documentElement) root.documentElement.dataset.traceworkTutorialBound='1';
+  if(root.documentElement?.dataset.traceworkTutorialBound==='1')return;
+  if(root.documentElement)root.documentElement.dataset.traceworkTutorialBound='1';
   root.addEventListener('click',e=>{
     const frameworkButton=e.target.closest?.('[data-framework-tutorial]');
     if(frameworkButton){e.preventDefault();openFrameworkTutorial(frameworkButton.dataset.frameworkTutorial||'tracework');return;}
-    const button=e.target.closest?.('[data-tutorial]');
-    if(!button)return;
-    e.preventDefault(); openTutorial(button.dataset.tutorial||'welcome');
+    const button=e.target.closest?.('[data-tutorial]');if(!button)return;
+    e.preventDefault();openTutorial(button.dataset.tutorial||'welcome');
   });
 }
 
 export function maybeOpenFirstVisitTutorial(section='welcome'){
-  if(hasSeenTutorial()) return;
-  markSeen(); window.setTimeout(()=>openTutorial(section,{firstVisit:true}),260);
+  if(hasSeenTutorial())return;
+  window.setTimeout(()=>openTutorial(section,{firstVisit:true}),320);
 }
 
 function escapeHtml(t=''){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
