@@ -532,6 +532,9 @@ function addHotspotInterpretation(text,prompt,inputNodeId){
     const baseY=Number.isFinite(Number(input?.y))?Number(input.y):fallback.y;
     created=createNode({type:'interpretation',label:value,branchId:input?.branchId||s.activeBranchId,x:baseX+270,y:baseY,meta:{guided:true,sourcePrompt:prompt?.question||'',provenance:'designer',hotspotId:input?.meta?.hotspotId||s.selectedHotspotId}});
     s.nodes.push(created);
+    // Guided source responses are intentionally left unwired. The designer decides
+    // whether the source language should connect to this reading.
+    if(input?.id) s.edges=s.edges.filter(e=>!((e.source===input.id&&e.target===created.id)||(e.target===input.id&&e.source===created.id)));
     s.activeNodeId=created.id;
     s.activeBranchId=created.branchId;
   });
@@ -569,6 +572,10 @@ function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
       const targetId=extra?.direction==='backward'?parent.id:created.id;
       s.edges.push(createEdge(sourceId,targetId));
       autoLinked=true;
+    }else{
+      // Source / hotspot responses must never be wired automatically. This is
+      // deliberately defensive so legacy helpers cannot recreate the edge.
+      s.edges=s.edges.filter(e=>!((e.source===parent.id&&e.target===created.id)||(e.target===parent.id&&e.source===created.id)));
     }
     s.activeNodeId=created.id;
     s.activeBranchId=created.branchId;
@@ -619,6 +626,9 @@ function nodeHandlers(){
         if(node.type==='input') {
           created=createNode({type:'interpretation',label:text,branchId:node.branchId||s.activeBranchId,meta:{guided:true,sourcePrompt:'Input-node guidance',provenance:'designer',hotspotId:node.meta?.hotspotId||s.selectedHotspotId}});
           s.nodes.push(created);
+          // Input guidance creates a nearby node only. Wiring is always a
+          // deliberate canvas action by the designer.
+          s.edges=s.edges.filter(e=>!((e.source===node.id&&e.target===created.id)||(e.target===node.id&&e.source===created.id)));
         }
         else if(node.type==='interpretation') created=addGrounding(s,node.id,text,extra.sourceKind||'Designer rationale',node.branchId);
         else if(node.type==='grounding') created=addConsequence(s,node.id,text,node.branchId,extra.tags||[]);
@@ -1801,7 +1811,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const col=i%columns,row=Math.floor(i/columns);
       const serpentine=row%2===1?(columns-1-col):col;
       const jitterX=(hash(n.id)%31)-15,jitterY=(hash(`${n.id}-free-y`)%29)-14;
-      positions.set(n.id,{x:90+serpentine*315+jitterX,y:80+row*185+jitterY});
+      positions.set(n.id,{x:90+serpentine*360+jitterX,y:80+row*225+jitterY});
     });
     return positions;
   }
@@ -1815,13 +1825,13 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     const positions=new Map();
     const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
     const cols=Math.max(2,Math.ceil(Math.sqrt(Math.max(1,categories.length))));
-    const centers=new Map(categories.map((c,i)=>[c.id,{x:150+(i%cols)*520,y:120+Math.floor(i/cols)*390}]));
+    const centers=new Map(categories.map((c,i)=>[c.id,{x:170+(i%cols)*650,y:130+Math.floor(i/cols)*560}]));
     const counts=new Map();
     nodes.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:170+(nth%3)*300,y:120+Math.ceil(categories.length/cols)*390+Math.floor(nth/3)*165});
+        positions.set(n.id,{x:190+(nth%3)*350,y:140+Math.ceil(categories.length/cols)*560+Math.floor(nth/3)*215});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1830,7 +1840,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const localCol=nth%3,localRow=Math.floor(nth/3);
       const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
-      positions.set(n.id,{x:center.x+(localCol-1)*285+jitterX,y:center.y+localRow*155+jitterY});
+      positions.set(n.id,{x:center.x+(localCol-1)*350+jitterX,y:center.y+localRow*215+jitterY});
     });
     return positions;
   }
@@ -1838,7 +1848,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
   if(framework.arrangement==='cycle') {
     const positions=new Map();
     const counts=new Map();
-    const cx=860,cy=520,rx=710,ry=395;
+    const cx=1020,cy=650,rx=860,ry=505;
     const centers=new Map(categories.map((c,i)=>{
       const angle=(-Math.PI/2)+(Math.PI*2*i/Math.max(1,categories.length));
       return [c.id,{x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry}];
@@ -1847,7 +1857,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:cx-175+(nth%2)*330,y:cy-45+Math.floor(nth/2)*145});
+        positions.set(n.id,{x:cx-205+(nth%2)*390,y:cy-55+Math.floor(nth/2)*190});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1855,20 +1865,20 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const center=centers.get(roleId)||{x:cx,y:cy};
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const ring=Math.floor(nth/4),slot=nth%4;
-      positions.set(n.id,{x:center.x+(slot%2)*290-145,y:center.y+Math.floor(slot/2)*135+ring*245-68});
+      positions.set(n.id,{x:center.x+(slot%2)*350-175,y:center.y+Math.floor(slot/2)*180+ring*310-90});
     });
     return positions;
   }
 
   const roleIndex=new Map(categories.map((c,i)=>[c.id,i]));
-  const xByRole=new Map(categories.map((c,i)=>[c.id,80+i*345]));
+  const xByRole=new Map(categories.map((c,i)=>[c.id,90+i*405]));
   const noteX=70+Math.max(1,categories.length-1)*155;
   const hotspotOrder=[];
   const seen=new Set();
   (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
   nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
 
-  const laneGap=245;
+  const laneGap=325;
   const positions=new Map();
   const counts=new Map();
   const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
@@ -1890,7 +1900,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const jitterY=(hash(`${n.id}-y`)%31)-15;
       const baseY=70+laneIndex*laneGap;
       const x=(n.type==='note'?noteX:(xByRole.get(roleId)??noteX))+jitterX+(laneIndex%2?18:0);
-      const y=baseY+nth*135+jitterY;
+      const y=baseY+nth*190+jitterY;
       positions.set(n.id,{x,y});
     });
   });

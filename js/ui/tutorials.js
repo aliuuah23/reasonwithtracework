@@ -87,7 +87,8 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     <div class="tutorial-mask tutorial-mask-top"></div><div class="tutorial-mask tutorial-mask-left"></div><div class="tutorial-mask tutorial-mask-right"></div><div class="tutorial-mask tutorial-mask-bottom"></div>
     <div class="tutorial-spotlight-ring" aria-hidden="true"></div>
     <section class="tutorial-popover" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
-      <div class="tutorial-popover-top"><span class="tutorial-eyebrow">${escapeHtml(eyebrow)}</span><button type="button" class="tutorial-close tutorial-popover-close" aria-label="Close tutorial">×</button></div>
+      <span class="tutorial-popover-caret" aria-hidden="true"></span>
+      <div class="tutorial-popover-top"><span class="tutorial-eyebrow">${escapeHtml(eyebrow)}</span><span class="tutorial-step-count"></span><button type="button" class="tutorial-close tutorial-popover-close" aria-label="Close tutorial">×</button></div>
       <div class="tutorial-popover-progress"></div>
       <span class="tutorial-step-number"></span><h3></h3><p></p>
       <div class="tutorial-popover-actions"><button type="button" class="text-button tutorial-popover-skip">${escapeHtml(skipLabel)}</button><div><button type="button" class="secondary-button tutorial-popover-back">Back</button><button type="button" class="primary-button compact tutorial-popover-next">Next →</button></div></div>
@@ -118,14 +119,19 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     Object.assign(masks[3].style,{left:'0px',top:`${bottom}px`,width:'100vw',height:`${Math.max(0,vh-bottom)}px`});
     Object.assign(ring.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
     const pw=Math.min(340,vw-24),ph=popover.offsetHeight||240,gap=14;
-    let px=right+gap,py=Math.max(12,Math.min(top,vh-ph-12));
-    if(px+pw>vw-12){px=left-pw-gap;}
-    if(px<12){px=Math.max(12,Math.min(left,vw-pw-12));py=bottom+gap;if(py+ph>vh-12)py=Math.max(12,top-ph-gap);}
+    let px=right+gap,py=Math.max(12,Math.min(top,vh-ph-12)),side='right';
+    if(px+pw>vw-12){px=left-pw-gap;side='left';}
+    if(px<12){
+      px=Math.max(12,Math.min(left,vw-pw-12));py=bottom+gap;side='below';
+      if(py+ph>vh-12){py=Math.max(12,top-ph-gap);side='above';}
+    }
+    popover.dataset.side=side;
     popover.style.left=`${px}px`;popover.style.top=`${py}px`;popover.style.width=`${pw}px`;
   };
   const render=()=>{
     const step=usable[index];
-    root.querySelector('.tutorial-step-number').textContent=String(index+1).padStart(2,'0');
+    root.querySelector('.tutorial-step-number').textContent=`STEP ${String(index+1).padStart(2,'0')}`;
+    const count=root.querySelector('.tutorial-step-count');if(count)count.textContent=`${index+1} / ${usable.length}`;
     root.querySelector('.tutorial-popover h3').textContent=step.title||title;
     root.querySelector('.tutorial-popover p').textContent=step.body||'';
     root.querySelector('.tutorial-popover-progress').innerHTML=usable.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join('');

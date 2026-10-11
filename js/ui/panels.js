@@ -46,9 +46,9 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     b.classList.add('selected');
     const value=(b.dataset.interpretation||'').trim();
     if(value){
-      const current=input.value.trim();
-      if(!current) input.value=`${value} — `;
-      else if(!current.toLowerCase().includes(value.toLowerCase())) input.value=`${value} — ${current}`;
+      // A newly selected cue replaces the prior cue/answer rather than stacking
+      // suggestions into an increasingly confusing sentence.
+      input.value=`${value} — `;
       input.focus();
       input.setSelectionRange?.(input.value.length,input.value.length);
     }
@@ -178,12 +178,13 @@ function bindFrameworkNext(root,node,framework,currentRole,guide,onSubmit){
   root.querySelectorAll('[data-probe-direction]').forEach(b=>b.addEventListener('click',()=>applyDirection(b.dataset.probeDirection)));
   roleSelect?.addEventListener('change',updateButton);
   root.querySelectorAll('[data-framework-cue]').forEach(b=>b.onclick=()=>{
-    b.classList.toggle('selected');
+    // Suggested answers are mutually exclusive. Choosing a different cue clears
+    // the previous cue/text so the new prompt starts cleanly.
+    root.querySelectorAll('[data-framework-cue]').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');
     const cue=(b.dataset.frameworkCue||'').trim();
     if(!cue||!area)return;
-    const current=area.value.trim();
-    if(!current) area.value=cue.endsWith('…')?cue:`${cue} — `;
-    else if(!current.toLowerCase().includes(cue.toLowerCase())) area.value=`${cue} — ${current}`;
+    area.value=cue.endsWith('…')?cue:`${cue} — `;
     area.focus();area.setSelectionRange?.(area.value.length,area.value.length);
   });
   add?.addEventListener('click',()=>{

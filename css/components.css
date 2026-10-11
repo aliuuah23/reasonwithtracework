@@ -426,3 +426,39 @@ body[data-framework="freeform"]:not(.framework-types-visible) .graph-node:not([d
 html.tutorial-tour-active{overflow:hidden}
 
 @media(max-width:760px){.tutorial-popover{width:min(320px,calc(100vw - 20px))!important}.probe-direction{grid-template-columns:1fr}}
+
+
+/* Round A2.2 · tutorial polish + edge-safe legend help */
+.tutorial-mask{background:rgba(17,20,29,.54);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.tutorial-spotlight-ring{border:2px solid #fff;border-radius:14px;box-shadow:0 0 0 3px rgba(99,94,232,.38),0 0 0 9999px rgba(0,0,0,0),0 18px 44px rgba(17,20,29,.22)}
+.tutorial-popover{background:#fff;color:var(--text);border:1px solid rgba(40,45,62,.14);border-radius:16px;padding:16px 16px 14px;box-shadow:0 24px 70px rgba(17,20,29,.22),0 2px 8px rgba(17,20,29,.08);overflow:visible}
+.tutorial-popover::before{content:'';position:absolute;inset:0 0 auto;height:3px;border-radius:16px 16px 0 0;background:var(--accent)}
+.tutorial-popover-caret{position:absolute;width:12px;height:12px;background:#fff;border-left:1px solid rgba(40,45,62,.14);border-bottom:1px solid rgba(40,45,62,.14);transform:rotate(45deg)}
+.tutorial-popover[data-side="right"] .tutorial-popover-caret{left:-7px;top:28px}
+.tutorial-popover[data-side="left"] .tutorial-popover-caret{right:-7px;top:28px;transform:rotate(225deg)}
+.tutorial-popover[data-side="below"] .tutorial-popover-caret{top:-7px;left:28px;transform:rotate(135deg)}
+.tutorial-popover[data-side="above"] .tutorial-popover-caret{bottom:-7px;left:28px;transform:rotate(-45deg)}
+.tutorial-popover-top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px}
+.tutorial-popover .tutorial-eyebrow{color:var(--accent-dark);font-size:8px;font-weight:800;letter-spacing:.09em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tutorial-step-count{font-size:8px;font-weight:750;color:var(--muted-2)}
+.tutorial-popover .tutorial-close{color:var(--muted);width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:18px}
+.tutorial-popover .tutorial-close:hover{background:var(--surface-soft);color:var(--text)}
+.tutorial-popover-progress{margin:10px 0 13px}
+.tutorial-popover .tutorial-progress-dot{height:3px;max-width:none;background:#e7e8ee;border-radius:99px}
+.tutorial-popover .tutorial-progress-dot.done{background:#cbc8fa}
+.tutorial-popover .tutorial-progress-dot.active{background:var(--accent)}
+.tutorial-popover .tutorial-step-number{display:block;color:var(--accent-dark);font-size:8px;font-weight:800;letter-spacing:.10em;margin-bottom:6px}
+.tutorial-popover h3{margin:0 0 8px;font-size:17px;color:var(--text);line-height:1.25;letter-spacing:-.025em}
+.tutorial-popover p{margin:0;color:var(--muted);font-size:10px;line-height:1.6;white-space:pre-line}
+.tutorial-popover-actions{padding-top:13px;margin-top:14px;border-top:1px solid var(--border)}
+.tutorial-popover .secondary-button{background:#fff;border-color:var(--border);color:var(--text)}
+.tutorial-popover .secondary-button:hover{background:var(--surface-soft)}
+.tutorial-popover .text-button{color:var(--muted)}
+.tutorial-popover .primary-button{box-shadow:0 5px 14px rgba(91,82,214,.18)}
+
+.canvas-footer .legend{z-index:220}
+.canvas-footer .legend-item.has-help::after,.canvas-footer .framework-role-chip.has-help::after{z-index:240}
+.canvas-footer .legend-item.has-help:first-child::after,.canvas-footer .framework-role-chip.has-help:first-child::after{left:0;transform:translate(0,3px)}
+.canvas-footer .legend-item.has-help:first-child:hover::after,.canvas-footer .legend-item.has-help:first-child:focus-visible::after,.canvas-footer .framework-role-chip.has-help:first-child:hover::after,.canvas-footer .framework-role-chip.has-help:first-child:focus-visible::after{transform:translate(0,0)}
+.canvas-footer .legend-item.has-help:last-child::after,.canvas-footer .framework-role-chip.has-help:last-child::after{left:auto;right:0;transform:translate(0,3px)}
+.canvas-footer .legend-item.has-help:last-child:hover::after,.canvas-footer .legend-item.has-help:last-child:focus-visible::after,.canvas-footer .framework-role-chip.has-help:last-child:hover::after,.canvas-footer .framework-role-chip.has-help:last-child:focus-visible::after{transform:translate(0,0)}
