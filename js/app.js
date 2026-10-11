@@ -1,7 +1,7 @@
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
-import { getFramework, provenanceOptions, inferLegacyProvenance } from './core/frameworks.js';
+import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
@@ -63,7 +63,7 @@ async function init(){
   pathways = await loadPathways();
   caseStudies = await loadCaseStudies();
   pilotEvidence = await loadPilotEvidence();
-  renderLegend(ontology);
+  renderLegend(frameworkLegend('tracework'));
   bindGlobalEvents();
   bindTutorialTriggers();
   updateUndoButton();
@@ -944,35 +944,47 @@ function updateThoughtSuggestion(){
   if(!els.freeThoughtInput)return;
   const text=els.freeThoughtInput.value.trim();
   const state=getState();
+  const framework=getFramework(state.frameworkId||'tracework');
+  const commandFrameworkId=framework.id==='freeform'?'tracework':framework.id;
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  const result=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
+  const activeRole=active?frameworkRoleForNode(active,commandFrameworkId)?.id:null;
+  const result=commandFrameworkId==='tracework'
+    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type})
+    : classifyFrameworkThought(text,commandFrameworkId,{canonicalType:null,afterRole:activeRole});
   const hasText=Boolean(text);
   els.addFreeThoughtButton.disabled=!hasText;
   els.addLooseNoteButton.disabled=!hasText;
 
   if(!hasText){
-    els.thoughtReason.textContent='Start typing to see a suggestion.';
+    els.thoughtReason.textContent=framework.id==='freeform'
+      ? 'Start typing to see an optional TRACEWORK structure suggestion.'
+      : `Start typing to see a ${framework.shortLabel} suggestion.`;
     els.thoughtTypeSelect.dataset.manual='';
     if(els.thoughtMatches) els.thoughtMatches.innerHTML='';
     return;
   }
 
   const manual=els.thoughtTypeSelect.dataset.manual==='1';
-  if(!manual && result.type) els.thoughtTypeSelect.value=result.type;
+  const suggested=commandFrameworkId==='tracework'?result.type:result.role;
+  if(!manual && suggested) els.thoughtTypeSelect.value=suggested;
   const selected=els.thoughtTypeSelect.value;
   const best=result.matches?.[0];
-  const selectedLabel=typeLabels[selected]||selected;
+  const selectedLabel=commandFrameworkId==='tracework'
+    ? (typeLabels[selected]||selected)
+    : (getFrameworkCategory(commandFrameworkId,selected)?.label||selected);
+  const prefix=framework.id==='freeform'?'Optional structure':framework.shortLabel;
   els.thoughtReason.textContent=manual
-    ? `Manual override · TRACEWORK will use ${selectedLabel}.`
-    : `${best?.strength??Math.round(result.confidence*100)}% match · ${result.reason}`;
+    ? `Manual override · ${prefix} will read this as ${selectedLabel}.`
+    : `${best?.strength??Math.round((result.confidence||0)*100)}% match · ${result.reason}`;
 
   if(els.thoughtMatches){
-    els.thoughtMatches.innerHTML=(result.matches||[]).slice(0,3).map((m,i)=>{
-      const label=typeLabels[m.type]||m.type;
-      return `<button type="button" class="thought-match ${m.type===selected?'selected':''} ${i===0?'strongest':''}" data-match-type="${m.type}"><span>${escapeHtml(label)}</span><strong>${m.strength}%</strong></button>`;
+    els.thoughtMatches.innerHTML=(result.matches||[]).slice(0,4).map((m,i)=>{
+      const role=commandFrameworkId==='tracework'?m.type:m.role;
+      const label=commandFrameworkId==='tracework'?(typeLabels[role]||role):(m.category?.label||role);
+      return `<button type="button" class="thought-match ${role===selected?'selected':''} ${i===0?'strongest':''}" data-match-role="${escapeHtml(role)}"><span>${escapeHtml(label)}</span><strong>${m.strength}%</strong></button>`;
     }).join('');
-    els.thoughtMatches.querySelectorAll('[data-match-type]').forEach(b=>b.onclick=()=>{
-      els.thoughtTypeSelect.value=b.dataset.matchType;
+    els.thoughtMatches.querySelectorAll('[data-match-role]').forEach(b=>b.onclick=()=>{
+      els.thoughtTypeSelect.value=b.dataset.matchRole;
       els.thoughtTypeSelect.dataset.manual='1';
       updateThoughtSuggestion();
     });
@@ -996,9 +1008,18 @@ function addFreeThought(){
   const text=els.freeThoughtInput.value.trim(); if(!text)return;
   focusPathRootId=null;
   checkpoint('add reasoning node');
-  const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
-  const type=els.thoughtTypeSelect.value||classification.type||'interpretation';
+  const state=getState();
+  const framework=getFramework(state.frameworkId||'tracework');
+  const commandFrameworkId=framework.id==='freeform'?'tracework':framework.id;
+  const active=state.nodes.find(n=>n.id===state.activeNodeId);
+  const activeRole=active?frameworkRoleForNode(active,commandFrameworkId)?.id:null;
+  const classification=commandFrameworkId==='tracework'
+    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type})
+    : classifyFrameworkThought(text,commandFrameworkId,{afterRole:activeRole});
+  const selectedRole=els.thoughtTypeSelect.value||(commandFrameworkId==='tracework'?classification.type:classification.role)||'interpretation';
+  const type=commandFrameworkId==='tracework'
+    ? selectedRole
+    : canonicalTypeForFrameworkRole(commandFrameworkId,selectedRole,classification.category?.canonicalType||'interpretation');
   const selectedHotspotId=workspaceMapMode==='aggregate' ? (active?.meta?.hotspotId || state.selectedHotspotId || null) : state.selectedHotspotId;
   const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state);
   const placement=visibleCanvasPlacement(scoped.nodes.length);
@@ -1006,16 +1027,18 @@ function addFreeThought(){
   let created=null;
   updateState(s=>{
     const provenance=els.thoughtProvenanceSelect?.value||'designer';
-    const node=createNode({type,label:text,branchId,x:placement.x,y:placement.y,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:'TRACEWORK',classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance}});
+    const frameworkRoles=commandFrameworkId!=='tracework'?{[commandFrameworkId]:selectedRole}:{};
+    const node=createNode({type,label:text,branchId,x:placement.x,y:placement.y,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:framework.id==='freeform'?'TRACEWORK (optional)':framework.label,classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance,frameworkRoles}});
     s.nodes.push(node);
     s.activeNodeId=node.id; s.activeBranchId=branchId;
     created=node;
   });
   lastAddedNodeId=created?.id||null;
   if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);}
-  logEvent('Free reasoning added',`${typeLabels[type]||type} · ${text}`);
+  const visibleRole=commandFrameworkId==='tracework'?(typeLabels[type]||type):(getFrameworkCategory(commandFrameworkId,selectedRole)?.label||selectedRole);
+  logEvent('Free reasoning added',`${visibleRole} · ${text}`);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer'; updateThoughtSuggestion(); renderWorkspace();
-  toast(`Added as ${typeLabels[type]||type}.`);
+  toast(`Added as ${visibleRole}${commandFrameworkId==='tracework'?'':` · ${getFramework(commandFrameworkId).shortLabel}`}.`);
 }
 
 function addLooseNote(){
@@ -1349,8 +1372,38 @@ function openNodeStatusMenu(id,x,y){
 
 function openNodeTypeMenu(id,x,y){
   document.getElementById('nodeTypeMenu')?.remove();
-  const node=getState().nodes.find(n=>n.id===id);
+  const state=getState();
+  const node=state.nodes.find(n=>n.id===id);
   if(!node)return;
+  const framework=getFramework(state.frameworkId||'tracework');
+
+  if(framework.id!=='tracework' && framework.id!=='freeform' && node.type!=='note'){
+    const current=frameworkRoleForNode(node,framework.id)?.id;
+    const menu=document.createElement('div');
+    menu.id='nodeTypeMenu';
+    menu.className='node-status-menu node-type-menu';
+    menu.innerHTML=`<small>${escapeHtml(framework.label)} role</small>${framework.categories.map(c=>`<button type="button" data-framework-role="${escapeHtml(c.id)}" class="${current===c.id?'selected':''}">${escapeHtml(c.label)}<span>${escapeHtml(c.description||'Change how this thought is read through the current framework.')}</span></button>`).join('')}<button type="button" data-framework-role="auto"><strong>Auto-read from text</strong><span>Remove the manual role and let TRACEWORK infer this framework again.</span></button>`;
+    document.body.appendChild(menu);
+    const rect=menu.getBoundingClientRect();
+    menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
+    menu.style.top=`${Math.max(8,Math.min(y,window.innerHeight-rect.height-8))}px`;
+    menu.querySelectorAll('[data-framework-role]').forEach(b=>b.onclick=()=>{
+      const nextRole=b.dataset.frameworkRole;
+      checkpoint('change framework role');
+      updateState(s=>{
+        const n=s.nodes.find(n=>n.id===id); if(!n)return;
+        const roles={...(n.meta?.frameworkRoles||{})};
+        if(nextRole==='auto') delete roles[framework.id]; else roles[framework.id]=nextRole;
+        n.meta={...(n.meta||{}),frameworkRoles:roles};
+        n.updatedAt=new Date().toISOString();
+      });
+      menu.remove(); renderWorkspace();
+      const label=nextRole==='auto'?'automatic reading':(getFrameworkCategory(framework.id,nextRole)?.label||nextRole);
+      toast(`${framework.shortLabel} role · ${label}. Underlying TRACEWORK type was not changed.`);
+    });
+    return;
+  }
+
   if(node.type==='input' && node.meta?.source==='brief'){
     toast('This Input stays tied to the selected brief language. Other reasoning nodes can change type.');
     return;
@@ -1359,7 +1412,7 @@ function openNodeTypeMenu(id,x,y){
   const menu=document.createElement('div');
   menu.id='nodeTypeMenu';
   menu.className='node-status-menu node-type-menu';
-  menu.innerHTML=`<small>Reasoning role</small>${editableTypes.map(t=>`<button type="button" data-node-type="${t}" class="${node.type===t?'selected':''}">${escapeHtml(typeLabels[t]||t)}<span>${t==='note'?'Leave this thought deliberately unclassified.':nodeGuidance[t]?.use||'Change how this thought functions in the trace.'}</span></button>`).join('')}`;
+  menu.innerHTML=`<small>TRACEWORK reasoning role</small>${editableTypes.map(t=>`<button type="button" data-node-type="${t}" class="${node.type===t?'selected':''}">${escapeHtml(typeLabels[t]||t)}<span>${t==='note'?'Leave this thought deliberately unclassified.':nodeGuidance[t]?.use||'Change how this thought functions in the trace.'}</span></button>`).join('')}`;
   document.body.appendChild(menu);
   const rect=menu.getBoundingClientRect();
   menu.style.left=`${Math.max(8,Math.min(x,window.innerWidth-rect.width-8))}px`;
@@ -1478,29 +1531,50 @@ function updateFrameworkControls(state){
   if(els.frameworkSelect) els.frameworkSelect.value=framework.id;
   document.body.dataset.framework=framework.id;
   document.body.classList.toggle('framework-types-visible',Boolean(showNodeTypes));
-  if(els.thoughtReadingLabel) els.thoughtReadingLabel.textContent=framework.id==='freeform'?'Optional structure suggestion':'TRACEWORK reads this as';
+
+  const commandFrameworkId=framework.id==='freeform'?'tracework':framework.id;
+  const categories=commandFrameworkId==='tracework'
+    ? frameworkCategories('tracework')
+    : frameworkCategories(commandFrameworkId);
+  if(els.thoughtTypeSelect){
+    const previous=els.thoughtTypeSelect.value;
+    const frameworkChanged=els.thoughtTypeSelect.dataset.framework!==commandFrameworkId;
+    els.thoughtTypeSelect.innerHTML=categories.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.label)}</option>`).join('');
+    if(!frameworkChanged && [...els.thoughtTypeSelect.options].some(o=>o.value===previous)) els.thoughtTypeSelect.value=previous;
+    els.thoughtTypeSelect.dataset.framework=commandFrameworkId;
+    if(frameworkChanged) els.thoughtTypeSelect.dataset.manual='';
+  }
+
+  if(els.thoughtReadingLabel){
+    els.thoughtReadingLabel.textContent=framework.id==='freeform'
+      ? 'Optional TRACEWORK structure'
+      : `${framework.shortLabel} reads this as`;
+  }
   if(els.toggleNodeTypesButton){
     if(framework.id==='freeform') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred types':'Reveal inferred types';
-    else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide node types':'Show node types';
+    else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
   }
   if(els.arrangeAggregateButton){
     els.arrangeAggregateButton.title=framework.id==='freeform'
-      ? 'Arrange the aggregate as a low-structure reasoning field without ontology columns'
-      : 'Arrange the aggregate through the TRACEWORK six-family grammar';
+      ? 'Arrange the aggregate as a low-structure reasoning field'
+      : `Arrange the aggregate through ${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''}`;
   }
+  renderLegend(frameworkLegend(framework.id));
 }
 
 function setFrameworkMode(id='tracework'){
   const framework=getFramework(id);
   const current=getState().frameworkId||'tracework';
-  if(framework.id===current){ updateFrameworkControls(getState()); return; }
+  if(framework.id===current){ updateFrameworkControls(getState()); updateThoughtSuggestion(); return; }
   patchState({frameworkId:framework.id});
-  // Freeform hides inferred categories by default; they can still be deliberately revealed.
   showNodeTypes=framework.id!=='freeform';
+  aggregateTypeFilter='all';
   selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
   renderWorkspace();
-  toast(`${framework.label} · ${framework.description}`);
+  updateThoughtSuggestion();
+  toast(`${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''} · ${framework.description}`);
 }
+
 
 function setWorkspaceMapMode(mode='focus'){
   const next=mode==='aggregate'?'aggregate':'focus';
@@ -1557,13 +1631,18 @@ function updateAggregateControls(state){
   const chunkOptions=['<option value="all">All sections</option>',...[...chunkCounts.entries()].map(([id,count])=>`<option value="${escapeHtml(id)}">${escapeHtml(chunkById.get(id)?.title||'Source section')} · ${count}</option>`)].join('');
   if(els.aggregateChunkFilter){ els.aggregateChunkFilter.innerHTML=chunkOptions; if([...els.aggregateChunkFilter.options].some(o=>o.value===aggregateChunkFilter)) els.aggregateChunkFilter.value=aggregateChunkFilter; else aggregateChunkFilter=els.aggregateChunkFilter.value='all'; }
 
-  const typeOrder=['input','interpretation','grounding','consequence','evaluation','goal','note'];
+  const framework=getFramework(state.frameworkId||'tracework');
   if(els.aggregateTypeFilter){
-    els.aggregateTypeFilter.innerHTML=['<option value="all">All node types</option>',...typeOrder.map(t=>`<option value="${t}">${escapeHtml(typeLabels[t]||t)}</option>`)].join('');
-    els.aggregateTypeFilter.value=aggregateTypeFilter;
+    if(framework.id!=='freeform' && framework.id!=='tracework'){
+      els.aggregateTypeFilter.innerHTML=['<option value="all">All framework roles</option>',...framework.categories.map(c=>`<option value="${escapeHtml(c.id)}">${escapeHtml(c.label)}</option>`),'<option value="note">Notes</option>'].join('');
+    }else{
+      const typeOrder=['input','interpretation','grounding','consequence','evaluation','goal','note'];
+      els.aggregateTypeFilter.innerHTML=['<option value="all">All node types</option>',...typeOrder.map(t=>`<option value="${t}">${escapeHtml(typeLabels[t]||t)}</option>`)].join('');
+    }
+    if([...els.aggregateTypeFilter.options].some(o=>o.value===aggregateTypeFilter)) els.aggregateTypeFilter.value=aggregateTypeFilter;
+    else aggregateTypeFilter=els.aggregateTypeFilter.value='all';
   }
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.value=aggregateStatusFilter;
-
 }
 
 function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracework'){
@@ -1575,8 +1654,6 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
     return null;
   };
 
-  // Freeform deliberately ignores ontology columns. It reads the project as a field of
-  // designer-authored thoughts, preserving network content while reducing visual prescription.
   if(frameworkId==='freeform'){
     const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
     const ordered=[...nodes].sort((a,b)=>{
@@ -1596,14 +1673,69 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
     return positions;
   }
 
+  const framework=getFramework(frameworkId);
+  const categories=framework.categories||frameworkCategories('tracework');
+
+  // Some literature frameworks are not linear taxonomies. Arrange the aggregate
+  // according to the character of the selected lens without changing any reasoning.
+  if(framework.arrangement==='network') {
+    const positions=new Map();
+    const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
+    const cols=Math.max(2,Math.ceil(Math.sqrt(Math.max(1,categories.length))));
+    const centers=new Map(categories.map((c,i)=>[c.id,{x:130+(i%cols)*430,y:110+Math.floor(i/cols)*310}]));
+    const counts=new Map();
+    nodes.forEach(n=>{
+      const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
+      if(n.type==='note'){
+        const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
+        positions.set(n.id,{x:150+(nth%3)*270,y:110+Math.ceil(categories.length/cols)*310+Math.floor(nth/3)*130});
+        return;
+      }
+      const role=frameworkRoleForNode(n,frameworkId);
+      const roleId=role?.id||categories[0]?.id;
+      const center=centers.get(roleId)||{x:130,y:110};
+      const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
+      const localCol=nth%3,localRow=Math.floor(nth/3);
+      const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
+      positions.set(n.id,{x:center.x+(localCol-1)*245+jitterX,y:center.y+localRow*118+jitterY});
+    });
+    return positions;
+  }
+
+  if(framework.arrangement==='cycle') {
+    const positions=new Map();
+    const counts=new Map();
+    const cx=760,cy=430,rx=590,ry=315;
+    const centers=new Map(categories.map((c,i)=>{
+      const angle=(-Math.PI/2)+(Math.PI*2*i/Math.max(1,categories.length));
+      return [c.id,{x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry}];
+    }));
+    nodes.forEach(n=>{
+      const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
+      if(n.type==='note'){
+        const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
+        positions.set(n.id,{x:cx-160+(nth%2)*300,y:cy-40+Math.floor(nth/2)*115});
+        return;
+      }
+      const role=frameworkRoleForNode(n,frameworkId);
+      const roleId=role?.id||categories[0]?.id;
+      const center=centers.get(roleId)||{x:cx,y:cy};
+      const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
+      const ring=Math.floor(nth/4),slot=nth%4;
+      positions.set(n.id,{x:center.x+(slot%2)*250-125,y:center.y+Math.floor(slot/2)*105+ring*210-55});
+    });
+    return positions;
+  }
+
+  const roleIndex=new Map(categories.map((c,i)=>[c.id,i]));
+  const xByRole=new Map(categories.map((c,i)=>[c.id,70+i*310]));
+  const noteX=70+Math.max(1,categories.length-1)*155;
   const hotspotOrder=[];
   const seen=new Set();
   (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
   nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
 
-  // TRACEWORK Grammar: the ontology remains visible as a loose set of reasoning columns.
-  const typeX={input:70,interpretation:360,grounding:660,consequence:980,evaluation:1300,goal:1600,note:815};
-  const laneGap=205;
+  const laneGap=195;
   const positions=new Map();
   const counts=new Map();
   const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
@@ -1611,18 +1743,21 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
   hotspotOrder.forEach((hotspotId,laneIndex)=>{
     const cluster=nodes.filter(n=>(n.meta?.hotspotId||'__loose__')===hotspotId);
     cluster.sort((a,b)=>{
-      const order={input:0,interpretation:1,grounding:2,note:2.5,consequence:3,evaluation:4,goal:5};
-      return (order[a.type]??9)-(order[b.type]??9) || String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+      const ar=frameworkRoleForNode(a,frameworkId),br=frameworkRoleForNode(b,frameworkId);
+      const ai=a.type==='note'?99:(roleIndex.get(ar?.id)??90),bi=b.type==='note'?99:(roleIndex.get(br?.id)??90);
+      return ai-bi || String(a.createdAt||'').localeCompare(String(b.createdAt||''));
     });
     cluster.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
-      const key=`${hotspotId}:${n.type}`;
+      const role=frameworkRoleForNode(n,frameworkId);
+      const roleId=n.type==='note'?'note':role?.id;
+      const key=`${hotspotId}:${roleId||n.type}`;
       const nth=counts.get(key)||0; counts.set(key,nth+1);
-      const jitterX=(hash(n.id)%43)-21;
-      const jitterY=(hash(`${n.id}-y`)%35)-17;
+      const jitterX=(hash(n.id)%35)-17;
+      const jitterY=(hash(`${n.id}-y`)%31)-15;
       const baseY=70+laneIndex*laneGap;
-      const x=(typeX[n.type]??815)+jitterX+(laneIndex%2?22:0);
-      const y=baseY+nth*82+jitterY+(n.type==='grounding'||n.type==='evaluation'?28:0);
+      const x=(n.type==='note'?noteX:(xByRole.get(roleId)??noteX))+jitterX+(laneIndex%2?18:0);
+      const y=baseY+nth*80+jitterY;
       positions.set(n.id,{x,y});
     });
   });
@@ -1638,7 +1773,13 @@ function aggregateTrace(state,{ignoreFilters=false}={}){
       const hotspot=hotspotById.get(n.meta?.hotspotId);
       if(aggregateHotspotFilter!=='all' && n.meta?.hotspotId!==aggregateHotspotFilter) return false;
       if(aggregateChunkFilter!=='all' && hotspot?.chunkId!==aggregateChunkFilter) return false;
-      if(aggregateTypeFilter!=='all' && n.type!==aggregateTypeFilter) return false;
+      if(aggregateTypeFilter!=='all'){
+        const framework=getFramework(state.frameworkId||'tracework');
+        if(framework.id!=='freeform' && framework.id!=='tracework'){
+          const role=n.type==='note'?'note':frameworkRoleForNode(n,framework.id)?.id;
+          if(role!==aggregateTypeFilter) return false;
+        }else if(n.type!==aggregateTypeFilter) return false;
+      }
       const status=n.status==='rejected'?'rejected':n.meta?.provisional?'provisional':'active';
       if(aggregateStatusFilter!=='all' && status!==aggregateStatusFilter) return false;
       return true;

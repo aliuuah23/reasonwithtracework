@@ -1,5 +1,6 @@
 import { typeLabels } from '../core/ontology.js';
 import { transitionEvidence } from '../evidence/pilot-evidence.js';
+import { getFramework, frameworkRoleForNode } from '../core/frameworks.js';
 
 const allowedFallback = {
   input: new Set(['interpretation','grounding','consequence']),
@@ -26,8 +27,19 @@ export function connectionCheck(source,target,edges=[],evidence=null,{frameworkI
   if(source.id===target.id) return {ok:false,reason:'A node cannot develop itself.',detail:'If the sentence contains two separate moves, split it into two nodes and connect those instead.'};
   if(edges.some(e=>e.source===source.id&&e.target===target.id)) return {ok:false,reason:'These two moves are already connected.',detail:'Use the existing wire, or disconnect it first if you want to test another relationship.'};
 
+  const framework=getFramework(frameworkId);
   if(frameworkId==='freeform'){
-    return {ok:true,reason:'Freeform keeps this relationship designer-defined.',detail:'TRACEWORK is not enforcing ontology order in Low-Structure mode. Connect the thoughts if the dependency is meaningful to you; reveal the inferred types later if you want to inspect how the relationship reads structurally.',signal:'neutral'};
+    return {ok:true,reason:'Freeform keeps this relationship designer-defined.',detail:'TRACEWORK is not enforcing a framework order in Low-Structure mode. Connect the thoughts if the dependency is meaningful; reveal a framework later if you want to inspect the relationship through a particular lens.',signal:'neutral'};
+  }
+
+  if(framework.connectionMode==='soft'){
+    if(source.type==='note'||target.type==='note') return {ok:true,reason:'Loose-note connection allowed.',detail:'Notes remain wild cards across every framework.',signal:'neutral'};
+    const a=frameworkRoleForNode(source,frameworkId),b=frameworkRoleForNode(target,frameworkId);
+    const ai=framework.categories.findIndex(c=>c.id===a?.id),bi=framework.categories.findIndex(c=>c.id===b?.id);
+    const adjacent=ai>=0&&bi>=0&&(bi===ai||bi===ai+1||(framework.arrangement==='cycle'&&ai===framework.categories.length-1&&bi===0));
+    return adjacent
+      ? {ok:true,reason:`This reads coherently through ${framework.label}.`,detail:`“${clip(source.label)}” is currently read as ${a?.label||'one framework role'}, developing into ${b?.label||'the next role'}. The framework is a lens, not a rule; the wire stays designer-authored.`,signal:'neutral'}
+      : {ok:true,reason:`This crosses the usual ${framework.shortLabel} sequence.`,detail:`${a?.label||'This move'} would normally be followed by a neighbouring role rather than ${b?.label||'this role'}, but TRACEWORK will keep the connection. The unusual jump may be exactly what is worth examining.`,signal:'limited'};
   }
 
   // Grey notes are deliberately wild cards. They can sit anywhere in the reasoning field.

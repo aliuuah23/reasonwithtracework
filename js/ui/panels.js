@@ -2,7 +2,7 @@ import { interpretationPrompt, groundingPrompt, consequencePrompt, evaluationPro
 import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js';
-import { provenanceLabel, inferLegacyProvenance } from '../core/frameworks.js';
+import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
 
@@ -62,6 +62,12 @@ export async function renderNodeInspector(node,state,handlers){
     return;
   }
 
+  const framework=getFramework(state.frameworkId||'tracework');
+  const frameworkRole=frameworkRoleForNode(node,framework.id);
+  const roleLabel=framework.id==='freeform'?(typeLabels[node.type]||node.type):(frameworkRole?.label||typeLabels[node.type]||node.type);
+  const roleColor=frameworkRole?.color||colors[node.type];
+  const progressRoles=framework.id==='freeform'?frameworkCategories('tracework'):frameworkCategories(framework.id);
+  const activeRoleId=framework.id==='tracework'?node.type:(frameworkRole?.id||node.type);
   const inputHotspot=node.type==='input'
     ? (state.hotspots?.find(h=>h.id===node.meta?.hotspotId) || {text:node.label,kind:/\s/.test(node.label)?'phrase':'word',reason:'Selected source language'})
     : null;
@@ -69,8 +75,8 @@ export async function renderNodeInspector(node,state,handlers){
   const next=nextForm(node,state,inputPrompt);
   const cases=await findCaseStudies({text:`${node.label} ${(node.meta?.tags||[]).join(' ')}`,type:node.type});
   root.innerHTML=`
-    <div class="inspector-head" style="--node-color:${colors[node.type]}"><span class="inspector-type"><i></i>${typeLabels[node.type]||node.type}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${['input','interpretation','grounding','consequence','evaluation','goal'].map(t=>`<span class="${stageDone(t,node.type)?'done':''}"></span>`).join('')}</div></div>
-    ${metaMarkup(node)}
+    <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progressRoles.map((r,i)=>`<span class="${frameworkProgressDone(progressRoles,activeRoleId,i)?'done':''}"></span>`).join('')}</div></div>
+    ${metaMarkup(node,framework,frameworkRole)}
     ${next}
     ${caseStudyMarkup(cases)}
     <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
@@ -125,9 +131,10 @@ function bindNext(root,node,handlers){
   });
   root.querySelector('#addNext')?.addEventListener('click',()=>{ const area=root.querySelector('#nextText'); const text=area?.value.trim(); const validation=root.querySelector('#nextValidation'); if(!text){ if(validation)validation.textContent='Write the reasoning you want to turn into a node.'; area?.focus(); return; } if(validation)validation.textContent=''; handlers.onNext(node,text,{sourceKind,tags}); });
 }
-function metaMarkup(node){
+function metaMarkup(node,framework=null,frameworkRole=null){
   const rows=[];
   rows.push(['Provenance',provenanceLabel(inferLegacyProvenance(node))]);
+  if(framework && framework.id!=='tracework' && framework.id!=='freeform') rows.push(['Framework lens',`${frameworkRole?.label||'Unresolved'} · ${framework.source||framework.label}`]);
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);
   if(node.meta?.sourceLabel)rows.push(['Pathway source',node.meta.sourceLabel]);
   if(node.meta?.tags?.length)rows.push(['Tags',node.meta.tags.join(' · ')]);
@@ -138,6 +145,7 @@ function metaMarkup(node){
   return `<div class="inspector-section"><h4>Trace context</h4><div class="node-meta-list">${rows.map(([a,b])=>`<div class="node-meta"><span>${esc(a)}</span><span>${esc(b)}</span></div>`).join('')}</div></div>`;
 }
 function statusText(node){ if(node.status==='rejected')return 'This reasoning remains visible but is no longer active.'; if(node.meta?.provisional)return 'A provisional alternative. Develop it before deciding whether to keep it.'; return 'Part of the active reasoning trace.'; }
+function frameworkProgressDone(roles,activeRoleId,index){ const current=roles.findIndex(r=>r.id===activeRoleId); return current>=0 && index<=current; }
 function stageDone(t,current){ const order=['input','interpretation','grounding','consequence','evaluation','goal']; return order.indexOf(t)<=order.indexOf(current); }
 function esc(t=''){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function attr(t=''){return esc(t).replace(/`/g,'');}

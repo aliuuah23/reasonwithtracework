@@ -2,7 +2,7 @@ import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
 import { nodeGuidance } from '../core/node-guidance.js';
 import { connectionSignal } from './connection-rules.js';
-import { provenanceLabel, inferLegacyProvenance } from '../core/frameworks.js';
+import { provenanceLabel, inferLegacyProvenance, frameworkRoleForNode, getFramework } from '../core/frameworks.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
@@ -38,7 +38,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.surface.dataset.framework=frameworkId;
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   const issueSet=new Set(issueNodeIds||[]);
-  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id))).join('');
+  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId)).join('');
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
 
   const nodeAnchor=(id,side='out')=>{
@@ -183,7 +183,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   bindConnectionPorts({surface:els.surface,svg:els.svg,nodesRoot:els.nodes,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor});
 }
 
-function nodeMarkup(n,selected,issue){
+function nodeMarkup(n,selected,issue,frameworkId='tracework'){
   const locked=Boolean(n.meta?.locked);
   const grouped=Boolean(n.meta?.groupId);
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
@@ -195,8 +195,16 @@ function nodeMarkup(n,selected,issue){
         ? 'Provisional = kept open for testing, revision or comparison rather than treated as settled.'
         : 'Active = currently retained as part of the working reasoning network.';
   const sourceInput=n.type==='input' && n.meta?.source==='brief';
-  const baseHelp=nodeGuidance[n.type]?.use||'';
-  const help=sourceInput?`${baseHelp} Source Inputs stay tied to the brief.`:`${baseHelp} Click the category label to change this node type.`;
+  const framework=getFramework(frameworkId);
+  const frameworkRole=frameworkRoleForNode(n,frameworkId);
+  const visibleRole=framework.id==='freeform'?(typeLabels[n.type]||n.type):(frameworkRole?.label||typeLabels[n.type]||n.type);
+  const roleColor=frameworkRole?.color||'var(--node-color)';
+  const baseHelp=framework.id==='tracework'||framework.id==='freeform'
+    ? (nodeGuidance[n.type]?.use||'')
+    : `${frameworkRole?.description||'This is how the current thought is being read through this framework.'} Lens: ${framework.label}${framework.source?` · ${framework.source}`:''}.`;
+  const help=sourceInput&&framework.id==='tracework'
+    ? `${baseHelp} Source Inputs stay tied to the brief.`
+    : `${baseHelp} Click the category label to change this ${framework.id==='tracework'||framework.id==='freeform'?'node type':'framework role'}.`;
   const ports='<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drag from here to find a source for this node"></button><button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect this node forward"></button>';
   const previewOpen=n.type==='consequence'&&Boolean(n.meta?.spatialPreviewOpen);
   const previewButton=n.type==='consequence'?`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Expand a schematic spatial reading of this text">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`:'';
@@ -204,9 +212,9 @@ function nodeMarkup(n,selected,issue){
   const provenanceId=inferLegacyProvenance(n);
   const provenance=provenanceLabel(provenanceId);
   const provenanceChip=(n.type==='input'||provenanceId!=='designer')?`<span class="node-provenance" title="Origin / provenance">${escapeHtml(provenance)}</span>`:'';
-  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
+  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor}">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
-      <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
+      <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
       <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${previewButton}</div>
