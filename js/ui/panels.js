@@ -2,6 +2,7 @@ import { interpretationPrompt, groundingPrompt, consequencePrompt, evaluationPro
 import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js';
+import { provenanceLabel, inferLegacyProvenance } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
 
@@ -126,6 +127,7 @@ function bindNext(root,node,handlers){
 }
 function metaMarkup(node){
   const rows=[];
+  rows.push(['Provenance',provenanceLabel(inferLegacyProvenance(node))]);
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);
   if(node.meta?.sourceLabel)rows.push(['Pathway source',node.meta.sourceLabel]);
   if(node.meta?.tags?.length)rows.push(['Tags',node.meta.tags.join(' · ')]);

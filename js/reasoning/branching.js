@@ -8,7 +8,7 @@ export function createBranch(state,fromNodeId,label='Alternative interpretation'
   const parentEdge=state.edges.find(e=>e.target===origin.id);
   const sourceId = origin.type==='interpretation' && parentEdge ? parentEdge.source : origin.id;
   const branchId=uniqueBranchId();
-  const node=createNode({type:'interpretation',label,branchId,meta:{branchedFrom:origin.id,provisional:true}});
+  const node=createNode({type:'interpretation',label,branchId,meta:{branchedFrom:origin.id,provisional:true,provenance:'designer'}});
   state.nodes.push(node); state.edges.push(createEdge(sourceId,node.id,{status:'provisional'}));
   state.activeNodeId=node.id; state.activeBranchId=branchId;
   return node;
@@ -19,7 +19,7 @@ export function forkNext(state,fromNodeId,label){
   const type=origin ? nextType[origin.type] : null;
   if(!origin || !type) return null;
   const branchId=uniqueBranchId();
-  const node=createNode({type,label,branchId,meta:{forkedFrom:origin.id,provisional:true}});
+  const node=createNode({type,label,branchId,meta:{forkedFrom:origin.id,provisional:true,provenance:'designer'}});
   state.nodes.push(node);
   state.edges.push(createEdge(origin.id,node.id,{status:'provisional'}));
   state.activeNodeId=node.id;

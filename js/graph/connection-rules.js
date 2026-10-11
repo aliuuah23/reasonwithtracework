@@ -21,10 +21,14 @@ const role = {
   note:'an intentionally uncategorised thought'
 };
 
-export function connectionCheck(source,target,edges=[],evidence=null){
+export function connectionCheck(source,target,edges=[],evidence=null,{frameworkId='tracework'}={}){
   if(!source||!target) return {ok:false,reason:'The wire needs to land on another reasoning node.',detail:'A TRACEWORK wire says that one thought is being used to develop another. Leave the thought floating if that relationship is not clear yet.'};
   if(source.id===target.id) return {ok:false,reason:'A node cannot develop itself.',detail:'If the sentence contains two separate moves, split it into two nodes and connect those instead.'};
   if(edges.some(e=>e.source===source.id&&e.target===target.id)) return {ok:false,reason:'These two moves are already connected.',detail:'Use the existing wire, or disconnect it first if you want to test another relationship.'};
+
+  if(frameworkId==='freeform'){
+    return {ok:true,reason:'Freeform keeps this relationship designer-defined.',detail:'TRACEWORK is not enforcing ontology order in Low-Structure mode. Connect the thoughts if the dependency is meaningful to you; reveal the inferred types later if you want to inspect how the relationship reads structurally.',signal:'neutral'};
+  }
 
   // Grey notes are deliberately wild cards. They can sit anywhere in the reasoning field.
   if(source.type==='note'||target.type==='note'){

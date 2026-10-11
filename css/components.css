@@ -343,3 +343,17 @@
 .tutorial-nav-actions{display:flex;gap:8px}
 .tutorial-revisit-note{margin:12px 0 0!important;font-size:10px!important;color:var(--muted)!important;text-align:right}
 @media(max-width:720px){.brief-start-controls{width:100%;justify-content:space-between}.tutorial-actions{align-items:flex-end}.tutorial-revisit-note{text-align:left}.tutorial-step{min-height:180px}}
+
+/* Round A1 · framework lens + provenance */
+.framework-control { display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:2px 4px 2px 8px; border:1px solid var(--border); border-radius:999px; background:var(--surface-soft); color:var(--muted-2); white-space:nowrap; }
+.framework-control > span { font-size:8px; font-weight:820; letter-spacing:.065em; text-transform:uppercase; }
+.framework-control select { max-width:172px; border:0; border-radius:999px; background:var(--surface); color:var(--text); padding:5px 24px 5px 8px; outline:none; font:inherit; font-size:9px; font-weight:760; cursor:pointer; }
+.framework-control select:focus { box-shadow:0 0 0 2px rgba(99,94,232,.09); }
+.thought-provenance { display:inline-flex; align-items:center; gap:5px; padding-left:3px; color:var(--muted-2); white-space:nowrap; }
+.thought-provenance > span { font-size:8px; font-weight:780; text-transform:uppercase; letter-spacing:.05em; }
+.thought-provenance select { max-width:154px !important; }
+.node-provenance { max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted-2); font-size:8px; line-height:1; }
+body[data-framework="freeform"] .canvas-panel { --framework-accent:#8f95a0; }
+body[data-framework="freeform"]:not(.framework-types-visible) #ontologyLegend { display:none; }
+body[data-framework="freeform"]:not(.framework-types-visible) .graph-node:not([data-type="note"]) .node-provenance { color:#8a909a; }
+@media(max-width:1180px){ .framework-control > span{display:none}.framework-control{padding-left:4px}.framework-control select{max-width:148px}.thought-provenance>span{display:none}.thought-provenance select{max-width:130px!important} }

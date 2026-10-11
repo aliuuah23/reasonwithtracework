@@ -2,6 +2,7 @@ import { autoLayout, surfaceSize } from './graph-layout.js';
 import { typeLabels } from '../core/ontology.js';
 import { nodeGuidance } from '../core/node-guidance.js';
 import { connectionSignal } from './connection-rules.js';
+import { provenanceLabel, inferLegacyProvenance } from '../core/frameworks.js';
 
 const CANVAS_ORIGIN_X=360;
 const CANVAS_ORIGIN_Y=680;
@@ -9,7 +10,7 @@ let lastNodeActivation={id:null,time:0};
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
   onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
-  selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null
+  selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null,frameworkId='tracework'
 }){
   const world=autoLayout(nodes);
   const laid=world.map(n=>({...n,x:(Number(n.x)||0)+CANVAS_ORIGIN_X,y:(Number(n.y)||0)+CANVAS_ORIGIN_Y}));
@@ -34,6 +35,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.surface.dataset.contentMaxY=String(maxY);
   els.surface.classList.toggle('hide-node-types',!showNodeTypes);
   els.surface.classList.toggle('hide-wire-signals',!showWireSignals);
+  els.surface.dataset.framework=frameworkId;
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id))).join('');
@@ -199,12 +201,15 @@ function nodeMarkup(n,selected,issue){
   const previewOpen=n.type==='consequence'&&Boolean(n.meta?.spatialPreviewOpen);
   const previewButton=n.type==='consequence'?`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Expand a schematic spatial reading of this text">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`:'';
   const preview=previewOpen?spatialPreviewMarkup(n.label):'';
+  const provenanceId=inferLegacyProvenance(n);
+  const provenance=provenanceLabel(provenanceId);
+  const provenanceChip=(n.type==='input'||provenanceId!=='designer')?`<span class="node-provenance" title="Origin / provenance">${escapeHtml(provenance)}</span>`:'';
   return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${typeLabels[n.type]||n.type}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
-      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${previewButton}</div>
+      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${previewButton}</div>
     </div></article>`;
 }
 

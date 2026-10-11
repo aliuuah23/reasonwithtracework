@@ -9,6 +9,7 @@ const freshState = () => ({
   briefChunks: [],
   activeBriefChunkId: null,
   sourceFileName: '',
+  frameworkId: 'tracework',
   hotspots: [],
   selectedHotspotId: null,
   nodes: [],

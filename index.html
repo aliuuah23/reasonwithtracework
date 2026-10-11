@@ -150,6 +150,13 @@
                   <button class="map-mode-button active" id="focusMapModeButton" type="button" title="Show only the reasoning around the selected hotspot">Focus map</button>
                   <button class="map-mode-button" id="aggregateMapModeButton" type="button" title="Merge every focus map in this project into one reasoning field">Aggregate map</button>
                 </div>
+                <label class="framework-control" title="Change the structuring lens without changing or deleting the reasoning itself.">
+                  <span>Framework</span>
+                  <select id="frameworkSelect" aria-label="Reasoning framework">
+                    <option value="tracework">TRACEWORK Grammar</option>
+                    <option value="freeform">Freeform / Low-Structure</option>
+                  </select>
+                </label>
                 <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                 <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
                 <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
@@ -193,7 +200,7 @@
             <div class="thought-entry">
               <textarea id="freeThoughtInput" rows="2" placeholder="Write a thought, decision, observation, spatial move…"></textarea>
               <div class="thought-reading" id="thoughtReading">
-                <span>TRACEWORK reads this as</span>
+                <span id="thoughtReadingLabel">TRACEWORK reads this as</span>
                 <select id="thoughtTypeSelect" aria-label="Suggested reasoning category">
                   <option value="interpretation">Interpretation</option>
                   <option value="grounding">Grounding</option>
@@ -202,6 +209,17 @@
                   <option value="goal">Goal</option>
                   <option value="input">Input / given condition</option>
                 </select>
+                <label class="thought-provenance" title="Record where this thought entered the project.">
+                  <span>Origin</span>
+                  <select id="thoughtProvenanceSelect" aria-label="Thought provenance">
+                    <option value="designer">Designer thought</option>
+                    <option value="observation">Observation / site condition</option>
+                    <option value="tutor">Tutor comment</option>
+                    <option value="precedent">Precedent / case study</option>
+                    <option value="brief">Brief / source document</option>
+                    <option value="other">Other source</option>
+                  </select>
+                </label>
                 <small id="thoughtReason">Start typing to see a suggestion.</small>
               </div>
               <div class="thought-matches" id="thoughtMatches"></div>
