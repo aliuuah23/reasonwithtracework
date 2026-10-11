@@ -2,7 +2,7 @@ import { interpretationPrompt, groundingPrompt, consequencePrompt, evaluationPro
 import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js';
-import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories } from '../core/frameworks.js';
+import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
 
@@ -10,10 +10,28 @@ export function renderEmptyInspector(){
   document.getElementById('inspectorContent').innerHTML=`<div class="inspector-empty"><div class="mini-trace"></div><h3>Inspect the reasoning.</h3><p>Select a hotspot or a node. TRACEWORK reveals the next useful question without deciding the answer for you.</p></div>`;
 }
 
-export async function renderHotspotInspector(hotspot,handlers){
-  const p=await interpretationPrompt(hotspot);
+export async function renderHotspotInspector(hotspot,state,handlers){
+  const framework=getFramework(state?.frameworkId||'tracework');
   const [related,cases]=await Promise.all([findRelatedPathways(hotspot.text),findCaseStudies({text:`${hotspot.text} ${hotspot.concept||''}`,type:'input'})]);
   const root=document.getElementById('inspectorContent');
+
+  if(framework.id!=='tracework' && framework.id!=='freeform'){
+    const pseudo={type:'input',label:hotspot.text,meta:{source:'brief',hotspotId:hotspot.id}};
+    const role=frameworkRoleForNode(pseudo,framework.id);
+    const guide=frameworkGuidance(framework.id,role?.id,{sourceText:hotspot.text});
+    root.innerHTML=`
+      <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p></div>
+      <div class="framework-lens-note"><strong>${esc(framework.label)}</strong><span>${esc(framework.source||'')}</span><p>${esc(framework.description)}</p></div>
+      ${frameworkNextForm({status:'active',label:hotspot.text},framework,role,guide)}
+      ${caseStudyMarkup(cases)}
+      ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
+    bindFrameworkNext(root,pseudo,framework,role,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(text,roleId,extra));
+    root.querySelectorAll('[data-related-path]').forEach(b=>b.onclick=()=>handlers.onRelatedPath?.(b.dataset.relatedPath));
+    root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
+    return;
+  }
+
+  const p=await interpretationPrompt(hotspot);
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip guided-direct-choice" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
@@ -72,15 +90,22 @@ export async function renderNodeInspector(node,state,handlers){
     ? (state.hotspots?.find(h=>h.id===node.meta?.hotspotId) || {text:node.label,kind:/\s/.test(node.label)?'phrase':'word',reason:'Selected source language'})
     : null;
   const inputPrompt=inputHotspot?await interpretationPrompt(inputHotspot):null;
-  const next=nextForm(node,state,inputPrompt);
+  const guide=(framework.id!=='tracework'&&framework.id!=='freeform')?frameworkGuidance(framework.id,frameworkRole?.id,{sourceText:node.label}):null;
+  const next=(framework.id!=='tracework'&&framework.id!=='freeform')
+    ? frameworkNextForm(node,framework,frameworkRole,guide)
+    : nextForm(node,state,inputPrompt);
   const cases=await findCaseStudies({text:`${node.label} ${(node.meta?.tags||[]).join(' ')}`,type:node.type});
+  const progress=framework.arrangement==='network'
+    ? progressRoles.map(r=>`<span class="${r.id===activeRoleId?'done':''}"></span>`).join('')
+    : progressRoles.map((r,i)=>`<span class="${frameworkProgressDone(progressRoles,activeRoleId,i)?'done':''}"></span>`).join('');
   root.innerHTML=`
-    <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progressRoles.map((r,i)=>`<span class="${frameworkProgressDone(progressRoles,activeRoleId,i)?'done':''}"></span>`).join('')}</div></div>
+    <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progress}</div></div>
     ${metaMarkup(node,framework,frameworkRole)}
     ${next}
     ${caseStudyMarkup(cases)}
     <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
-  bindNext(root,node,handlers);
+  if(framework.id!=='tracework'&&framework.id!=='freeform') bindFrameworkNext(root,node,framework,frameworkRole,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(node,text,roleId,extra));
+  else bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
   root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
   root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
@@ -92,6 +117,56 @@ export async function renderNodeInspector(node,state,handlers){
 function caseStudyMarkup(items){
   if(!items?.length)return '';
   return `<div class="inspector-section"><h4>Related case studies</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Specific spatial features to compare — useful when the next reasoning step feels unclear, never prescribed answers.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
+}
+
+function frameworkNextForm(node,framework,currentRole,guide){
+  if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it to continue working from it, or branch from an earlier active node.</p></div>`;
+  if(!guide?.nextRole){
+    return `<div class="inspector-section framework-guided-section"><span class="status-chip active">${esc(framework.shortLabel)} pause point</span><div class="prompt-question">${esc(guide?.question||'This framework route can pause here.')}</div><div class="guided-help-note">The framework is a lens, not a compulsory sequence. Return to an earlier node, add a free thought, or switch framework whenever another reading would be more useful.</div></div>`;
+  }
+  const recommended=guide.nextRole;
+  const roles=framework.categories||[];
+  const options=roles.map(c=>`<option value="${attr(c.id)}" ${c.id===recommended?'selected':''}>${esc(c.label)}${c.id===recommended?' · suggested':''}</option>`).join('');
+  return `<div class="inspector-section framework-guided-section">
+    <div class="framework-next-row"><span class="guided-next-label">${esc(framework.shortLabel)} next move</span><select id="frameworkNextRole" aria-label="Next framework role">${options}</select></div>
+    <div class="prompt-question">${esc(guide.question)}</div>
+    ${guide.choices?.length?`<div class="choice-list">${guide.choices.map(c=>`<button class="choice-chip framework-cue" data-framework-cue="${attr(c)}">${esc(c)}</button>`).join('')}</div>`:''}
+    <div class="guided-help-note">The suggested next role follows ${esc(framework.label)}, but it is editable. Keep the framework useful rather than forcing your reasoning to obey it.</div>
+    <label class="field-label">Write the next reasoning move</label>
+    <textarea class="field-textarea" id="nextText" placeholder="${attr(guide.placeholder||'Write the next reasoning move…')}"></textarea>
+    <div class="guided-validation" id="nextValidation"></div>
+    <button class="primary-button compact" id="addFrameworkNext">Add ${esc(framework.categories.find(c=>c.id===recommended)?.label||'node')} →</button>
+  </div>`;
+}
+
+function bindFrameworkNext(root,node,framework,currentRole,guide,onSubmit){
+  if(!guide?.nextRole)return;
+  const area=root.querySelector('#nextText');
+  const roleSelect=root.querySelector('#frameworkNextRole');
+  const add=root.querySelector('#addFrameworkNext');
+  const updateButton=()=>{
+    const role=framework.categories.find(c=>c.id===roleSelect?.value);
+    if(add)add.textContent=`Add ${role?.label||'node'} →`;
+  };
+  roleSelect?.addEventListener('change',updateButton);
+  root.querySelectorAll('[data-framework-cue]').forEach(b=>b.onclick=()=>{
+    b.classList.toggle('selected');
+    const cue=(b.dataset.frameworkCue||'').trim();
+    if(!cue||!area)return;
+    const current=area.value.trim();
+    if(!current) area.value=cue.endsWith('…')?cue:`${cue} — `;
+    else if(!current.toLowerCase().includes(cue.toLowerCase())) area.value=`${cue} — ${current}`;
+    area.focus();area.setSelectionRange?.(area.value.length,area.value.length);
+  });
+  add?.addEventListener('click',()=>{
+    const text=area?.value.trim();
+    const validation=root.querySelector('#nextValidation');
+    if(!text){if(validation)validation.textContent='Write the reasoning you want to turn into a node.';area?.focus();return;}
+    if(validation)validation.textContent='';
+    const roleId=roleSelect?.value||guide.nextRole;
+    onSubmit?.(text,roleId,{question:guide.question,currentRole:currentRole?.id||null});
+  });
+  updateButton();
 }
 
 function nextForm(node,state,inputPrompt=null){
@@ -114,6 +189,7 @@ function nextForm(node,state,inputPrompt=null){
   }
   return `<div class="inspector-section"><span class="status-chip active">Pathway complete</span><p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:0">This route is complete. You can return to any earlier node and fork another consequence, trade-off or goal.</p></div>`;
 }
+
 function bindNext(root,node,handlers){
   let sourceKind=''; const tags=[];
   root.querySelectorAll('.selectable').forEach(b=>b.onclick=()=>{ b.classList.toggle('selected'); if(b.dataset.groundSource)sourceKind=b.dataset.groundSource; if(b.dataset.tag){ const i=tags.indexOf(b.dataset.tag); i>-1?tags.splice(i,1):tags.push(b.dataset.tag); } });
@@ -146,6 +222,5 @@ function metaMarkup(node,framework=null,frameworkRole=null){
 }
 function statusText(node){ if(node.status==='rejected')return 'This reasoning remains visible but is no longer active.'; if(node.meta?.provisional)return 'A provisional alternative. Develop it before deciding whether to keep it.'; return 'Part of the active reasoning trace.'; }
 function frameworkProgressDone(roles,activeRoleId,index){ const current=roles.findIndex(r=>r.id===activeRoleId); return current>=0 && index<=current; }
-function stageDone(t,current){ const order=['input','interpretation','grounding','consequence','evaluation','goal']; return order.indexOf(t)<=order.indexOf(current); }
 function esc(t=''){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function attr(t=''){return esc(t).replace(/`/g,'');}

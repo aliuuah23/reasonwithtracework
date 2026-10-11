@@ -31,6 +31,12 @@
     <section class="about-flow">
       <div class="flow-step">Input</div><i></i><div class="flow-step">Interpretation</div><i></i><div class="flow-step">Grounding</div><i></i><div class="flow-step">Spatial consequence</div><i></i><div class="flow-step">Evaluation</div><i></i><div class="flow-step">Goal</div>
     </section>
+    <section class="about-frameworks">
+      <span class="product-kicker">Reasoning frameworks</span>
+      <h2>One project, several ways to read the reasoning.</h2>
+      <p>TRACEWORK Grammar is the default operational model. The six literature frameworks below are optional lenses: they reorganise, prompt and classify the same underlying reasoning without replacing it.</p>
+      <div class="framework-reference-grid" id="frameworkReferenceGrid"></div>
+    </section>
     <section class="about-research">
       <span class="product-kicker">Research foundations</span>
       <h2>A research system underneath a usable interface.</h2>
@@ -43,10 +49,13 @@
   <script type="module">
     import { loadReferences } from './js/evidence/references.js';
     import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './js/ui/tutorials.js';
+    import { frameworks } from './js/core/frameworks.js';
     const el = document.getElementById('referenceList');
     loadReferences().then(items => {
       el.innerHTML = items.map(r => `<article><strong>${r.author}</strong><span>${r.title}</span><p>${r.relevance}</p></article>`).join('');
     });
+    const frameworkGrid=document.getElementById('frameworkReferenceGrid');
+    frameworkGrid.innerHTML=frameworks.filter(f=>f.id!=='freeform').map(f=>`<article class="framework-reference-card"><div class="framework-reference-head"><strong>${f.label}</strong><span>${f.source||''}</span></div><p>${f.description}</p><div class="framework-reference-roles">${(f.categories||[]).map(c=>`<span class="framework-role-chip has-help" data-help="${c.description}">${c.label}</span>`).join('')}</div></article>`).join('');
     bindTutorialTriggers();
     maybeOpenFirstVisitTutorial('about');
   </script>

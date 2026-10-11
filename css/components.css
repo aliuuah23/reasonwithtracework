@@ -357,3 +357,43 @@ body[data-framework="freeform"] .canvas-panel { --framework-accent:#8f95a0; }
 body[data-framework="freeform"]:not(.framework-types-visible) #ontologyLegend { display:none; }
 body[data-framework="freeform"]:not(.framework-types-visible) .graph-node:not([data-type="note"]) .node-provenance { color:#8a909a; }
 @media(max-width:1180px){ .framework-control > span{display:none}.framework-control{padding-left:4px}.framework-control select{max-width:148px}.thought-provenance>span{display:none}.thought-provenance select{max-width:130px!important} }
+
+/* Round A2 · framework guidance, framework help and arrangement blending */
+.framework-lens-note { margin:10px 0 0; padding:10px 11px; border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); }
+.framework-lens-note strong,.framework-lens-note span { display:block; }
+.framework-lens-note strong { font-size:10px; color:var(--text); }
+.framework-lens-note span { margin-top:2px; color:var(--accent-dark); font-size:8px; font-weight:760; letter-spacing:.035em; }
+.framework-lens-note p { margin:6px 0 0; color:var(--muted); font-size:9px; line-height:1.5; }
+.framework-guided-section { border-left:2px solid color-mix(in srgb,var(--accent) 30%,transparent); padding-left:12px; }
+.framework-next-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.framework-next-row .guided-next-label { margin-bottom:0; }
+.framework-next-row select { min-width:0; max-width:170px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--text); padding:5px 24px 5px 8px; font-size:9px; font-weight:730; outline:none; }
+.framework-next-row select:focus { border-color:#b6b4f3; box-shadow:0 0 0 2px rgba(99,94,232,.06); }
+.arrange-blend { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--border); border-radius:999px; background:var(--surface); color:var(--muted-2); }
+.arrange-blend > span { font-size:8px; font-weight:760; }
+.arrange-blend input { width:92px; accent-color:var(--accent); cursor:pointer; }
+.arrange-blend output { min-width:67px; font-size:8px; font-weight:700; color:var(--muted); }
+.legend-item.has-help,.framework-role-chip.has-help { position:relative; cursor:help; }
+.legend-item.has-help::after,.framework-role-chip.has-help::after {
+  content:attr(data-help); position:absolute; z-index:120; left:50%; bottom:calc(100% + 7px); transform:translate(-50%,3px);
+  width:220px; padding:8px 9px; border-radius:9px; background:#171a21; color:#fff; font-size:9px; font-weight:500; line-height:1.45;
+  white-space:normal; text-align:left; box-shadow:0 10px 24px rgba(20,24,38,.22); opacity:0; visibility:hidden; pointer-events:none; transition:.08s ease;
+}
+.legend-item.has-help:hover::after,.legend-item.has-help:focus-visible::after,.framework-role-chip.has-help:hover::after,.framework-role-chip.has-help:focus-visible::after { opacity:1; visibility:visible; transform:translate(-50%,0); }
+.framework-tutorial-shell .tutorial-step p { white-space:pre-line; }
+
+/* About · long-form framework reference */
+.about-frameworks { margin-top:70px; }
+.about-frameworks > h2 { margin:10px 0 10px; font-size:36px; letter-spacing:-.035em; }
+.about-frameworks > p { max-width:800px; margin:0 0 24px; color:var(--muted); line-height:1.65; font-size:14px; }
+.framework-reference-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.framework-reference-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; }
+.framework-reference-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.framework-reference-head strong { font-size:13px; }
+.framework-reference-head span { color:var(--accent-dark); font-size:9px; font-weight:720; text-align:right; }
+.framework-reference-card p { color:var(--muted); font-size:11px; line-height:1.55; margin:9px 0 12px; }
+.framework-reference-roles { display:flex; flex-wrap:wrap; gap:5px; }
+.framework-role-chip { display:inline-flex; align-items:center; min-height:24px; padding:4px 7px; border:1px solid var(--border); border-radius:999px; background:var(--surface-soft); color:var(--muted); font-size:8px; font-weight:680; }
+@media(max-width:760px){ .framework-reference-grid{grid-template-columns:1fr}.framework-next-row{align-items:flex-start;flex-direction:column}.framework-next-row select{max-width:100%;width:100%}.arrange-blend input{width:70px} }
+#workspaceTutorialButton { max-width:150px; overflow:hidden; text-overflow:ellipsis; }
+@media(max-width:1180px){ #workspaceTutorialButton{max-width:92px;padding-inline:8px} }

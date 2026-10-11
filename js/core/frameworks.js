@@ -184,47 +184,169 @@ export function classifyFrameworkThought(text,frameworkId,{canonicalType=null,af
   }
   const scores=Object.fromEntries(framework.categories.map(c=>[c.id,0]));
   const reasons=Object.fromEntries(framework.categories.map(c=>[c.id,[]]));
+  const bump=(id,amount,reason)=>{ if(id in scores){ scores[id]+=amount; if(reason)reasons[id].push(reason); } };
   for(const c of framework.categories){
-    for(const phrase of c.phrases||[]){ if(containsPhrase(value,phrase)){scores[c.id]+=3;reasons[c.id].push(`“${phrase}”`);} }
-    for(const word of c.words||[]){ if(new RegExp(`\\b${escapeRegex(String(word).toLowerCase())}\\b`,'i').test(value)){scores[c.id]+=1;reasons[c.id].push(`“${word}”`);} }
-    if(canonicalType && (c.canonicalBias||[]).includes(canonicalType)){scores[c.id]+=2.2;reasons[c.id].push('current TRACEWORK role');}
+    for(const phrase of c.phrases||[]){ if(containsPhrase(value,phrase)){bump(c.id,3,`“${phrase}”`);} }
+    for(const word of c.words||[]){ if(new RegExp(`\\b${escapeRegex(String(word).toLowerCase())}\\b`,'i').test(value)){bump(c.id,1,`“${word}”`);} }
+    // The underlying TRACEWORK role is supporting context only, never the dominant cue.
+    if(canonicalType && (c.canonicalBias||[]).includes(canonicalType)){bump(c.id,.65,'underlying TRACEWORK role');}
   }
+  applyFrameworkHeuristics(value,framework.id,{bump,afterRole});
   if(afterRole){
     const idx=framework.categories.findIndex(c=>c.id===afterRole);
     const next=framework.categories[idx+1];
-    if(next){scores[next.id]+=.7;reasons[next.id].push('previous framework step');}
+    if(next) bump(next.id,.55,'previous framework step');
   }
   if(/[?]$/.test(value)){
-    const question=framework.categories.find(c=>/question|clarification/i.test(c.label));
-    if(question){scores[question.id]+=1.5;reasons[question.id].push('question form');}
+    const question=framework.categories.find(c=>/question|clarification|refinement/i.test(c.label));
+    if(question)bump(question.id,1.4,'question form');
   }
   let ranked=framework.categories.map(c=>({category:c,score:scores[c.id]})).sort((a,b)=>b.score-a.score);
   if(!ranked.length)return {role:null,category:null,confidence:0,reason:'',matches:[]};
   if(ranked[0].score===0){
     const fallback=canonicalType?framework.categories.find(c=>(c.canonicalBias||[]).includes(canonicalType)):null;
-    scores[(fallback||framework.categories[0]).id]=.5;
+    bump((fallback||framework.categories[0]).id,.45,'weak default');
     ranked=framework.categories.map(c=>({category:c,score:scores[c.id]})).sort((a,b)=>b.score-a.score);
   }
+  const positive=ranked.filter(x=>x.score>0);
+  const total=Math.max(.1,positive.reduce((sum,x)=>sum+x.score,0));
   const best=ranked[0],second=ranked[1]||{score:0};
   const margin=Math.max(0,best.score-second.score);
-  const confidence=Math.max(.32,Math.min(.93,.42+(best.score*.07)+(margin*.05)));
-  const maxScore=Math.max(best.score,.5);
-  const matches=ranked.slice(0,4).map((item,index)=>({
-    role:item.category.id,
-    category:item.category,
-    strength:item.score<=0?0:Math.max(0,Math.min(99,Math.round((confidence*100)*(item.score/maxScore)))),
-    cues:[...new Set(reasons[item.category.id])].slice(0,2),
-    strongest:index===0
-  }));
-  const cues=[...new Set(reasons[best.category.id])].slice(0,3);
+  const confidence=Math.max(.28,Math.min(.88,.34+(best.score*.055)+(margin*.045)));
+  const matches=ranked.slice(0,4).map((item,index)=>{
+    const share=item.score<=0?0:item.score/total;
+    const strength=item.score<=0?0:Math.max(8,Math.min(86,Math.round(18+share*68)));
+    return {role:item.category.id,category:item.category,strength,cues:[...new Set(reasons[item.category.id])].slice(0,3),strongest:index===0};
+  });
+  const cues=[...new Set(reasons[best.category.id])].slice(0,4);
   const cueText=cues.length?`Cues: ${cues.join(' + ')}.`:`Suggested from the overall wording.`;
   return {
     role:best.category.id,
     category:best.category,
     confidence,
-    reason:`${cueText} Match percentages show relative fit within ${framework.label}, not certainty.`,
+    reason:`${cueText} Percentages show relative fit inside ${framework.label}, not certainty; change the role whenever the framework reading does not match your intent.`,
     matches
   };
+}
+
+function applyFrameworkHeuristics(value,frameworkId,{bump,afterRole}){
+  const t=value.toLowerCase();
+  const has=re=>re.test(t);
+  if(frameworkId==='requirements'){
+    if(has(/\b(must|shall|required|requirement|ensure|needs? to|should)\b/) && has(/\b(keep|remain|provide|allow|accommodate|support|protect|maintain|route|space|seating|access|circulation)\b/)) bump('requirement',5,'operational “must/should” condition');
+    if(has(/\b(cannot|can't|must not|without|fixed|limit|limited|obstacle|conflict|interfere|crowd|crowding|dependency|prevent)\b|may conflict|may interfere/)) bump('constraint',5,'limitation or conflict');
+    if(has(/\b(when|during|if|whenever|peak period|scenario|in use)\b/)) bump('scenario',3.5,'situational condition');
+    if(has(/\b(goal|aim|purpose|users? need|need for|support|enable|desired)\b/) && !has(/\bmust|shall|required\b/)) bump('goal',3.5,'need or desired condition');
+    if(has(/\b(clarify|clarification|what does|what is meant|define|refine|refinement|unclear)\b/)) bump('refinement',4,'clarification/refinement language');
+    if(has(/\b(test|check|validate|validation|satisfy|satisfied|verify|negotiate|whether it works)\b/)) bump('validation',4.5,'testing or negotiation language');
+    if(has(/\b(stakeholder|brief|client|user says|given condition)\b/)) bump('statement',3,'source/stakeholder statement');
+  }
+  if(frameworkId==='fivewhys'){
+    if(has(/\b(ultimately|fundamentally|at the root|root concern|core issue|what matters|underlying concern)\b/)) bump('root',6,'root-concern language');
+    if(has(/\b(because|due to|since|results from|comes from|driven by)\b/)){
+      if(afterRole==='reason'||afterRole==='deeper') bump('deeper',5,'another “why” answer'); else bump('reason',5,'explicit reason');
+    } else if(afterRole==='reason'||afterRole==='deeper') bump('deeper',2.8,'continuing the why chain');
+    else bump('surface',1.5,'starting statement');
+  }
+  if(frameworkId==='laddering'){
+    if(has(/\b(allows?|enables?|prevents?|leads? to|results? in|makes it possible|so that)\b/)) bump('consequence',5,'means–end consequence language');
+    if(has(/\b(value|ultimately|important because|what matters|autonomy|dignity|belonging|control|agency|comfort|security|identity)\b/)) bump('value',4.5,'underlying value/end-state');
+    if(has(/\b(flexible|open|private|quiet|visible|movable|accessible|compact|shaded|permeable|attribute|preference|quality)\b/)) bump('attribute',3.5,'concrete attribute or quality');
+  }
+  if(frameworkId==='framing'){
+    if(has(/\b(rather than|not .* but|reframe|frame this|seen as|treat .* as|working principle|way of seeing)\b/)) bump('frame',6,'reframing/lens language');
+    if(has(/\b(problem|issue|situation|condition|currently|there is|we have)\b/)) bump('situation',3.5,'problematic situation');
+    if(has(/\b(aim|purpose|value|we want|should support|so that|why it matters)\b/)) bump('value',3.5,'desired value or aim');
+    if(has(/^(create|provide|use|arrange|place|move|add|remove|design|make)\b|\b(could create|respond by|spatial response)\b/)) bump('response',4.5,'design response');
+  }
+  if(frameworkId==='reflective'){
+    if(has(/\b(instead|rather than|rethink|reframe|revise|try another|change .* instead|move .* instead)\b/)) bump('reframe',7,'revised frame or next move');
+    if(has(/\b(this|that)\s+(makes?|creates?|causes?|reveals?|means?|results?)\b|\b(but may|however|interfere|unintended|consequence|result)\b/)) bump('backtalk',6,'situation talking back to the move');
+    if(has(/\b(i notice|i realise|i realize|on reflection|this works|does not work|doesn't work|better|worse|successful|fails?|reflect)\b/)) bump('reflection',6,'reflection on the result');
+    if(has(/^(place|move|add|remove|arrange|try|use|shift|rotate|open|close|make|draw|model|test)\b|\b(i will|let's try|try to)\b/)) bump('move',5,'design move/experiment');
+    if(has(/\b(the problem is|the idea is|i think|i am treating|current frame|understand this as)\b/)) bump('frame',4,'current framing');
+  }
+  if(frameworkId==='semantics'){
+    if(has(/\b(could mean|might mean|may mean|does not necessarily mean|doesn't necessarily mean|means|i interpret|reading of|implies)\b/)) bump('meaning',5.5,'explicit meaning/interpretation language');
+    if(has(/\b(in this context|for these users|on this site|depending on|culture|situated|circumstance)\b/)) bump('context',4,'contextual construction of meaning');
+    if(has(/\b(use|experience|behavio|occupation|occupy|interaction|activity|how people)\b/)) bump('use',3.8,'use/experience implication');
+    if(has(/\b(value|relationship|relation|priority|what matters|important because|between)\b/)) bump('value_relation',3.8,'value or relation');
+    if(has(/\b(feels?|atmosphere|sense of|quality|welcoming|quiet|comfort|character)\b/)) bump('atmosphere',3.8,'atmospheric/qualitative meaning');
+    if(has(/\b(spatial|architect|enclos|visual connection|threshold|screen|layout|seating|route|circulation|opening|wall|edge|centre|center|form|section|plan)\b/)) bump('implication',5,'architectural/spatial implication');
+    if(afterRole==='meaning' && has(/\b(enclos|visual|threshold|screen|layout|seating|route|circulation|form|space)\b/)) bump('implication',2.5,'meaning developing toward architecture');
+    if(!afterRole && !has(/\bmean|context|use|experience|value|atmosphere|spatial|architect|enclos|visual|threshold|layout|seating|route|form\b/)) bump('expression',1.5,'unresolved expression/term');
+  }
+}
+
+export function frameworkGuidance(frameworkId,currentRoleId,{sourceText=''}={}){
+  const f=getFramework(frameworkId);
+  if(!f || f.id==='tracework' || f.id==='freeform') return null;
+  const guidance={
+    requirements:{
+      statement:{nextRole:'refinement',question:'What is still unclear, assumed or underspecified in this statement?',placeholder:'Clarify who, when, what condition, or what meaning needs refinement…',choices:['Who is affected?','When does it apply?','What must remain true?']},
+      refinement:{nextRole:'goal',question:'What underlying need or goal does this clarification point to?',placeholder:'State the need or desired condition this clarification serves…',choices:['User need','Design goal','Performance aim']},
+      goal:{nextRole:'scenario',question:'In what concrete situation should this goal hold?',placeholder:'Describe a use condition, moment, actor or scenario that tests the goal…',choices:['Normal use','Peak condition','Edge case']},
+      scenario:{nextRole:'constraint',question:'What could limit, obstruct or conflict with this goal in that scenario?',placeholder:'Name the obstacle, dependency, limit or conflict…',choices:['Physical limit','Competing requirement','Operational conflict']},
+      constraint:{nextRole:'requirement',question:'What operational requirement could respond to this obstacle without hiding it?',placeholder:'State a condition the design should satisfy…',choices:['Must allow…','Must maintain…','Must avoid…']},
+      requirement:{nextRole:'validation',question:'How could this requirement be checked, negotiated or tested?',placeholder:'Describe what would count as satisfying or challenging the requirement…',choices:['Test against scenario','Check conflict','Negotiate priority']},
+      validation:{nextRole:'refinement',question:'What needs to be refined after this check?',placeholder:'Revise or clarify the requirement based on what the test revealed…',choices:['Clarify wording','Adjust requirement','Revisit goal']}
+    },
+    fivewhys:{
+      surface:{nextRole:'reason',question:'Why is this issue, condition or need happening — or why does it matter?',placeholder:'Because…',choices:['Because…']},
+      reason:{nextRole:'deeper',question:'Why is that the case?',placeholder:'Because…',choices:['Ask why again']},
+      deeper:{nextRole:'deeper',question:'Why does that underlying reason exist?',placeholder:'Because…',choices:['Ask why again','This may be the root concern'],roleOptions:['deeper','root']},
+      root:{nextRole:null,question:'A root concern has been reached. Start another Why chain if another cause may also matter.',placeholder:'',choices:[]}
+    },
+    laddering:{
+      attribute:{nextRole:'consequence',question:'What does this attribute enable, prevent or change for the user?',placeholder:'This allows / prevents / changes…',choices:['Functional consequence','Experiential consequence']},
+      consequence:{nextRole:'value',question:'Why is that consequence important?',placeholder:'This matters because…',choices:['Control / agency','Comfort / security','Belonging / identity']},
+      value:{nextRole:null,question:'This ladder has reached a value. Start another attribute or compare how the value could become architectural.',placeholder:'',choices:[]}
+    },
+    framing:{
+      situation:{nextRole:'frame',question:'What way of seeing this situation would make it designable?',placeholder:'Rather than treating this as…, frame it as…',choices:['Change the question','Change the relationship','Change what counts as the problem']},
+      frame:{nextRole:'value',question:'What value or outcome makes this frame worth pursuing?',placeholder:'This frame matters because it could…',choices:['User value','Spatial aim','Performance outcome']},
+      value:{nextRole:'response',question:'What design response becomes possible through this frame?',placeholder:'Respond by…',choices:['Spatial organisation','Element / system','Sequence / threshold']},
+      response:{nextRole:'frame',question:'What alternative frame could produce a different response?',placeholder:'Another way to frame the situation is…',choices:['Reframe the situation','Keep response and change frame']}
+    },
+    reflective:{
+      frame:{nextRole:'move',question:'What move or experiment would test this current frame?',placeholder:'Try / place / move / draw / model…',choices:['Make a move','Test an alternative']},
+      move:{nextRole:'backtalk',question:'What does the situation do in response to this move?',placeholder:'This creates / reveals / causes…',choices:['Unexpected effect','Spatial consequence','Constraint becomes visible']},
+      backtalk:{nextRole:'reflection',question:'What does that back-talk make you notice or reconsider?',placeholder:'I notice / this works because / this fails because…',choices:['What worked?','What failed?','What changed?']},
+      reflection:{nextRole:'reframe',question:'How should the frame or next move change because of that reflection?',placeholder:'Instead / revise / reframe / try another…',choices:['Reframe','Revise the move','Try an alternative']},
+      reframe:{nextRole:'move',question:'What next move would test the revised frame?',placeholder:'Try / move / change…',choices:['Test the reframe','Make the next move']}
+    },
+    semantics:{
+      expression:{nextRole:'meaning',question:'What possible meaning does this expression carry here?',placeholder:'In this project, this could mean…',choices:['Possible meaning','Alternative reading']},
+      meaning:{nextRole:'context',question:'What makes this meaning matter: context, use, relation, atmosphere or an architectural implication?',placeholder:'Develop the meaning through context, use, value, quality or spatial implication…',choices:['Context','Use / experience','Value / relation','Atmosphere / quality','Architectural consequence'],roleOptions:['context','use','value_relation','atmosphere','implication']},
+      context:{nextRole:'meaning',question:'How does this context change or qualify the meaning?',placeholder:'In this context, the expression becomes…',choices:['Qualify the meaning','Surface another meaning'],roleOptions:['meaning','use','implication']},
+      use:{nextRole:'implication',question:'What architectural implication follows from this use or experience?',placeholder:'Spatially, this suggests…',choices:['Spatial consequence','Relationship / threshold'],roleOptions:['implication','value_relation']},
+      value_relation:{nextRole:'implication',question:'How might this value or relation become spatially consequential?',placeholder:'This could be expressed through…',choices:['Architectural consequence','Atmospheric quality'],roleOptions:['implication','atmosphere']},
+      atmosphere:{nextRole:'implication',question:'What architectural condition could support or challenge this quality?',placeholder:'This quality could be shaped through…',choices:['Architectural consequence','Use / experience'],roleOptions:['implication','use']},
+      implication:{nextRole:'meaning',question:'What meaning does this architectural consequence reinforce, challenge or reveal?',placeholder:'This consequence changes the reading because…',choices:['Re-read the expression','Add context'],roleOptions:['meaning','context']}
+    }
+  };
+  const byRole=guidance[f.id]||{};
+  const current=byRole[currentRoleId]||byRole[f.categories?.[0]?.id]||null;
+  if(!current)return null;
+  const roleOptions=(current.roleOptions||[current.nextRole]).filter(Boolean);
+  return {...current,roleOptions,sourceText,framework:f};
+}
+
+export function frameworkTutorialSteps(frameworkId='tracework'){
+  const f=getFramework(frameworkId);
+  const common={title:f.label,source:f.source,description:f.description};
+  const roles=(f.categories||[]).map(c=>({label:c.label,description:c.description}));
+  const notes={
+    tracework:'TRACEWORK is the project’s base operational grammar. It can remain visible, be hidden, or be compared with other lenses without changing the designer’s underlying reasoning.',
+    requirements:'Use this lens to progressively clarify needs, goals, scenarios, obstacles and operational requirements. It is especially useful when a brief or stakeholder statement needs refinement before becoming actionable.',
+    fivewhys:'Use repeated “why?” questions to move beneath a surface statement. TRACEWORK keeps this intentionally light because Five Whys is an elicitation technique, not a full design ontology.',
+    laddering:'Follow Attribute → Consequence → Value. This reveals why a stated spatial quality matters before deciding how architecture should respond.',
+    framing:'Use framing to change how an unclear situation is seen so that a design response becomes possible. The framework is a lens for constructing the problem, not merely categorising an answer.',
+    reflective:'Use the cycle Current frame → Move → Back-talk → Reflection → Reframe / next move. The right panel follows the conversation between the designer and the developing situation.',
+    semantics:'Treat meaning as contextual, relational and potentially multiple. The map is intentionally network-like: expression, meaning, context, use, value, atmosphere and architectural implication can connect in several directions.',
+    freeform:'Use this mode when visible categories get in the way. The same reasoning remains available for later inspection through TRACEWORK or a literature framework.'
+  };
+  return {...common,note:notes[f.id]||'',roles};
 }
 
 export function categoryColor(frameworkId,roleId){

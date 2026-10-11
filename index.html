@@ -142,7 +142,7 @@
         <section class="canvas-panel panel">
           <div class="canvas-toolbar">
             <div>
-              <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" data-tutorial="workspace">? Tutorial</button></div>
+              <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" id="workspaceTutorialButton" data-tutorial="workspace">? Tutorial</button></div>
               <div class="canvas-title-row">
                 <h2 id="canvasTitle">Your trace</h2>
                 <span class="branch-count" id="branchCount">1 path</span>
@@ -176,7 +176,7 @@
                 <select id="aggregateTypeFilter" aria-label="Filter aggregate map by node type"><option value="all">All node types</option></select>
                 <select id="aggregateStatusFilter" aria-label="Filter aggregate map by working status"><option value="all">All statuses</option><option value="active">Active</option><option value="provisional">Provisional</option><option value="rejected">Rejected</option></select>
                 <button class="aggregate-action" id="resetAggregateFiltersButton" type="button" title="Clear filters and pathway focus to restore the full project field">Show all</button>
-                <button class="aggregate-action" id="arrangeAggregateButton" type="button" title="Reflow the aggregate into a legible project-wide reasoning field without changing the individual focus maps">Arrange map</button>
+                <button class="aggregate-action" id="arrangeAggregateButton" type="button" title="Reflow the aggregate into a legible project-wide reasoning field without changing the individual focus maps">Arrange map</button><label class="arrange-blend hidden" id="arrangeBlendControl" title="Blend between the layout you had before Arrange map and the framework arrangement"><span>Arrangement</span><input id="arrangeBlendSlider" type="range" min="0" max="100" value="100" step="1"><output id="arrangeBlendLabel">Framework 100%</output></label>
               </div>
             </div>
             <div class="toolbar-actions">

@@ -26,7 +26,7 @@ import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } fro
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './ui/tutorials.js';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -54,6 +54,8 @@ let aggregateHotspotFilter = 'all';
 let aggregateChunkFilter = 'all';
 let aggregateTypeFilter = 'all';
 let aggregateStatusFilter = 'all';
+let aggregateArrangeSession = null;
+let aggregateArrangeBlend = 100;
 const undoStack = [];
 const MAX_UNDO = 30;
 
@@ -96,7 +98,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),frameworkSelect:$('#frameworkSelect'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),arrangeBlendControl:$('#arrangeBlendControl'),arrangeBlendSlider:$('#arrangeBlendSlider'),arrangeBlendLabel:$('#arrangeBlendLabel'),frameworkSelect:$('#frameworkSelect'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
   });
 }
 
@@ -144,6 +146,7 @@ function bindGlobalEvents(){
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.onchange=()=>{ aggregateStatusFilter=els.aggregateStatusFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
+  if(els.arrangeBlendSlider) els.arrangeBlendSlider.oninput=()=>applyAggregateArrangeBlend(Number(els.arrangeBlendSlider.value)||0);
   document.addEventListener('keydown',handleWorkspaceKeydown);
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
@@ -363,7 +366,7 @@ function renderWorkspace(){
   els.thoughtDock.classList.toggle('hidden',!thoughtDockAvailable);
   if(thoughtDockAvailable) updateThoughtSuggestion();
   if(active) renderNodeInspector(active,state,nodeHandlers());
-  else if(workspaceMapMode==='focus' && state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,hotspotHandlers()); }
+  else if(workspaceMapMode==='focus' && state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,state,hotspotHandlers()); }
   else renderEmptyInspector();
 }
 
@@ -384,14 +387,17 @@ function renderGraphState(){
     onNodeTypeClick:(id,e)=>openNodeTypeMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence,{frameworkId:getState().frameworkId}),
-    onNodeMove:(id,x,y)=>updateState(s=>{
-      const n=s.nodes.find(n=>n.id===id); if(!n)return;
-      if(workspaceMapMode==='aggregate'){
-        const frameworkId=s.frameworkId||'tracework';
-        n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x,y}}};
-        if(frameworkId==='tracework'){ n.meta.aggregateX=x; n.meta.aggregateY=y; }
-      }else { n.x=x; n.y=y; }
-    }),
+    onNodeMove:(id,x,y)=>{
+      if(workspaceMapMode==='aggregate'){aggregateArrangeSession=null;aggregateArrangeBlend=100;els.arrangeBlendControl?.classList.add('hidden');}
+      updateState(s=>{
+        const n=s.nodes.find(n=>n.id===id); if(!n)return;
+        if(workspaceMapMode==='aggregate'){
+          const frameworkId=s.frameworkId||'tracework';
+          n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x,y}}};
+          if(frameworkId==='tracework'){ n.meta.aggregateX=x; n.meta.aggregateY=y; }
+        }else { n.x=x; n.y=y; }
+      });
+    },
     getScale:()=>canvasZoom,
     selectedEdgeId,
     selectedNodeIds:[...selectedNodeIds],
@@ -498,13 +504,15 @@ async function selectHotspot(id){
   logEvent('Language selected',hotspot.text);
   renderWorkspace();
   const latest=getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
-  await renderHotspotInspector(hotspot,hotspotHandlers(latest?.id));
+  await renderHotspotInspector(hotspot,getState(),hotspotHandlers(latest?.id));
   setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`),canvasZoom),80);
 }
 
 function hotspotHandlers(inputNodeId=null){
+  const resolveInput=()=>inputNodeId || getState().activeNodeId || getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===getState().selectedHotspotId)?.id || null;
   return {
-    onInterpretation:(text,prompt)=>addHotspotInterpretation(text,prompt,inputNodeId || getState().activeNodeId),
+    onInterpretation:(text,prompt)=>addHotspotInterpretation(text,prompt,resolveInput()),
+    onFrameworkNext:(text,roleId,extra)=>addFrameworkGuidedStep(resolveInput(),text,roleId,extra),
     onRelatedPath:id=>inspectPathway(pathways.find(p=>p.id===id)),
     onCaseStudy:id=>inspectCaseStudy(id)
   };
@@ -532,6 +540,36 @@ function addHotspotInterpretation(text,prompt,inputNodeId){
   logEvent('Interpretation added',value);
   renderWorkspace();
   if(created)toast('Interpretation added and linked. Continue from the new node, or leave it open.');
+}
+
+function addFrameworkGuidedStep(parentId,text,roleId,extra={}){
+  const value=String(text||'').trim();
+  if(!value||!parentId)return;
+  const frameworkId=getState().frameworkId||'tracework';
+  const framework=getFramework(frameworkId);
+  if(framework.id==='tracework'||framework.id==='freeform')return;
+  const role=getFrameworkCategory(frameworkId,roleId);
+  if(!role)return;
+  checkpoint(`add ${framework.shortLabel} guided step`);
+  let created=null;
+  const fallback=visibleCanvasPlacement(getState().nodes.length+1);
+  updateState(s=>{
+    const parent=s.nodes.find(n=>n.id===parentId);
+    if(!parent)return;
+    const type=canonicalTypeForFrameworkRole(frameworkId,roleId,'interpretation');
+    const baseX=Number.isFinite(Number(parent.x))?Number(parent.x):fallback.x;
+    const baseY=Number.isFinite(Number(parent.y))?Number(parent.y):fallback.y;
+    created=createNode({type,label:value,branchId:parent.branchId||s.activeBranchId,x:baseX+285,y:baseY+18,meta:{guided:true,frameworkGuided:true,hotspotId:parent.meta?.hotspotId||s.selectedHotspotId,provenance:'designer',sourcePrompt:extra?.question||'',frameworkRoles:{[frameworkId]:roleId}}});
+    s.nodes.push(created);
+    s.edges.push(createEdge(parent.id,created.id));
+    s.activeNodeId=created.id;
+    s.activeBranchId=created.branchId;
+  });
+  lastAddedNodeId=created?.id||null;
+  if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);selectedEdgeId=null;}
+  logEvent(`${framework.shortLabel} guided step`,`${role.label} · ${value}`);
+  renderWorkspace();
+  if(created)toast(`${role.label} added through ${framework.shortLabel}. Underlying TRACEWORK role remains editable.`);
 }
 
 function selectNode(id,event){
@@ -590,6 +628,7 @@ function nodeHandlers(){
       logEvent(labels[node.type]||'Reasoning added',text); renderWorkspace();
       if(created) toast(`${typeLabels[created.type]||created.type} added and linked.`);
     },
+    onFrameworkNext:(node,text,roleId,extra)=>addFrameworkGuidedStep(node.id,text,roleId,extra),
     onBranch:id=>branchFrom(id),
     onFork:id=>forkFrom(id),
     onEdit:node=>editNode(node),
@@ -1559,6 +1598,25 @@ function updateFrameworkControls(state){
       ? 'Arrange the aggregate as a low-structure reasoning field'
       : `Arrange the aggregate through ${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''}`;
   }
+  if(els.workspaceTutorialButton){
+    if(framework.id==='tracework'){
+      els.workspaceTutorialButton.textContent='? Tutorial';
+      els.workspaceTutorialButton.dataset.tutorial='workspace';
+      delete els.workspaceTutorialButton.dataset.frameworkTutorial;
+      els.workspaceTutorialButton.title='Workspace tutorial';
+    }else{
+      els.workspaceTutorialButton.textContent=`? ${framework.shortLabel} guide`;
+      els.workspaceTutorialButton.dataset.frameworkTutorial=framework.id;
+      delete els.workspaceTutorialButton.dataset.tutorial;
+      els.workspaceTutorialButton.title=`Reopen the ${framework.label} framework guide`;
+    }
+  }
+  if(els.arrangeBlendControl){
+    const usable=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id;
+    els.arrangeBlendControl.classList.toggle('hidden',!usable);
+    if(usable && els.arrangeBlendSlider){els.arrangeBlendSlider.value=String(aggregateArrangeBlend);}
+    if(usable && els.arrangeBlendLabel){els.arrangeBlendLabel.textContent=aggregateArrangeBlend<=0?'Original':aggregateArrangeBlend>=100?'Framework 100%':`Framework ${aggregateArrangeBlend}%`; }
+  }
   renderLegend(frameworkLegend(framework.id));
 }
 
@@ -1570,8 +1628,10 @@ function setFrameworkMode(id='tracework'){
   showNodeTypes=framework.id!=='freeform';
   aggregateTypeFilter='all';
   selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
+  aggregateArrangeSession=null; aggregateArrangeBlend=100;
   renderWorkspace();
   updateThoughtSuggestion();
+  maybeOpenFrameworkTutorial(framework.id);
   toast(`${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''} · ${framework.description}`);
 }
 
@@ -1668,7 +1728,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
       const col=i%columns,row=Math.floor(i/columns);
       const serpentine=row%2===1?(columns-1-col):col;
       const jitterX=(hash(n.id)%31)-15,jitterY=(hash(`${n.id}-free-y`)%29)-14;
-      positions.set(n.id,{x:90+serpentine*285+jitterX,y:80+row*155+jitterY});
+      positions.set(n.id,{x:90+serpentine*315+jitterX,y:80+row*185+jitterY});
     });
     return positions;
   }
@@ -1682,13 +1742,13 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
     const positions=new Map();
     const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
     const cols=Math.max(2,Math.ceil(Math.sqrt(Math.max(1,categories.length))));
-    const centers=new Map(categories.map((c,i)=>[c.id,{x:130+(i%cols)*430,y:110+Math.floor(i/cols)*310}]));
+    const centers=new Map(categories.map((c,i)=>[c.id,{x:150+(i%cols)*520,y:120+Math.floor(i/cols)*390}]));
     const counts=new Map();
     nodes.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:150+(nth%3)*270,y:110+Math.ceil(categories.length/cols)*310+Math.floor(nth/3)*130});
+        positions.set(n.id,{x:170+(nth%3)*300,y:120+Math.ceil(categories.length/cols)*390+Math.floor(nth/3)*165});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1697,7 +1757,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const localCol=nth%3,localRow=Math.floor(nth/3);
       const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
-      positions.set(n.id,{x:center.x+(localCol-1)*245+jitterX,y:center.y+localRow*118+jitterY});
+      positions.set(n.id,{x:center.x+(localCol-1)*285+jitterX,y:center.y+localRow*155+jitterY});
     });
     return positions;
   }
@@ -1705,7 +1765,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
   if(framework.arrangement==='cycle') {
     const positions=new Map();
     const counts=new Map();
-    const cx=760,cy=430,rx=590,ry=315;
+    const cx=860,cy=520,rx=710,ry=395;
     const centers=new Map(categories.map((c,i)=>{
       const angle=(-Math.PI/2)+(Math.PI*2*i/Math.max(1,categories.length));
       return [c.id,{x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry}];
@@ -1714,7 +1774,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:cx-160+(nth%2)*300,y:cy-40+Math.floor(nth/2)*115});
+        positions.set(n.id,{x:cx-175+(nth%2)*330,y:cy-45+Math.floor(nth/2)*145});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1722,20 +1782,20 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
       const center=centers.get(roleId)||{x:cx,y:cy};
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const ring=Math.floor(nth/4),slot=nth%4;
-      positions.set(n.id,{x:center.x+(slot%2)*250-125,y:center.y+Math.floor(slot/2)*105+ring*210-55});
+      positions.set(n.id,{x:center.x+(slot%2)*290-145,y:center.y+Math.floor(slot/2)*135+ring*245-68});
     });
     return positions;
   }
 
   const roleIndex=new Map(categories.map((c,i)=>[c.id,i]));
-  const xByRole=new Map(categories.map((c,i)=>[c.id,70+i*310]));
+  const xByRole=new Map(categories.map((c,i)=>[c.id,80+i*345]));
   const noteX=70+Math.max(1,categories.length-1)*155;
   const hotspotOrder=[];
   const seen=new Set();
   (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
   nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
 
-  const laneGap=195;
+  const laneGap=245;
   const positions=new Map();
   const counts=new Map();
   const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
@@ -1757,7 +1817,7 @@ function aggregateInitialPositions(state,frameworkId=state.frameworkId||'tracewo
       const jitterY=(hash(`${n.id}-y`)%31)-15;
       const baseY=70+laneIndex*laneGap;
       const x=(n.type==='note'?noteX:(xByRole.get(roleId)??noteX))+jitterX+(laneIndex%2?18:0);
-      const y=baseY+nth*80+jitterY;
+      const y=baseY+nth*135+jitterY;
       positions.set(n.id,{x,y});
     });
   });
@@ -1799,18 +1859,49 @@ function arrangeAggregateMap({recordUndo=true,quiet=false}={}){
   const frameworkId=getState().frameworkId||'tracework';
   if(recordUndo) checkpoint(`arrange aggregate map · ${frameworkId}`);
   const state=getState();
+  const before=aggregateInitialPositions(state,frameworkId);
   const clearedNodes=state.nodes.map(n=>{
     const positions={...(n.meta?.aggregatePositions||{})}; delete positions[frameworkId];
     const meta={...(n.meta||{}),aggregatePositions:positions};
     if(frameworkId==='tracework'){ delete meta.aggregateX; delete meta.aggregateY; }
     return {...n,meta};
   });
-  const positions=aggregateInitialPositions({...state,nodes:clearedNodes},frameworkId);
-  updateState(s=>{ s.nodes.forEach(n=>{ const pos=positions.get(n.id); if(!pos)return; n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x:pos.x,y:pos.y}}}; if(frameworkId==='tracework'){n.meta.aggregateX=pos.x;n.meta.aggregateY=pos.y;} }); });
+  const target=aggregateInitialPositions({...state,nodes:clearedNodes},frameworkId);
+  aggregateArrangeSession={frameworkId,before:new Map(before),target:new Map(target)};
+  aggregateArrangeBlend=100;
+  writeAggregatePositions(target,frameworkId);
   selectedNodeIds.clear(); selectedEdgeId=null; focusPathRootId=null;
   renderWorkspace();
   setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },40);
-  if(!quiet) toast(`${getFramework(frameworkId).label} arrangement applied. The underlying reasoning and other framework layouts were not changed.`);
+  if(!quiet) toast(`${getFramework(frameworkId).label} arrangement applied. Use the Arrangement slider to blend back toward the layout you had before arranging.`);
+}
+
+function writeAggregatePositions(positionMap,frameworkId){
+  updateState(s=>{ s.nodes.forEach(n=>{
+    const pos=positionMap.get(n.id); if(!pos)return;
+    n.meta={...(n.meta||{}),aggregatePositions:{...(n.meta?.aggregatePositions||{}),[frameworkId]:{x:pos.x,y:pos.y}}};
+    if(frameworkId==='tracework'){n.meta.aggregateX=pos.x;n.meta.aggregateY=pos.y;}
+  }); });
+}
+
+function applyAggregateArrangeBlend(value=100){
+  if(workspaceMapMode!=='aggregate'||!aggregateArrangeSession)return;
+  const frameworkId=getState().frameworkId||'tracework';
+  if(aggregateArrangeSession.frameworkId!==frameworkId)return;
+  const blend=Math.max(0,Math.min(100,Number(value)||0));
+  aggregateArrangeBlend=blend;
+  const t=blend/100;
+  const positions=new Map();
+  const ids=new Set([...aggregateArrangeSession.before.keys(),...aggregateArrangeSession.target.keys()]);
+  ids.forEach(id=>{
+    const a=aggregateArrangeSession.before.get(id)||aggregateArrangeSession.target.get(id);
+    const b=aggregateArrangeSession.target.get(id)||a;
+    if(!a||!b)return;
+    positions.set(id,{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  });
+  writeAggregatePositions(positions,frameworkId);
+  if(els.arrangeBlendLabel) els.arrangeBlendLabel.textContent=blend<=0?'Original':blend>=100?'Framework 100%':`Framework ${Math.round(blend)}%`;
+  renderGraphState();
 }
 
 function scopedTrace(state){

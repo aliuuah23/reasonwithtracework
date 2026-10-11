@@ -197,3 +197,8 @@
 .graph-surface.aggregate-map .trace-edge { opacity:.74; }
 .graph-surface.aggregate-map .trace-edge.selected,
 .graph-surface.aggregate-map .trace-edge.wire-hover { opacity:1; }
+
+/* Round A2 · keep the node being inspected in front of dense aggregate maps. */
+.graph-node:hover { z-index:14; }
+.graph-node.selected { z-index:24; }
+.graph-node.dragging { z-index:32; }
