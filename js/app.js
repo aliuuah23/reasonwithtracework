@@ -98,7 +98,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),arrangeBlendControl:$('#arrangeBlendControl'),arrangeBlendSlider:$('#arrangeBlendSlider'),arrangeBlendLabel:$('#arrangeBlendLabel'),frameworkSelect:$('#frameworkSelect'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),arrangeBlendControl:$('#arrangeBlendControl'),arrangeBlendSlider:$('#arrangeBlendSlider'),arrangeBlendLabel:$('#arrangeBlendLabel'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
   });
 }
 
@@ -140,6 +140,7 @@ function bindGlobalEvents(){
   if(els.focusMapModeButton) els.focusMapModeButton.onclick=()=>setWorkspaceMapMode('focus');
   if(els.aggregateMapModeButton) els.aggregateMapModeButton.onclick=()=>setWorkspaceMapMode('aggregate');
   if(els.frameworkSelect) els.frameworkSelect.onchange=()=>setFrameworkMode(els.frameworkSelect.value);
+  if(els.frameworkLockButton) els.frameworkLockButton.onclick=toggleFrameworkLock;
   if(els.aggregateHotspotFilter) els.aggregateHotspotFilter.onchange=()=>{ aggregateHotspotFilter=els.aggregateHotspotFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.aggregateChunkFilter) els.aggregateChunkFilter.onchange=()=>{ aggregateChunkFilter=els.aggregateChunkFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.aggregateTypeFilter) els.aggregateTypeFilter.onchange=()=>{ aggregateTypeFilter=els.aggregateTypeFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
@@ -1623,7 +1624,21 @@ function updateZoomLabel(){ const label=$('#zoomLabel'); if(label)label.textCont
 
 function updateFrameworkControls(state){
   const framework=getFramework(state.frameworkId||'tracework');
-  if(els.frameworkSelect) els.frameworkSelect.value=framework.id;
+  if(els.frameworkSelect){
+    els.frameworkSelect.value=framework.id;
+    els.frameworkSelect.disabled=Boolean(state.frameworkLocked);
+    els.frameworkSelect.setAttribute('aria-disabled',state.frameworkLocked?'true':'false');
+  }
+  if(els.frameworkLockButton){
+    const locked=Boolean(state.frameworkLocked);
+    els.frameworkLockButton.classList.toggle('locked',locked);
+    els.frameworkLockButton.setAttribute('aria-pressed',locked?'true':'false');
+    els.frameworkLockButton.title=locked
+      ? `Unlock ${framework.label} to choose a different framework for this project`
+      : `Lock ${framework.label} so this project's framework cannot be changed accidentally`;
+    const text=els.frameworkLockButton.querySelector('.framework-lock-text');
+    if(text) text.textContent=locked?'Locked':'Lock';
+  }
   document.body.dataset.framework=framework.id;
   document.body.classList.toggle('framework-types-visible',Boolean(showNodeTypes));
 
@@ -1679,10 +1694,19 @@ function updateFrameworkControls(state){
 }
 
 function setFrameworkMode(id='tracework'){
+  const state=getState();
   const framework=getFramework(id);
-  const current=getState().frameworkId||'tracework';
-  if(framework.id===current){ updateFrameworkControls(getState()); updateThoughtSuggestion(); return; }
+  const current=state.frameworkId||'tracework';
+  if(state.frameworkLocked && framework.id!==current){
+    if(els.frameworkSelect) els.frameworkSelect.value=current;
+    toast(`${getFramework(current).label} is locked for this project. Unlock it before changing frameworks.`);
+    return;
+  }
+  if(framework.id===current){ updateFrameworkControls(state); updateThoughtSuggestion(); return; }
   patchState({frameworkId:framework.id});
+  // Persist the last-used framework immediately so reopening this trace restores the same lens,
+  // even if the page is closed before the normal autosave debounce finishes.
+  saveProject(getState());
   showNodeTypes=framework.id!=='freeform';
   aggregateTypeFilter='all';
   selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
@@ -1691,6 +1715,18 @@ function setFrameworkMode(id='tracework'){
   updateThoughtSuggestion();
   maybeOpenFrameworkTutorial(framework.id);
   toast(`${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''} · ${framework.description}`);
+}
+
+
+function toggleFrameworkLock(){
+  const state=getState();
+  if(!state.brief)return;
+  const next=!Boolean(state.frameworkLocked);
+  patchState({frameworkLocked:next});
+  saveProject(getState());
+  updateFrameworkControls(getState());
+  const framework=getFramework(getState().frameworkId||'tracework');
+  toast(next?`${framework.label} locked for this project.`:`${framework.label} unlocked. Frameworks can be changed again.`);
 }
 
 
@@ -1792,6 +1828,40 @@ function currentAggregateArrangement(state){
   return positions;
 }
 
+
+function deoverlapAggregateLayout(nodes,positions){
+  // Framework layouts are semantic guides, not packing diagrams. Keep generous
+  // clearance between cards so long labels never land on top of neighbours.
+  const placed=(nodes||[]).map((n,index)=>{
+    const p=positions.get(n.id)||{x:n.x||0,y:n.y||0};
+    const lines=Math.max(0,Math.ceil(String(n.label||'').length/34)-2);
+    const h=Math.min(225,112+(lines*18)+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
+    return {id:n.id,index,x:p.x,y:p.y,w:230,h};
+  }).sort((a,b)=>a.y-b.y||a.x-b.x||a.index-b.index);
+  const gapX=64,gapY=58;
+  for(let pass=0;pass<24;pass++){
+    let moved=false;
+    for(let i=0;i<placed.length;i++){
+      const a=placed[i];
+      for(let j=i+1;j<placed.length;j++){
+        const b=placed[j];
+        const overlapX=Math.min(a.x+a.w+gapX,b.x+b.w+gapX)-Math.max(a.x,b.x);
+        const overlapY=Math.min(a.y+a.h+gapY,b.y+b.h+gapY)-Math.max(a.y,b.y);
+        if(overlapX>0 && overlapY>0){
+          // Preserve the framework's horizontal role bands whenever possible;
+          // resolve collisions vertically rather than shuffling nodes into new roles.
+          b.y += overlapY + 8;
+          moved=true;
+        }
+      }
+    }
+    if(!moved)break;
+  }
+  const out=new Map(positions);
+  placed.forEach(p=>out.set(p.id,{x:p.x,y:p.y}));
+  return out;
+}
+
 function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracework'){
   const nodes=state.nodes||[];
   // Generate a fresh framework layout only when Arrange Map is explicitly requested.
@@ -1803,7 +1873,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const ah=hotspotIndex.get(a.meta?.hotspotId)??9999,bh=hotspotIndex.get(b.meta?.hotspotId)??9999;
       return ah-bh || String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || String(a.id).localeCompare(String(b.id));
     });
-    const columns=Math.max(4,Math.min(7,Math.ceil(Math.sqrt(Math.max(1,ordered.length)*1.35))));
+    const columns=Math.max(4,Math.min(7,Math.ceil(Math.sqrt(Math.max(1,ordered.length)*1.25))));
     const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
     const positions=new Map();
     ordered.forEach((n,i)=>{
@@ -1811,9 +1881,9 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const col=i%columns,row=Math.floor(i/columns);
       const serpentine=row%2===1?(columns-1-col):col;
       const jitterX=(hash(n.id)%31)-15,jitterY=(hash(`${n.id}-free-y`)%29)-14;
-      positions.set(n.id,{x:90+serpentine*360+jitterX,y:80+row*225+jitterY});
+      positions.set(n.id,{x:90+serpentine*420+jitterX,y:80+row*270+jitterY});
     });
-    return positions;
+    return deoverlapAggregateLayout(nodes,positions);
   }
 
   const framework=getFramework(frameworkId);
@@ -1825,13 +1895,13 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     const positions=new Map();
     const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
     const cols=Math.max(2,Math.ceil(Math.sqrt(Math.max(1,categories.length))));
-    const centers=new Map(categories.map((c,i)=>[c.id,{x:170+(i%cols)*650,y:130+Math.floor(i/cols)*560}]));
+    const centers=new Map(categories.map((c,i)=>[c.id,{x:170+(i%cols)*760,y:130+Math.floor(i/cols)*690}]));
     const counts=new Map();
     nodes.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:190+(nth%3)*350,y:140+Math.ceil(categories.length/cols)*560+Math.floor(nth/3)*215});
+        positions.set(n.id,{x:190+(nth%3)*420,y:140+Math.ceil(categories.length/cols)*690+Math.floor(nth/3)*265});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1840,15 +1910,15 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const localCol=nth%3,localRow=Math.floor(nth/3);
       const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
-      positions.set(n.id,{x:center.x+(localCol-1)*350+jitterX,y:center.y+localRow*215+jitterY});
+      positions.set(n.id,{x:center.x+(localCol-1)*420+jitterX,y:center.y+localRow*265+jitterY});
     });
-    return positions;
+    return deoverlapAggregateLayout(nodes,positions);
   }
 
   if(framework.arrangement==='cycle') {
     const positions=new Map();
     const counts=new Map();
-    const cx=1020,cy=650,rx=860,ry=505;
+    const cx=1180,cy=760,rx=1010,ry=610;
     const centers=new Map(categories.map((c,i)=>{
       const angle=(-Math.PI/2)+(Math.PI*2*i/Math.max(1,categories.length));
       return [c.id,{x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry}];
@@ -1857,7 +1927,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
-        positions.set(n.id,{x:cx-205+(nth%2)*390,y:cy-55+Math.floor(nth/2)*190});
+        positions.set(n.id,{x:cx-235+(nth%2)*450,y:cy-65+Math.floor(nth/2)*235});
         return;
       }
       const role=frameworkRoleForNode(n,frameworkId);
@@ -1865,20 +1935,20 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const center=centers.get(roleId)||{x:cx,y:cy};
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const ring=Math.floor(nth/4),slot=nth%4;
-      positions.set(n.id,{x:center.x+(slot%2)*350-175,y:center.y+Math.floor(slot/2)*180+ring*310-90});
+      positions.set(n.id,{x:center.x+(slot%2)*420-210,y:center.y+Math.floor(slot/2)*225+ring*380-110});
     });
-    return positions;
+    return deoverlapAggregateLayout(nodes,positions);
   }
 
   const roleIndex=new Map(categories.map((c,i)=>[c.id,i]));
-  const xByRole=new Map(categories.map((c,i)=>[c.id,90+i*405]));
-  const noteX=70+Math.max(1,categories.length-1)*155;
+  const xByRole=new Map(categories.map((c,i)=>[c.id,90+i*470]));
+  const noteX=110+Math.max(1,categories.length)*470;
   const hotspotOrder=[];
   const seen=new Set();
   (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
   nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
 
-  const laneGap=325;
+  const laneGap=405;
   const positions=new Map();
   const counts=new Map();
   const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
@@ -1900,11 +1970,11 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const jitterY=(hash(`${n.id}-y`)%31)-15;
       const baseY=70+laneIndex*laneGap;
       const x=(n.type==='note'?noteX:(xByRole.get(roleId)??noteX))+jitterX+(laneIndex%2?18:0);
-      const y=baseY+nth*190+jitterY;
+      const y=baseY+nth*235+jitterY;
       positions.set(n.id,{x,y});
     });
   });
-  return positions;
+  return deoverlapAggregateLayout(nodes,positions);
 }
 
 function aggregateTrace(state,{ignoreFilters=false}={}){

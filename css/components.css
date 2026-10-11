@@ -462,3 +462,22 @@ html.tutorial-tour-active{overflow:hidden}
 .canvas-footer .legend-item.has-help:first-child:hover::after,.canvas-footer .legend-item.has-help:first-child:focus-visible::after,.canvas-footer .framework-role-chip.has-help:first-child:hover::after,.canvas-footer .framework-role-chip.has-help:first-child:focus-visible::after{transform:translate(0,0)}
 .canvas-footer .legend-item.has-help:last-child::after,.canvas-footer .framework-role-chip.has-help:last-child::after{left:auto;right:0;transform:translate(0,3px)}
 .canvas-footer .legend-item.has-help:last-child:hover::after,.canvas-footer .legend-item.has-help:last-child:focus-visible::after,.canvas-footer .framework-role-chip.has-help:last-child:hover::after,.canvas-footer .framework-role-chip.has-help:last-child:focus-visible::after{transform:translate(0,0)}
+
+
+/* Round A2.3 · per-project framework persistence + lock */
+.framework-control-wrap{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.framework-control-wrap .framework-control{min-width:0}
+.framework-control select:disabled{cursor:not-allowed;opacity:.72;background:#f3f4f6;color:#6f7580}
+.framework-lock-button{
+  appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:30px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;
+  background:var(--surface);color:var(--muted);font:inherit;font-size:8px;font-weight:780;
+  cursor:pointer;transition:border-color .12s ease,background .12s ease,color .12s ease,box-shadow .12s ease;
+}
+.framework-lock-button:hover{border-color:var(--border-strong);color:var(--text);box-shadow:0 3px 10px rgba(34,40,61,.06)}
+.framework-lock-button.locked{background:#f0efff;border-color:#c9c7f5;color:var(--accent-dark)}
+.framework-lock-glyph{position:relative;display:inline-block;width:9px;height:8px;border:1.5px solid currentColor;border-radius:2px;box-sizing:border-box;margin-top:3px}
+.framework-lock-glyph::before{content:'';position:absolute;left:1px;top:-6px;width:5px;height:6px;border:1.5px solid currentColor;border-bottom:0;border-radius:5px 5px 0 0;box-sizing:border-box;transition:transform .12s ease}
+.framework-lock-button:not(.locked) .framework-lock-glyph::before{transform:translateX(2px) rotate(22deg);transform-origin:0 100%}
+.framework-lock-text{white-space:nowrap}
+@media(max-width:1180px){.framework-lock-text{display:none}.framework-lock-button{width:30px;padding:4px}.framework-control-wrap{gap:3px}}

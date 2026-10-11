@@ -159,3 +159,8 @@ Aggregate tools include hotspot, brief-section, node-type and status filters; Fo
 - Contextual tutorials use a more polished anchored coach-card treatment.
 - Framework Arrange Map spacing is increased at 100% while Original remains untouched.
 - Legend help is edge-safe in compressed/half-window layouts.
+
+## Round A2.3 — Framework persistence + lock
+- Each project now restores the last framework used when reopened. Framework changes are saved immediately in addition to normal autosave.
+- A per-project framework Lock/Locked control prevents accidental lens changes until explicitly unlocked.
+- Arrange Map spacing is more generous and includes an additional collision-avoidance pass so 100% framework layouts are less likely to overlap long node cards.
