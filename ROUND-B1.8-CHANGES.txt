@@ -1,0 +1,7 @@
+TRACEWORK Round B1.8 — source highlight / typography repair ONLY
+- One text-node renderer; corrected overlapping active ranges without splitting fragments.
+- One continuous active highlight even when selecting a nested word/phrase.
+- Forced 11px regular-weight, left-aligned brief text across full/half-screen.
+- Source renderer B1.8 version marker visible beneath the brief, so deployment can be distinguished from cached B1.7.
+- All modified scripts and styles linked with B1.8 cache-buster.
+- Other B1.7 functions preserved unchanged; combine projects, undo, and hotspot deletion are not claimed fixed here.

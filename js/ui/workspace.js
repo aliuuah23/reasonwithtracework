@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.8';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.9';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -197,30 +197,62 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
 // the previous apparent break in a highlight after changing selections.
 export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
   const source=String(text||'');
-  if(doc.childNodes.length!==1 || doc.firstChild?.nodeType!==Node.TEXT_NODE || doc.textContent!==source){
-    doc.textContent=source;
-  }
   const resolved=(hotspots||[])
     .map(h=>resolveHotspotForText(source,h,Number(h.start)||0))
-    .filter(h=>h&&h.end>h.start);
-  // Native Highlights are document-level. Clear old ranges before every draw,
-  // including when there are no hotspots or a different brief chunk is chosen.
+    .filter(h=>h && h.end>h.start);
+  // Bold the UNION of hotspot text, not the individual overlapping ranges.
+  // This prevents adjacent/overlapping selections from nesting or breaking words.
+  const cuts=new Set([0,source.length]);
+  for(const h of resolved){cuts.add(h.start);cuts.add(h.end);}
+  const marks=[...cuts].sort((a,b)=>a-b);
+  const signature=JSON.stringify([source,marks]);
+  if(doc._traceworkSignature!==signature){
+    const fragment=document.createDocumentFragment();
+    for(let i=0;i<marks.length-1;i++){
+      const a=marks[i], b=marks[i+1];
+      if(b<=a) continue;
+      const content=source.slice(a,b);
+      const emphasized=resolved.some(h=>h.start<b && h.end>a);
+      if(emphasized){
+        const span=document.createElement('strong');
+        span.className='brief-emphasis';
+        span.textContent=content;
+        fragment.appendChild(span);
+      }else fragment.appendChild(document.createTextNode(content));
+    }
+    if(!source)fragment.appendChild(document.createTextNode(''));
+    doc.replaceChildren(fragment);
+    doc._traceworkSignature=signature;
+  }
+  const nodes=[];
+  const walker=document.createTreeWalker(doc,NodeFilter.SHOW_TEXT);
+  let cursor=0,node;
+  while((node=walker.nextNode())){
+    nodes.push({node,start:cursor,end:cursor+node.textContent.length});
+    cursor+=node.textContent.length;
+  }
+  const at=pos=>{
+    const p=Math.max(0,Math.min(pos,source.length));
+    const found=nodes.find(n=>p>=n.start && p<n.end) || nodes[nodes.length-1];
+    return found?[found.node,Math.max(0,Math.min(p-found.start,found.node.length))]:null;
+  };
   const registry=globalThis.CSS?.highlights;
   if(registry){
     registry.delete('tracework-brief-suggested');
     registry.delete('tracework-brief-active');
   }
-  if(registry && typeof Highlight==='function' && doc.firstChild){
-    const textNode=doc.firstChild;
-    const toRange=h=>{
-      const r=new Range();r.setStart(textNode,h.start);r.setEnd(textNode,h.end);return r;
-    };
-    // All suggestions remain highlighted, regardless of which chip is active.
-    if(resolved.length) registry.set('tracework-brief-suggested',new Highlight(...resolved.map(toRange)));
+  const rangeFor=(start,end)=>{
+    const first=at(start),last=at(end);
+    if(!first||!last)return null;
+    const range=document.createRange();
+    range.setStart(...first);range.setEnd(...last);
+    return range;
+  };
+  if(registry && typeof Highlight==='function'){
+    const all=resolved.map(h=>rangeFor(h.start,h.end)).filter(Boolean);
+    if(all.length)registry.set('tracework-brief-suggested',new Highlight(...all));
     const selected=resolved.find(h=>h.id===selectedId);
     if(selected){
-      // Make overlapping phrases a single continuous active range rather
-      // than painting a small word on top of a larger phrase.
       let left=selected.start,right=selected.end,expanded=true;
       while(expanded){
         expanded=false;
@@ -230,18 +262,22 @@ export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
           }
         }
       }
-      registry.set('tracework-brief-active',new Highlight(toRange({start:left,end:right})));
+      const active=rangeFor(left,right);
+      if(active)registry.set('tracework-brief-active',new Highlight(active));
     }
   }
-  // Use caret offsets only to activate hotspot chips. Never modify text nodes.
+  // Native text selection is preserved for manual phrase extraction.
   doc.onclick=e=>{
     if(!resolved.length || !handlers.onHotspot || !window.getSelection()?.isCollapsed)return;
     const caret=document.caretPositionFromPoint?.(e.clientX,e.clientY);
-    const old=!caret?document.caretRangeFromPoint?.(e.clientX,e.clientY):null;
-    const node=caret?.offsetNode||old?.startContainer;
-    const offset=caret?.offset??old?.startOffset;
-    if(node!==doc.firstChild || !Number.isInteger(offset))return;
-    const covering=resolved.filter(h=>offset>=h.start&&offset<h.end).sort((a,b)=>(b.end-b.start)-(a.end-a.start));
+    const fallback=!caret?document.caretRangeFromPoint?.(e.clientX,e.clientY):null;
+    const target=caret?.offsetNode||fallback?.startContainer;
+    const local=caret?.offset??fallback?.startOffset;
+    const segment=nodes.find(n=>n.node===target);
+    if(!segment || !Number.isInteger(local))return;
+    const offset=segment.start+local;
+    const covering=resolved.filter(h=>offset>=h.start && offset<h.end)
+      .sort((a,b)=>(b.end-b.start)-(a.end-a.start));
     if(covering.length)handlers.onHotspot(covering[0].id);
   };
   doc.style.cursor=resolved.length?'text':'';

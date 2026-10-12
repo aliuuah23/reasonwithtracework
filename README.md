@@ -1,11 +1,11 @@
-# TRACEWORK — clean B1.8 repository snapshot
+TRACEWORK Round B1.9 — website deployment
 
-Source of truth: `index.html`, `about.html`, and the `css/`, `data/`, `js/` folders.
+Extract this ZIP first. Drag the css/, data/, js/ folders plus index.html, about.html, README.md and other root files together into the GitHub repository upload area so the folders remain intact. Do not upload the ZIP itself or individual folder contents at the repository root.
 
-The application uses `css/...` and `js/...` paths, not root-level CSS/JS/JSON copies.
-This repository snapshot preserves Round B1.8 source-renderer improvements.
+Round B1.9 changes:
+- Restore readable Inter source typography (12 px) and bold hotspot text; retain native continuous, correct multiline highlights.
+- Stabilise right inspector input drafts across redraws and source/hotspot switching; reject stale async inspector responses.
+- Preserve prior B1.8 project combination, undo and classifier tooltip behavior; no browser data reset.
+- Versioned CSS/JS assets (b1.9) and visible source renderer label.
 
-Stage B remains in progress: verify hotspot highlighting and project combining on deployed GitHub Pages before treating either as fixed.
-GitHub commit history is retained by applying this snapshot to an existing local clone, not by recreating the repository.
-
-Do not reset browser storage; saved traces may be stored only in the browser.
+Test: Privacy/Users highlight, editor Backspace, right inspector draft after Hide suggestions, half-screen width.

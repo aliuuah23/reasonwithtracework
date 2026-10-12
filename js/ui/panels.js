@@ -6,11 +6,44 @@ import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForN
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
 
+let inspectorRequest=0;
+const inspectorDrafts=new Map();
+function saveInspectorDraft(root){
+  const key=root?.dataset?.inspectorDraftKey||root?.dataset?.inspectorKey;
+  if(!key)return;
+  const values={};
+  root.querySelectorAll('textarea').forEach(el=>{if(el.id)values[el.id]=el.value;});
+  if(Object.keys(values).length)inspectorDrafts.set(key,values);
+}
+function shouldRenderInspector(root,key,request,draftKey=key){
+  if(request!==inspectorRequest)return false; // stale async case/precedent response
+  if(root.dataset.inspectorKey===key)return false; // keep typed text, caret and focus
+  saveInspectorDraft(root);
+  root.dataset.inspectorKey=key;
+  root.dataset.inspectorDraftKey=draftKey;
+  return true;
+}
+function restoreInspectorDraft(root,key){
+  const values=inspectorDrafts.get(root.dataset.inspectorDraftKey||key);
+  if(!values)return;
+  root.querySelectorAll('textarea').forEach(el=>{
+    if(!el.id)return;
+    if(Object.hasOwn(values,el.id))el.value=values[el.id];
+    else if((el.id==='nextText'||el.id==='customInterpretation') && (Object.hasOwn(values,'nextText')||Object.hasOwn(values,'customInterpretation')))
+      el.value=values.nextText??values.customInterpretation;
+  });
+}
 export function renderEmptyInspector(){
-  document.getElementById('inspectorContent').innerHTML=`<div class="inspector-empty"><div class="mini-trace"></div><h3>Inspect the reasoning.</h3><p>Select a hotspot or a node. TRACEWORK reveals the next useful question without deciding the answer for you.</p></div>`;
+  inspectorRequest++;
+  const root=document.getElementById('inspectorContent');
+  if(root.dataset.inspectorKey==='empty')return;
+  saveInspectorDraft(root);root.dataset.inspectorKey='empty';root.dataset.inspectorDraftKey='empty';
+  root.innerHTML=`<div class="inspector-empty"><div class="mini-trace"></div><h3>Inspect the reasoning.</h3><p>Select a hotspot or a node. TRACEWORK reveals the next useful question without deciding the answer for you.</p></div>`;
 }
 
 export async function renderHotspotInspector(hotspot,state,handlers){
+  const request=++inspectorRequest;
+  const key=`${state?.projectId||'project'}:hotspot:${hotspot.id}:${state?.frameworkId||'tracework'}`;
   const framework=getFramework(state?.frameworkId||'tracework');
   const [related,cases]=await Promise.all([findRelatedPathways(hotspot.text),findCaseStudies({text:`${hotspot.text} ${hotspot.concept||''}`,type:'input'})]);
   const root=document.getElementById('inspectorContent');
@@ -19,12 +52,14 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     const pseudo={type:'input',label:hotspot.text,meta:{source:'brief',hotspotId:hotspot.id}};
     const role=frameworkRoleForNode(pseudo,framework.id);
     const guide=frameworkGuidance(framework.id,role?.id,{sourceText:hotspot.text});
+    if(!shouldRenderInspector(root,key,request))return;
     root.innerHTML=`
       <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p></div>
       <div class="framework-lens-note"><strong>${esc(framework.label)}</strong><span>${esc(framework.source||'')}</span><p>${esc(framework.description)}</p></div>
       ${frameworkNextForm({status:'active',label:hotspot.text},framework,role,guide)}
       ${caseStudyMarkup(cases)}
       ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
+    restoreInspectorDraft(root,key);
     bindFrameworkNext(root,pseudo,framework,role,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(text,roleId,extra));
     root.querySelectorAll('[data-related-path]').forEach(b=>b.onclick=()=>handlers.onRelatedPath?.(b.dataset.relatedPath));
     root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
@@ -32,6 +67,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
   }
 
   const p=await interpretationPrompt(hotspot);
+  if(!shouldRenderInspector(root,key,request))return;
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip guided-direct-choice" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
@@ -40,6 +76,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
     ${caseStudyMarkup(cases)}
     ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
+  restoreInspectorDraft(root,key);
   const input=root.querySelector('#customInterpretation');
   root.querySelectorAll('[data-interpretation]').forEach(b=>b.onclick=()=>{
     root.querySelectorAll('[data-interpretation]').forEach(x=>x.classList.remove('selected'));
@@ -65,15 +102,22 @@ export async function renderHotspotInspector(hotspot,state,handlers){
 }
 
 export async function renderNodeInspector(node,state,handlers){
+  const request=++inspectorRequest;
+  const key=`${state?.projectId||'project'}:node:${node.id}:${state?.frameworkId||'tracework'}:${node.status||'active'}:${node.label}`;
   const root=document.getElementById('inspectorContent');
+  const draftKey=node.type==='input'&&node.meta?.hotspotId
+    ?`${state?.projectId||'project'}:hotspot:${node.meta.hotspotId}:${state?.frameworkId||'tracework'}`
+    :key;
   if(node.type==='note'){
     const suggestion=node.meta?.suggestedType||'interpretation';
     const cases=await findCaseStudies({text:node.label,type:suggestion});
+    if(!shouldRenderInspector(root,key,request,draftKey))return;
     root.innerHTML=`
       <div class="inspector-head" style="--node-color:${colors.note}"><span class="inspector-type"><i></i>Loose note</span><h3>${esc(node.label)}</h3><p>Unclassified on purpose. Keep it loose, or convert it when its role becomes clearer.</p></div>
       <div class="inspector-section"><h4>TRACEWORK suggestion</h4><span class="classification-chip" style="--node-color:${colors[suggestion]||colors.note}"><i></i>${esc(typeLabels[suggestion]||suggestion)}</span><p style="color:var(--muted);font-size:11px;line-height:1.5;margin:9px 0 0">${esc(node.meta?.classificationReason||'The wording resembles this reasoning role.')}</p><div class="inspector-actions"><button class="primary-button compact" id="convertNote">Convert to ${esc(typeLabels[suggestion]||suggestion)}</button></div></div>
       ${caseStudyMarkup(cases)}
       <div class="inspector-section"><h4>Note actions</h4><div class="inspector-actions"><button class="secondary-button" id="editNode">Edit</button></div></div>`;
+    restoreInspectorDraft(root,key);
     root.querySelector('#convertNote')?.addEventListener('click',()=>handlers.onConvertNote?.(node,suggestion));
     root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
     root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
@@ -98,6 +142,7 @@ export async function renderNodeInspector(node,state,handlers){
   const progress=framework.arrangement==='network'
     ? progressRoles.map(r=>`<span class="${r.id===activeRoleId?'done':''}"></span>`).join('')
     : progressRoles.map((r,i)=>`<span class="${frameworkProgressDone(progressRoles,activeRoleId,i)?'done':''}"></span>`).join('');
+  if(!shouldRenderInspector(root,key,request,draftKey))return;
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progress}</div></div>
     ${metaMarkup(node,framework,frameworkRole)}
@@ -107,6 +152,7 @@ export async function renderNodeInspector(node,state,handlers){
   if(framework.id!=='tracework'&&framework.id!=='freeform') bindFrameworkNext(root,node,framework,frameworkRole,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(node,text,roleId,extra));
   else bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
+  restoreInspectorDraft(root,key);
   root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
   root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
   root.querySelector('#rejectBranch')?.addEventListener('click',()=>handlers.onReject(node.branchId,node));

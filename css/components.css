@@ -744,3 +744,16 @@ html.tutorial-tour-active{overflow:hidden}
   .source-panel{min-width:0!important;overflow-x:hidden!important;}
   #briefDocument.brief-document{padding:8px!important;font-size:11px!important;}
 }
+
+/* Round B1.9: Restore TRACEWORK's friendly Inter source text without
+   reintroducing the broken inline background/span highlighting. */
+#briefDocument.brief-document {font-family:var(--font)!important;font-size:12px!important;line-height:1.63!important;font-weight:430!important;text-align:left!important;}
+#briefDocument .brief-emphasis {font-family:inherit!important;font-size:inherit!important;font-weight:720!important;display:inline!important;white-space:inherit!important;line-height:inherit!important;letter-spacing:inherit!important;color:inherit!important;background:none!important;padding:0!important;margin:0!important;border:0!important;}
+#briefDocument::highlight(tracework-brief-suggested){background-color:rgba(126,118,245,.24);color:inherit;}
+#briefDocument::highlight(tracework-brief-active){background-color:rgba(115,104,241,.42);color:#302880;}
+/* Safeguards for right inspector, long text, and native editing. */
+.inspector-panel,.inspector-panel *{min-width:0;overflow-wrap:break-word;}
+.inspector-panel textarea,.thought-dock textarea{user-select:text;-webkit-user-select:text;overflow-wrap:break-word;white-space:pre-wrap;}
+.inspector-panel .inspector-head h3,.inspector-panel .prompt-question{word-break:normal;overflow-wrap:anywhere;}
+.inspector-panel .choice-chip,.inspector-panel .field-textarea{width:100%;max-width:100%;}
+@media(max-width:1280px){#briefDocument.brief-document{font-size:12px!important;}}

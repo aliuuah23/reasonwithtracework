@@ -1,0 +1,1 @@
+Round B1.9: preserve native CSS Highlights and complete phrases; restore friendly bold source hotspots at 12px with left alignment; keep edited reasoning drafts and prevent stale inspector async responses from overwriting current inspector. Preserve existing project combining and undo.

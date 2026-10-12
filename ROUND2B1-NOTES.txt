@@ -1,0 +1,12 @@
+TRACEWORK Round 2B.1 — Source Filing Fix
+
+Changes:
+- Switching Quick Brief / Long Brief clears the current brief field.
+- Adds optional Project / trace name before starting.
+- Long briefs are filed into explicit sections from headings, or auto-chunked by paragraph/sentence when unstructured.
+- Adds visible section/file list in the Source panel with hotspot counts.
+- Adds hotspot view filter: All / Suggested / Selected by me.
+- Designer-selected text remains distinguishable from automatic suggestions.
+- Right-panel hotspot suggestions now prefill the answer; Add creates and links the interpretation directly.
+
+Upload all files preserving paths on top of the current Round 2B deployment.
