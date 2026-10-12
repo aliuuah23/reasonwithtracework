@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.0';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.1';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -85,7 +85,7 @@ function relativeHotspots(hotspots,chunk,fullBrief=''){
 }
 
 function isDesignerSelected(h){
-  return String(h.id||'').startsWith('hotspot-manual-') || h.concept==='custom' || h.source==='designer';
+  return Boolean(h.edited) || String(h.id||'').startsWith('hotspot-manual-') || h.concept==='custom' || h.source==='designer';
 }
 
 function filterHotspots(hotspots,mode='all'){
@@ -176,8 +176,9 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   // paint each full, possibly wrapped phrase without fragmenting text or shifting it.
   paintBriefHighlights(doc,displayedText,relative,selectedId,handlers);
   if(visible.length){
-    list.innerHTML=visible.map(h=>`<span class="hotspot-list-entry"><button type="button" class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${escapeHtml(h.id)}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button><button type="button" class="hotspot-remove" data-delete-hotspot="${escapeHtml(h.id)}" title="Delete hotspot" aria-label="Delete hotspot ${escapeHtml(h.text)}">×</button></span>`).join('');
+    list.innerHTML=visible.map(h=>`<span class="hotspot-list-entry"><button type="button" class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${escapeHtml(h.id)}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button><button type="button" class="hotspot-edit" data-edit-hotspot="${escapeHtml(h.id)}" title="Edit selected words" aria-label="Edit hotspot ${escapeHtml(h.text)}">✎</button><button type="button" class="hotspot-remove" data-delete-hotspot="${escapeHtml(h.id)}" title="Delete hotspot" aria-label="Delete hotspot ${escapeHtml(h.text)}">×</button></span>`).join('');
     list.querySelectorAll('[data-hotspot]').forEach(el=>el.onclick=()=>handlers.onHotspot(el.dataset.hotspot));
+    list.querySelectorAll('[data-edit-hotspot]').forEach(el=>el.onclick=()=>handlers.onEditHotspot?.(el.dataset.editHotspot));
     list.querySelectorAll('[data-delete-hotspot]').forEach(el=>el.onclick=()=>handlers.onDeleteHotspot?.(el.dataset.deleteHotspot));
   }else{
     const message=!showSuggestions && hotspotFilter!=='selected'

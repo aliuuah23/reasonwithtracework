@@ -1,0 +1,8 @@
+TRACEWORK Round B2.1 — Editable Hotspot Selections & Source/Inspector Refinement
+
+NEW: ✎ Edit beside each Interpretive Hotspots chip and a matching Edit source selection action in the right inspector; change exact source selection, including via drag selection inside edit modal; validation against source; preserve input-node linkage, graph edges and reasoning; undo via Ctrl+Z.
+IMPROVED: Compact Edit/Delete actions in narrow source panel; additional inspector text field width constraints; accurate full README with usage, deployment, acceptance tests, known limitations and cumulative Stage A/B status.
+PRESERVED: Working full bold Privacy/Users highlights, B2.0 pointer cursor, Ctrl+Z node movement, original project-combine semantics, project-local storage.
+DEFERRED: Separate/split/export brief files, additional combine-project synchronization, full Stage C consolidation.
+
+Deploy: Extract All, upload nested root folders into GitHub repository, commit, wait for GitHub Pages.

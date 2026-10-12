@@ -793,3 +793,27 @@ html.tutorial-tour-active{overflow:hidden}
   .source-panel .hotspot-list-entry .hotspot-chip { padding:4px 6px; }
   .source-panel .hotspot-controls { gap:4px; }
 }
+
+
+/* Round B2.1 · edit hotspot selection without enlarging its chip */
+.source-panel .hotspot-list-entry .hotspot-chip { max-width:calc(100% - 46px); }
+.source-panel .hotspot-edit,
+.source-panel .hotspot-remove {
+  flex:0 0 23px; width:23px; min-width:23px; height:28px; padding:0;
+  border:0; background:transparent; cursor:pointer; color:var(--muted);
+  font-size:13px; line-height:1; border-radius:0;
+}
+.source-panel .hotspot-edit:hover,.source-panel .hotspot-edit:focus-visible {
+  background:#f0efff; color:var(--accent-dark); outline:1px solid #d3d0f9;
+}
+.source-panel .hotspot-remove:hover,.source-panel .hotspot-remove:focus-visible{border-radius:0 12px 12px 0;}
+.hotspot-edit-label{display:block;font-size:11px;font-weight:750;color:var(--muted);margin:12px 0 6px;}
+#hotspotEditInput{width:100%;box-sizing:border-box;}
+.hotspot-edit-feedback{min-height:20px;font-size:11px;color:var(--muted);line-height:1.45;margin:7px 0 0;}
+.hotspot-edit-source{max-height:210px;overflow:auto;white-space:pre-wrap;text-align:left;}
+.inspector-panel .inspector-section,.inspector-panel .inspector-head,.inspector-panel .inspector-content{min-width:0;max-width:100%;}
+.inspector-panel .inspector-section input,.inspector-panel .inspector-section textarea{max-width:100%;box-sizing:border-box;}
+
+.hotspot-inspector-edit {margin-top:11px;max-width:100%;white-space:normal;text-align:left;}
+.inspector-panel .inspector-actions{flex-wrap:wrap;}
+.inspector-panel .inspector-actions .secondary-button{min-width:0;flex:1 1 110px;white-space:normal;text-align:center;}

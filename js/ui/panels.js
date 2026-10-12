@@ -54,13 +54,14 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     const guide=frameworkGuidance(framework.id,role?.id,{sourceText:hotspot.text});
     if(!shouldRenderInspector(root,key,request))return;
     root.innerHTML=`
-      <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p></div>
+      <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p><button class="secondary-button compact hotspot-inspector-edit" data-edit-hotspot-selection="${esc(hotspot.id)}">✎ Edit source selection</button></div>
       <div class="framework-lens-note"><strong>${esc(framework.label)}</strong><span>${esc(framework.source||'')}</span><p>${esc(framework.description)}</p></div>
       ${frameworkNextForm({status:'active',label:hotspot.text},framework,role,guide)}
       ${caseStudyMarkup(cases)}
       ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
     restoreInspectorDraft(root,key);
     bindFrameworkNext(root,pseudo,framework,role,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(text,roleId,extra));
+    root.querySelectorAll('[data-edit-hotspot-selection]').forEach(b=>b.onclick=()=>handlers.onEditHotspot?.(b.dataset.editHotspotSelection));
     root.querySelectorAll('[data-related-path]').forEach(b=>b.onclick=()=>handlers.onRelatedPath?.(b.dataset.relatedPath));
     root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
     return;
@@ -69,7 +70,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
   const p=await interpretationPrompt(hotspot);
   if(!shouldRenderInspector(root,key,request))return;
   root.innerHTML=`
-    <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
+    <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><button class="secondary-button compact hotspot-inspector-edit" data-edit-hotspot-selection="${esc(hotspot.id)}">✎ Edit source selection</button><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip guided-direct-choice" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
     <div class="guided-help-note">Choose a cue if useful. It will move into the same writing field so it can be extended, qualified or rewritten before it becomes a node.</div>
     <label class="field-label">Write / extend the interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
@@ -90,6 +91,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
       input.setSelectionRange?.(input.value.length,input.value.length);
     }
   });
+  root.querySelectorAll('[data-edit-hotspot-selection]').forEach(b=>b.onclick=()=>handlers.onEditHotspot?.(b.dataset.editHotspotSelection));
   root.querySelector('#addCustomInterpretation').onclick=()=>{
     const val=input.value.trim();
     const validation=root.querySelector('#interpretationValidation');
@@ -148,12 +150,13 @@ export async function renderNodeInspector(node,state,handlers){
     ${metaMarkup(node,framework,frameworkRole)}
     ${next}
     ${caseStudyMarkup(cases)}
-    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
+    <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}${node.type==='input' && node.meta?.hotspotId?'<button class="secondary-button action-help" id="editInputHotspot">✎ Edit source selection</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
   if(framework.id!=='tracework'&&framework.id!=='freeform') bindFrameworkNext(root,node,framework,frameworkRole,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(node,text,roleId,extra));
   else bindNext(root,node,handlers);
   root.querySelector('#branchFromNode')?.addEventListener('click',()=>handlers.onBranch(node.id));
   restoreInspectorDraft(root,key);
   root.querySelector('#forkFromNode')?.addEventListener('click',()=>handlers.onFork(node.id));
+  root.querySelector('#editInputHotspot')?.addEventListener('click',()=>handlers.onEditHotspot?.(node.meta.hotspotId));
   root.querySelector('#editNode')?.addEventListener('click',()=>handlers.onEdit(node));
   root.querySelector('#rejectBranch')?.addEventListener('click',()=>handlers.onReject(node.branchId,node));
   root.querySelector('#restoreBranch')?.addEventListener('click',()=>handlers.onRestore(node.branchId,node));

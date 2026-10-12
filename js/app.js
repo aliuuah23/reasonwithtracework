@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.0';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.1';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b2.0';
+import { renderGraph } from './graph/graph-renderer.js?v=b2.1';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.0';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.1';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -363,7 +363,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onDeleteHotspot:deleteHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
+  renderBrief(state,{onHotspot:selectHotspot,onEditHotspot:editHotspot,onDeleteHotspot:deleteHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   updateMapModeControls(state);
   updateFrameworkControls(state);
   if(workspaceMapMode==='aggregate') updateAggregateControls(state);
@@ -550,6 +550,95 @@ async function selectHotspot(id){
   setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`),canvasZoom),80);
 }
 
+
+// B2.1 · edit the actual source selection, without resetting its reasoning map.
+// A hotspot remains an exact quotation from the brief; arbitrary renames would
+// create a highlight that cannot be anchored to the source.
+function editHotspot(id){
+  const state=getState(),hotspot=state.hotspots.find(h=>h.id===id);
+  if(!hotspot)return;
+  const chunk=state.briefChunks?.find(c=>c.id===hotspot.chunkId) ||
+    state.briefChunks?.find(c=>Number(hotspot.start)>=Number(c.start)&&Number(hotspot.start)<Number(c.end)) || null;
+  const source=chunk?.text||state.brief||'';
+  const baseOffset=chunk ? (()=>{
+    const hint=Number(chunk.start)||0;
+    const match=state.brief.indexOf(chunk.text,Math.max(0,hint-16));
+    return match>=0 ? match : hint;
+  })() : 0;
+  const original=String(hotspot.text||'');
+  const idx=source.toLocaleLowerCase().indexOf(original.toLocaleLowerCase());
+  openModal(`<h2 id="modalTitle">Edit hotspot</h2>
+    <p>Change which <strong>exact words in this brief</strong> belong to this hotspot. Edit the phrase below, or drag across the passage to select it. Existing linked reasoning is preserved.</p>
+    <label class="hotspot-edit-label" for="hotspotEditInput">Selected phrase</label>
+    <input class="field-input" id="hotspotEditInput" value="${escapeHtml(original)}" autocomplete="off" spellcheck="false">
+    <div class="hotspot-edit-feedback" id="hotspotEditFeedback" role="status">The phrase must appear in the current brief section.</div>
+    <div class="selection-brief hotspot-edit-source" id="hotspotEditSource" tabindex="0" aria-label="Choose a different phrase from this source section">${escapeHtml(source)}</div>
+    <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancel</button><button type="button" class="primary-button compact" id="saveHotspotEdit">Save selection</button></div>`,{
+      onOpen:m=>{
+        const input=m.querySelector('#hotspotEditInput'), feedback=m.querySelector('#hotspotEditFeedback');
+        const passage=m.querySelector('#hotspotEditSource'), save=m.querySelector('#saveHotspotEdit');
+        // Offset anchoring handles repeated words by preferring the previous position.
+        const locate=()=>{
+          const wanted=input.value.trim();
+          if(!wanted)return null;
+          const hits=[],lower=source.toLocaleLowerCase(),target=wanted.toLocaleLowerCase();
+          let at=0;
+          while((at=lower.indexOf(target,at))!==-1){
+            const normalized=normaliseHotspotSelection(source,at,at+target.length);
+            if(normalized.text===source.slice(normalized.start,normalized.end) &&
+                normalized.text.toLocaleLowerCase()===wanted.toLocaleLowerCase())
+              hits.push(normalized);
+            at+=Math.max(1,target.length);
+          }
+          const expected=Math.max(0,(Number(hotspot.start)||0)-baseOffset);
+          return hits.sort((a,b)=>Math.abs(a.start-expected)-Math.abs(b.start-expected))[0]||null;
+        };
+        const check=()=>{
+          const found=locate();
+          const duplicate=found && getState().hotspots.some(h=>h.id!==id &&
+            (Number(h.start)||0)===baseOffset+found.start && (Number(h.end)||0)===baseOffset+found.end);
+          save.disabled=!found||Boolean(duplicate);
+          feedback.textContent=duplicate?'That exact selection is already a hotspot.':
+            found?'Selection found in the source. Linked reasoning will be retained.':
+            'Select or enter an exact phrase from the current brief section.';
+          return found;
+        };
+        input.addEventListener('input',check);
+        const readSelection=()=>{
+          const sel=window.getSelection();
+          if(!sel || sel.rangeCount===0 || sel.isCollapsed)return;
+          const range=sel.getRangeAt(0);
+          if(!passage.contains(range.commonAncestorContainer))return;
+          const start=textOffsetWithin(passage,range.startContainer,range.startOffset);
+          const end=textOffsetWithin(passage,range.endContainer,range.endOffset);
+          const snapped=normaliseHotspotSelection(source,start,end);
+          if(snapped.text){input.value=snapped.text;check();}
+        };
+        passage.addEventListener('mouseup',()=>setTimeout(readSelection,0));
+        passage.addEventListener('keyup',()=>setTimeout(readSelection,0));
+        save.onclick=()=>{
+          const found=check();if(!found)return;
+          const editedText=found.text;
+          if(editedText===hotspot.text && baseOffset+found.start===hotspot.start){closeModal();return;}
+          checkpoint('edit hotspot selection');
+          updateState(s=>{
+            const target=s.hotspots.find(h=>h.id===id);
+            if(!target)return;
+            Object.assign(target,{text:editedText,start:baseOffset+found.start,end:baseOffset+found.end,
+              chunkId:chunk?.id||target.chunkId||null,
+              kind:/\s/.test(editedText)?'phrase':'word',edited:true,concept:'custom',source:'designer',
+              reason:'Source selection revised by designer'});
+            // Keep the same source node ID, wires, interpretations and branches.
+            s.nodes.filter(n=>n.type==='input'&&n.meta?.hotspotId===id).forEach(n=>n.label=editedText);
+          });
+          logEvent('Hotspot selection revised',`${original} → ${editedText}`);
+          closeModal();renderWorkspace();toast('Hotspot updated. Linked reasoning preserved; Ctrl+Z to undo.');
+        };
+        check();input.focus();input.select();
+      }
+    });
+}
+
 function deleteHotspot(id){
   const state=getState(),hotspot=state.hotspots.find(h=>h.id===id);
   if(!hotspot)return;
@@ -572,6 +661,7 @@ function deleteHotspot(id){
 function hotspotHandlers(inputNodeId=null){
   const resolveInput=()=>inputNodeId || getState().activeNodeId || getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===getState().selectedHotspotId)?.id || null;
   return {
+    onEditHotspot:id=>editHotspot(id),
     onInterpretation:(text,prompt)=>addHotspotInterpretation(text,prompt,resolveInput()),
     onFrameworkNext:(text,roleId,extra)=>addFrameworkGuidedStep(resolveInput(),text,roleId,extra),
     onRelatedPath:id=>inspectPathway(pathways.find(p=>p.id===id)),
@@ -712,6 +802,7 @@ function nodeHandlers(){
     onBranch:id=>branchFrom(id),
     onFork:id=>forkFrom(id),
     onEdit:node=>editNode(node),
+    onEditHotspot:id=>editHotspot(id),
     onReject:(branchId,node)=>confirmRejectBranch(branchId,node),
     onRestore:(branchId,node)=>{
       updateState(s=>restoreBranch(s,branchId));
