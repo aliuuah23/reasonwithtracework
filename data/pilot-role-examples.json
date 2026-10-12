@@ -1,0 +1,1395 @@
+{
+  "source": "Pilot_Experiment_01_Master_Coding_CORRECTED_ONTOLOGY.xlsx / 12_Ontology_Nodes",
+  "participants": "P01–P10",
+  "note": "Pilot-coded node labels are illustrative references only, not a calibrated prediction dataset or statistical likelihood. Adaptation examples map to evaluation or consequence by class.",
+  "counts": {
+    "input": 11,
+    "interpretation": 25,
+    "grounding": 33,
+    "goal": 28,
+    "consequence": 118,
+    "evaluation": 15
+  },
+  "examples": [
+    {
+      "text": "Pause",
+      "role": "input",
+      "participant": "P01",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Pause means eating, chatting and last-minute work",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Greenery as a place to pause",
+      "role": "grounding",
+      "participant": "P01",
+      "class": "Association"
+    },
+    {
+      "text": "Support everyday pause activities",
+      "role": "goal",
+      "participant": "P01",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Benches and tables",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Pavilion",
+      "role": "input",
+      "participant": "P01",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Pavilion means circular space",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Chinese and Japanese garden pavilions from growing up in Singapore",
+      "role": "grounding",
+      "participant": "P01",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Circular pavilion form",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Environmental conditions",
+      "role": "input",
+      "participant": "P01",
+      "class": "Requirement / Constraint"
+    },
+    {
+      "text": "Heat, natural ventilation, shelter and existing vegetation",
+      "role": "grounding",
+      "participant": "P01",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Keep the pavilion open for natural ventilation",
+      "role": "goal",
+      "participant": "P01",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Open pavilion",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Ceiling fans",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Shelter / weather protection",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Privacy",
+      "role": "input",
+      "participant": "P01",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Privacy as a balance between enclosure and openness",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Create separation without feeling suffocated",
+      "role": "goal",
+      "participant": "P01",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Internal walls",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Open perimeter / no walls on facade",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Circular geometry clashes with straight rectangular columns",
+      "role": "evaluation",
+      "participant": "P01",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Abandon circular form",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Revision"
+    },
+    {
+      "text": "Rectangular / simpler modernist form",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Privacy through level change rather than walls",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Replace wall-based privacy with level change",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Revision"
+    },
+    {
+      "text": "Sunken and projecting spaces",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Depth corresponds to greater privacy and longer stay",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Exposed edge seating",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Deeper sunken seating",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Short accessible pause at the edge",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Greater privacy and longer stay deeper inside",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Add 20 more seats; footprint fixed; route unobstructed; individual + group use retained",
+      "role": "input",
+      "participant": "P01",
+      "class": "Added Requirement"
+    },
+    {
+      "text": "Can existing tables and chairs be divided?",
+      "role": "evaluation",
+      "participant": "P01",
+      "class": "Reconsideration"
+    },
+    {
+      "text": "Convert privacy walls into chairs",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Revision"
+    },
+    {
+      "text": "Seating elements also act as privacy walls",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Split long sofas into multiple facing seats",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Beanbags in the deeper private area",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Retain privacy while increasing seating",
+      "role": "consequence",
+      "participant": "P01",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Count people rather than discrete seats",
+      "role": "evaluation",
+      "participant": "P01",
+      "class": "Reconsideration"
+    },
+    {
+      "text": "Seats understood as occupancy capacity",
+      "role": "interpretation",
+      "participant": "P01",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Pause / daily activities",
+      "role": "input",
+      "participant": "P02",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Accessible, peaceful place for students to relax",
+      "role": "goal",
+      "participant": "P02",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Site selection",
+      "role": "input",
+      "participant": "P02",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Behind SDE4: hill, shade, sea breeze, trees, quietness, access",
+      "role": "grounding",
+      "participant": "P02",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Site behind SDE4",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Strong site winds",
+      "role": "grounding",
+      "participant": "P02",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Channel airflow through the pavilion",
+      "role": "goal",
+      "participant": "P02",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Tapered / cone-shaped wind-tunnel form",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Block sun while maintaining air circulation",
+      "role": "goal",
+      "participant": "P02",
+      "class": "Design Intention"
+    },
+    {
+      "text": "V-shaped roof",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Individual and group use",
+      "role": "input",
+      "participant": "P02",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Individual and communal occupation should be separated",
+      "role": "interpretation",
+      "participant": "P02",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Protect quiet individual study while supporting communal use",
+      "role": "goal",
+      "participant": "P02",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Curved study pods around the perimeter",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Circular communal seating in the centre",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Communal gathering is represented by circular geometry",
+      "role": "grounding",
+      "participant": "P02",
+      "class": "Association"
+    },
+    {
+      "text": "Movement / circulation",
+      "role": "input",
+      "participant": "P02",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Avoid disturbing occupants when entering",
+      "role": "goal",
+      "participant": "P02",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Multiple perimeter entries",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Less disturbance to individual pods",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Patterned roof with opaque and translucent areas",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Drain rainwater through the roof structure",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Circular communal form may create too much echo",
+      "role": "evaluation",
+      "participant": "P02",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Long curved form instead of full circle",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Alternative"
+    },
+    {
+      "text": "A rotating / lazy-Susan pavilion could be intriguing",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Alternative"
+    },
+    {
+      "text": "Stand out and invite play",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Cake-like double-level arrangement",
+      "role": "grounding",
+      "participant": "P02",
+      "class": "Association"
+    },
+    {
+      "text": "Add a second level",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Alternative"
+    },
+    {
+      "text": "Smaller upper circumference over wider lower level",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Lift the middle communal area and place more seats below",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Increase seating without increasing footprint",
+      "role": "consequence",
+      "participant": "P02",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Walkway from IT bus stop to SDE3 has constant foot traffic",
+      "role": "grounding",
+      "participant": "P03",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Pavilion on the hill beside the walkway",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Give students a place to pause between classes",
+      "role": "goal",
+      "participant": "P03",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Shaded, tree-filled and sometimes windy site",
+      "role": "grounding",
+      "participant": "P03",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Keep the pavilion as open as possible",
+      "role": "goal",
+      "participant": "P03",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Larger roof for rain protection",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Some students want to be alone and unaffected by others",
+      "role": "interpretation",
+      "participant": "P03",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Create a layered space for different degrees of separation",
+      "role": "goal",
+      "participant": "P03",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Layered seating",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Benches / tables / seats at different heights",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Water-droplet / rounded form",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Rounded form makes the layered idea easier",
+      "role": "evaluation",
+      "participant": "P03",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Leaf-like roof because the site is green and shaded by trees",
+      "role": "grounding",
+      "participant": "P03",
+      "class": "Association"
+    },
+    {
+      "text": "Leaf-like roof",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Avoid a rigid form that feels out of place",
+      "role": "goal",
+      "participant": "P03",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Open visibility allows users to see approaching friends",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Build up or down",
+      "role": "evaluation",
+      "participant": "P03",
+      "class": "Reconsideration"
+    },
+    {
+      "text": "Add a smaller second / mezzanine level",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Alternative"
+    },
+    {
+      "text": "Widen benches so people can sit on both sides",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Revision"
+    },
+    {
+      "text": "Double-sided back-to-back seating",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Increase capacity without enlarging footprint",
+      "role": "consequence",
+      "participant": "P03",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Duration of use",
+      "role": "input",
+      "participant": "P04",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Three durations: brief waiting, short rest, longer study",
+      "role": "interpretation",
+      "participant": "P04",
+      "class": "Interpretation"
+    },
+    {
+      "text": "High-top chairs for brief waiting",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Cafe-style seating for short rest",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Lounge / library tables and chairs for longer study",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Privacy means varying degrees of visual connectivity",
+      "role": "interpretation",
+      "participant": "P04",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Old LaSalle campus experience",
+      "role": "grounding",
+      "participant": "P04",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Field beside LaSalle with MRT route, footfall, smoking corner and public activity",
+      "role": "grounding",
+      "participant": "P04",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Corner pavilion at high-footfall edge",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Bar table / shelf for quick waiting and food",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Cafe seating and a step near the smoking corner",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Curved alfresco / performance seating",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Liven up the area through public performance / occupation",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Second level for another seating typology and visual connection",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Spiral staircase",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Frame good views while screening unattractive service-side views",
+      "role": "goal",
+      "participant": "P04",
+      "class": "Design Intention"
+    },
+    {
+      "text": "High windows / balcony for light, sky and skyline views",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Privacy should not become a windowless claustrophobic box",
+      "role": "interpretation",
+      "participant": "P04",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Adding another floor feels overkill but preserves footprint",
+      "role": "evaluation",
+      "participant": "P04",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Use picnic mats on the grass instead of conventional seats",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Alternative"
+    },
+    {
+      "text": "Picnic mats spread onto the grass",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Students can lie down outdoors rather than remain cooped up inside",
+      "role": "consequence",
+      "participant": "P04",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Long walkway from SDE to IT bus stop is heavily used but mostly a corridor",
+      "role": "grounding",
+      "participant": "P05",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "University-student experience of walking this route",
+      "role": "grounding",
+      "participant": "P05",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Use underutilised corridor space for rest and study",
+      "role": "goal",
+      "participant": "P05",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Pavilion located along the SDE–IT walkway",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "The pavilion should feel transient: open, airy and comfortable",
+      "role": "interpretation",
+      "participant": "P05",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Support short pause while still allowing longer activities",
+      "role": "goal",
+      "participant": "P05",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Existing trees and open landscape",
+      "role": "grounding",
+      "participant": "P05",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Draw openness from the existing site into the pavilion",
+      "role": "goal",
+      "participant": "P05",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Louvers instead of hard walls",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Open roof / possible kinetic climatic system",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Prior studio work using louvers",
+      "role": "grounding",
+      "participant": "P05",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Transient means a temporary transition space where people usually keep moving",
+      "role": "interpretation",
+      "participant": "P05",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Blur the boundary between inside and outside",
+      "role": "interpretation",
+      "participant": "P05",
+      "class": "Interpretation"
+    },
+    {
+      "text": "A hard block would feel invasive in an open flowing site",
+      "role": "evaluation",
+      "participant": "P05",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Replace one large pavilion with several smaller ones",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Revision"
+    },
+    {
+      "text": "Cluster of smaller pavilions",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Village effect",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Students can choose which pavilion to use",
+      "role": "consequence",
+      "participant": "P05",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Scenic walk before Techno: underutilised greenery, student flow, trees and shade",
+      "role": "grounding",
+      "participant": "P06",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Use the space while maintaining its unusedness / natural character",
+      "role": "goal",
+      "participant": "P06",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Tree-like growing structure",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "The intervention should feel temporary, mobile and lightly placed",
+      "role": "interpretation",
+      "participant": "P06",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Compact, minimal structure rather than a full building",
+      "role": "goal",
+      "participant": "P06",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Pause between lessons means rest rather than study",
+      "role": "interpretation",
+      "participant": "P06",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Personal experience of being tired between lessons",
+      "role": "grounding",
+      "participant": "P06",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Force / encourage students to rest",
+      "role": "goal",
+      "participant": "P06",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Seats with storage underneath",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Very small irregular tables only large enough for a phone",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Gardens by the Bay water-cooling system",
+      "role": "grounding",
+      "participant": "P06",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Funnel form collects rainwater for cooling",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Public-to-private gradient follows distance from the main path",
+      "role": "interpretation",
+      "participant": "P06",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Users can choose convenience or walk farther for privacy",
+      "role": "evaluation",
+      "participant": "P06",
+      "class": "Trade-off"
+    },
+    {
+      "text": "Private spaces face away from the crowd",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Slit roll-up screens that block direct interaction but retain awareness",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Rain chain instead of a blind",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Alternative"
+    },
+    {
+      "text": "Rain chain provides drainage, shade and an attraction point",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Circle feels softer and less harsh in untouched greenery",
+      "role": "grounding",
+      "participant": "P06",
+      "class": "Association"
+    },
+    {
+      "text": "Simply populate more identical units",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Alternative"
+    },
+    {
+      "text": "Stretch the circular unit while keeping rest, water and privacy logic",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Alternative"
+    },
+    {
+      "text": "Vary structure heights and sizes like different trees",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Alternative"
+    },
+    {
+      "text": "A varied cluster could become a landmark / sculpture",
+      "role": "consequence",
+      "participant": "P06",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Central passing area between architecture, canteen, bus stop and engineering",
+      "role": "grounding",
+      "participant": "P07",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "People currently pass through rather than loiter",
+      "role": "grounding",
+      "participant": "P07",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Use the programme to make people wait and stay",
+      "role": "goal",
+      "participant": "P07",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Public site means accessibility and greater liveliness",
+      "role": "interpretation",
+      "participant": "P07",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Keep the pavilion public and accessible",
+      "role": "goal",
+      "participant": "P07",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Existing trees provide natural shading",
+      "role": "grounding",
+      "participant": "P07",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Openings around trees / grass",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "More ventilation and comfort",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Structure on top of the pathway",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Benches within the structure",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Major movement / flow points",
+      "role": "grounding",
+      "participant": "P07",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Organic form derived from bringing movement arrows together",
+      "role": "interpretation",
+      "participant": "P07",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Organic pavilion form with larger openings at major flows",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Make the pavilion double-decker",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Revision"
+    },
+    {
+      "text": "Put additional seating on the second level",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Shift circulation so it is less disruptive",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Maintain pedestrian movement while adding capacity vertically",
+      "role": "consequence",
+      "participant": "P07",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Pavilion for students to relax",
+      "role": "input",
+      "participant": "P08",
+      "class": "Brief Cue"
+    },
+    {
+      "text": "Little House on the Prairie",
+      "role": "grounding",
+      "participant": "P08",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Primitive / tactile making as a counterbalance to digital tools and AI",
+      "role": "interpretation",
+      "participant": "P08",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Create a dedicated place for play, making and tactile exploration",
+      "role": "goal",
+      "participant": "P08",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Wood carving, building, pottery, sculpting, painting, reading, writing, knitting and sewing",
+      "role": "grounding",
+      "participant": "P08",
+      "class": "Scenario"
+    },
+    {
+      "text": "Balance primitive making with digitally intensive architectural education",
+      "role": "evaluation",
+      "participant": "P08",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Green hill outside SDE3 / SDE4 feels fresh and relaxed",
+      "role": "grounding",
+      "participant": "P08",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Build the pavilion into / on the hill",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Interior should be modular and possibly built by students themselves",
+      "role": "goal",
+      "participant": "P08",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Invertible stools / tables and student-built furniture",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Normal pitched roof",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Brick / stone material character",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Craving a more primitive way of living / making after years in architecture school",
+      "role": "grounding",
+      "participant": "P08",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Rest can be productive: learning and exploring without being tiring",
+      "role": "interpretation",
+      "participant": "P08",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Countryside character of the film",
+      "role": "grounding",
+      "participant": "P08",
+      "class": "Association"
+    },
+    {
+      "text": "Use the hill terrain more actively",
+      "role": "evaluation",
+      "participant": "P08",
+      "class": "Reconsideration"
+    },
+    {
+      "text": "Split the single floor into mezzanine / stepped floors",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Revision"
+    },
+    {
+      "text": "Mezzanine / stepped floor system",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Create interplay between hill terrain, floors and entrance / exit points",
+      "role": "consequence",
+      "participant": "P08",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Green sloping route from Aki / CLB where students already walk from bus stop to class",
+      "role": "grounding",
+      "participant": "P09",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Pavilion should become part of existing student movement",
+      "role": "interpretation",
+      "participant": "P09",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Pavilion on the sloping route",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Rectangular form",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Slope suggests two or more levels",
+      "role": "interpretation",
+      "participant": "P09",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Small-group booths on first level",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Individual booths on second level",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Denser screening toward busy path; sparser screening toward vegetation",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Privacy and intimacy without losing openness",
+      "role": "goal",
+      "participant": "P09",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Screening allows views and natural ventilation better than glass",
+      "role": "evaluation",
+      "participant": "P09",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Simple overhang roof",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Open rooftop for students",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Alternative"
+    },
+    {
+      "text": "Organic skylight variation",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Alternative"
+    },
+    {
+      "text": "Multiple levels maximise use of the slope without making a very long single storey",
+      "role": "evaluation",
+      "participant": "P09",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Use open rooftop for overflow seats",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Alternative"
+    },
+    {
+      "text": "Expand backwards / to the sides",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Alternative"
+    },
+    {
+      "text": "Build upward instead of increasing footprint",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Alternative"
+    },
+    {
+      "text": "Add a second or third level",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Increase seating vertically within the footprint",
+      "role": "consequence",
+      "participant": "P09",
+      "class": "Spatial Consequence"
+    },
+    {
+      "text": "Underutilised site near SDE4, Arts, Ventus and an overcrowded IT bus stop",
+      "role": "grounding",
+      "participant": "P10",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Redistribute some crowd away from the IT bus stop",
+      "role": "goal",
+      "participant": "P10",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Pavilion at the secondary bus-stop area",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Slope, rainwater flow and circulation routes",
+      "role": "grounding",
+      "participant": "P10",
+      "class": "Context Grounding"
+    },
+    {
+      "text": "Do not cut the young trees",
+      "role": "goal",
+      "participant": "P10",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Shelter with openings for trees",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Light penetration should vary according to tree cover",
+      "role": "interpretation",
+      "participant": "P10",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Voronoi cell roof system",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Glass / transparent cells under denser tree cover and solid cells where tree cover is lower",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Use rainwater on the slope to slow water and cool the space",
+      "role": "goal",
+      "participant": "P10",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Voronoi provides discrete cells for variation and looks more natural than a grid",
+      "role": "evaluation",
+      "participant": "P10",
+      "class": "Comparison / Evaluation"
+    },
+    {
+      "text": "Prior Grasshopper / Voronoi studio experience",
+      "role": "grounding",
+      "participant": "P10",
+      "class": "Prior Repertoire"
+    },
+    {
+      "text": "Keep seats away from tree openings because rain may splash in",
+      "role": "evaluation",
+      "participant": "P10",
+      "class": "Reconsideration"
+    },
+    {
+      "text": "Setbacks from tree openings",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Keep seats away from edges so they remain usable in rain",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "Move seating away from side paths / into emptier spaces",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Revision"
+    },
+    {
+      "text": "Possibly place seating on the main path",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Proposition"
+    },
+    {
+      "text": "A path only needs enough clear space for comfortable passage",
+      "role": "interpretation",
+      "participant": "P10",
+      "class": "Interpretation"
+    },
+    {
+      "text": "Maintain comfortable circulation without disturbing seated users",
+      "role": "goal",
+      "participant": "P10",
+      "class": "Design Intention"
+    },
+    {
+      "text": "Seats can coexist with movement if sufficient clearance is retained",
+      "role": "consequence",
+      "participant": "P10",
+      "class": "Spatial Consequence"
+    }
+  ]
+}

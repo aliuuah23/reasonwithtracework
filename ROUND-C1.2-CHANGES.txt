@@ -1,0 +1,1 @@
+Stage C1.2: All nodes now offer schematic plan/3D preview; operational overall/detail suggestions on every framework; keyword/feature-based architectural case studies (not pavilion defaults); in-node Link and Case-study bubbles; tutorials and README updated. Retains C1.1 map, classifier, undo, fit, alignment and framework changes.

@@ -1,0 +1,9 @@
+TRACEWORK C1.1 — Pilot-informed classification and map visibility
+
+- Lighter dotted local snap guides; nearby centre/edge matching, tighter tolerance, Shift bypass.
+- Ctrl+mousewheel zoom anchors on active/selected node.
+- Fit all visible nodes using actual graph bounds at half-screen and full-screen.
+- Original aggregate is a natural interwoven graph, no forced role columns.
+- Arrange still supports literature framework-specific layouts; Reflow preserved.
+- Role suggestion scoring draws on coded labels (P01–P10) extracted from corrected pilot ontology; strong goal wording overrides weak interpretation defaults. Pilot-derived matches are qualitative evidence, NOT calibrated probabilities.
+- All existing map position data and original saved placements are preserved.

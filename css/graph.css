@@ -214,3 +214,16 @@
 .graph-align-guide.visible { display:block; }
 .graph-align-guide.vertical { top:0; bottom:0; width:1px; }
 .graph-align-guide.horizontal { left:0; right:0; height:1px; }
+
+/* C1.1 — subtle, local editor alignment guides (not graph connections). */
+.graph-align-guide {background:transparent;box-shadow:none;opacity:.75;}
+.graph-align-guide.vertical {width:1px;background-image:repeating-linear-gradient(to bottom,#bac1cf 0 4px,transparent 4px 9px);}
+.graph-align-guide.horizontal {height:1px;background-image:repeating-linear-gradient(to right,#bac1cf 0 4px,transparent 4px 9px);}
+
+/* Stage C1.2 — spatial exploration and actionable connection bubbles for all roles */
+.node-quick-actions {display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;}
+.node-quick-action {border:1px solid color-mix(in srgb,var(--node-color) 24%,var(--border));background:color-mix(in srgb,var(--node-color) 7%,white);color:var(--text);border-radius:999px;padding:5px 9px;font-size:9px;font-weight:650;cursor:pointer;flex:1;white-space:nowrap;}
+.node-quick-action:hover,.node-quick-action:focus-visible {background:color-mix(in srgb,var(--node-color) 18%,white);border-color:var(--node-color);outline-offset:2px;}
+.node-foot {flex-wrap:wrap;}
+.node-preview-toggle {font-size:9px;}
+.graph-node.preview-open {min-height:0;}

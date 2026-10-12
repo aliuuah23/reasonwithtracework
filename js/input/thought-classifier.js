@@ -1,3 +1,42 @@
+// C1.1: evidence-assisted lexical matching from the *coded node labels* in
+// Pilot Experiment 01 (P01–P10). These are small qualitative examples, not a
+// probability-trained model; their role is to check wording against observed
+// design-intention, interpretation and spatial-proposition distinctions.
+let pilotExamples=[];
+let pilotIDF=new Map();
+const PILOT_STOP=new Set('a an the and or of in on at to for by with is are was were be been being that which what when where who from this these those it its i we they them as about into through rather than but while without not more less should can could would will need needs do does did their there have has had after before along during my our your a few some even very'.split(' '));
+function roleTokens(text){
+  return [...new Set(String(text||'').toLowerCase().match(/[a-z]+/g)||[])]
+    .map(word=>word.replace(/(ing|ments|ment|tion|sions|ed|es|s)$/,'')).filter(word=>word.length>2&&!PILOT_STOP.has(word));
+}
+export function setPilotRoleExamples(dataset){
+  pilotExamples=(dataset?.examples||[]).filter(item=>TYPE_INFO[item.role]&&String(item.text||'').length>4).map(item=>({
+    role:item.role,tokens:roleTokens(item.text),text:item.text,class:item.class
+  })).filter(item=>item.tokens.length);
+  const documentFrequency=new Map();
+  for(const item of pilotExamples)for(const token of new Set(item.tokens))documentFrequency.set(token,(documentFrequency.get(token)||0)+1);
+  pilotIDF=new Map([...documentFrequency].map(([word,n])=>[word,Math.log(1+(pilotExamples.length+1)/(n+1))]));
+}
+function pilotRoleCues(value){
+  if(!pilotExamples.length)return [];
+  const words=roleTokens(value);if(!words.length)return [];
+  const set=new Set(words);
+  const matches=pilotExamples.map(item=>{
+    const overlap=item.tokens.filter(word=>set.has(word));
+    const shared=overlap.reduce((sum,t)=>sum+(pilotIDF.get(t)||1),0);
+    const lenA=words.reduce((sum,t)=>sum+(pilotIDF.get(t)||1),0);
+    const lenB=item.tokens.reduce((sum,t)=>sum+(pilotIDF.get(t)||1),0);
+    // Weighted Dice similarity; penalise a single common token matching a label.
+    const sim=overlap.length>=2?2*shared/Math.max(1,lenA+lenB):0;
+    return {...item,sim,overlap};
+  }).filter(m=>m.sim>=.24).sort((a,b)=>b.sim-a.sim);
+  const roleBest=new Map();
+  for(const m of matches){
+    if(!roleBest.has(m.role))roleBest.set(m.role,m);
+  }
+  return [...roleBest.entries()].map(([role,m])=>({role,score:Math.min(3.6,m.sim*5),label:m.text,sim:m.sim}));
+}
+
 const TYPE_INFO = {
   input: {
     label:'Input',
@@ -79,6 +118,9 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
     }
   }
 
+  // Examples are secondary evidence, with structural wording remaining decisive.
+  for(const cue of pilotRoleCues(value))bump(cue.role,cue.score,`similar to pilot-coded ${TYPE_INFO[cue.role].label}: “${cue.label}”`);
+
   const lower=value.toLowerCase();
   const has=re=>re.test(lower);
 
@@ -102,7 +144,12 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   if(has(/\b(but|however|while|whereas|although|trade-?off|at the cost of|compromise|risk|drawback|better|worse|conflict|interfere|priority|prioriti[sz]e|works|fails?)\b/)) bump('evaluation',4.2,'comparison / judgement / conflict');
   if(has(/\b(more|less)\s+(effective|efficient|flexible|private|open|comfortable|predictable|accessible)\b/)) bump('evaluation',2.2,'comparative judgement');
 
-  if(has(/\b(the aim is|the goal is|the intention is|the purpose is|we want to|ultimately|in order to|so that)\b/)) bump('goal',5,'explicit intention / purpose');
+  if(has(/\b(the aim is|the goal is|the intention is|the purpose is|we want to|ultimately|in order to|so that)\b/)) bump('goal',7,'explicit intention / purpose');
+  if(has(/\b((my|our|the|design|project|main)\s+)?(goal|aim|intention|objective|purpose)s?\b/)) bump('goal',7.4,'explicit design-goal or intention wording');
+  if(has(/\b(suppose|imagine|consider)\b/) && has(/\b(goal|aim|intention|objective|purpose)\b/)) bump('goal',3.2,'hypothetical stated as a goal');
+  if(has(/^\s*(?:our|my|the|this|design|project|main)\s+(?:goal|aim|objective|intention|purpose)\b/)) bump('goal',11,'the statement frames a design aim before describing a possible means');
+  if(has(/\b(should|must)\s+(feel|be|remain|experience|enjoy)\b/) && !spatialAction) bump('goal',3.4,'desired outcome rather than an architectural move');
+  if(has(/\b(i|we)\s+(want|hope|intend|aim|would like|would prefer|need)\b/)) bump('goal',6.5,'stated designer intention');
   if(has(/^\s*(support|enable|encourage|ensure|promote|allow)\b/)) bump('goal',5.2,'goal-oriented verb');
   if(has(/\b(to|so that|in order to)\s+(support|enable|encourage|allow|ensure|promote|protect|maintain)\b/)) bump('goal',3,'purpose clause');
 
@@ -154,7 +201,7 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   return {
     type:best.type,
     confidence,
-    reason:`${cueText} ${ambiguity} Match strengths are independent fits, not probabilities.`,
+    reason:`${cueText} ${ambiguity} Match strengths compare language cues with coded pilot examples; they are not probabilities.`,
     scores,
     matches,
     alternatives:ranked.slice(1,3),

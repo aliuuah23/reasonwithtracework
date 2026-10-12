@@ -29,7 +29,7 @@
   {
     "id": "serpentine-2017-kere",
     "name": "Serpentine Pavilion 2017",
-    "designer": "Francis K\u00e9r\u00e9",
+    "designer": "Francis Kéré",
     "year": 2017,
     "feature": "Shared canopy / central gathering",
     "tags": [
@@ -262,5 +262,108 @@
     "prompt": "Can a structural system support both a spatial programme and an ongoing community activity?",
     "sourceLabel": "ArchDaily",
     "sourceUrl": "https://www.archdaily.com/975691/green-agora-pavilion-spatial-anatomy"
+  },
+  {
+    "id": "epfl-rolex-learning-center",
+    "name": "Rolex Learning Center",
+    "designer": "SANAA",
+    "year": 2010,
+    "feature": "Continuous learning landscape / topographic circulation",
+    "tags": [
+      "circulation",
+      "movement",
+      "route",
+      "topography",
+      "level",
+      "flexibility",
+      "learning",
+      "study",
+      "community",
+      "programme",
+      "courtyard",
+      "access",
+      "slope",
+      "threshold"
+    ],
+    "moves": [
+      "continuous interior landscape",
+      "gentle ramps and terraces",
+      "courtyards as program separators",
+      "multiple adjacent study settings"
+    ],
+    "note": "At EPFL, a continuous floor surface connects study, cultural and social programmes using slopes, terraces and internal patios instead of treating every use as an enclosed room.",
+    "whyRelevant": "Compare how movement and changes in level organise simultaneous uses, without assuming a pavilion typology.",
+    "prompt": "Can a continuous surface organise different degrees of group use without relying on closed partitions?",
+    "sourceLabel": "EPFL project",
+    "sourceUrl": "https://www.epfl.ch/campus/visitors/buildings/rolex-learning-center/building/"
+  },
+  {
+    "id": "sendai-mediatheque-ito",
+    "name": "Sendai Mediatheque",
+    "designer": "Toyo Ito",
+    "year": 2001,
+    "feature": "Open floor plates / structural tubes / flexible programme",
+    "tags": [
+      "structure",
+      "column",
+      "tube",
+      "open plan",
+      "flexibility",
+      "programme",
+      "library",
+      "media",
+      "light",
+      "services",
+      "section",
+      "floor",
+      "circulation",
+      "vertical",
+      "visual"
+    ],
+    "moves": [
+      "continuous floor plates",
+      "woven tube supports",
+      "distributed services and movement",
+      "spatially open programme"
+    ],
+    "note": "The Mediatheque combines floor plates, vertical structural tubes and a skin into a system accommodating different media and public activities.",
+    "whyRelevant": "Relevant to statements about structure, circulation, programme or flexible interior organisation rather than a particular building shape.",
+    "prompt": "What might happen if structure and services enable several uses rather than prescribing one room arrangement?",
+    "sourceLabel": "MoMA collection",
+    "sourceUrl": "https://www.moma.org/collection/works/1034"
+  },
+  {
+    "id": "quinta-monroy-elemental",
+    "name": "Quinta Monroy",
+    "designer": "ELEMENTAL / Alejandro Aravena",
+    "year": 2004,
+    "feature": "Incremental housing / framework for change",
+    "tags": [
+      "housing",
+      "adaptability",
+      "incremental",
+      "flexibility",
+      "growth",
+      "expansion",
+      "modular",
+      "ownership",
+      "participation",
+      "phasing",
+      "affordability",
+      "construction",
+      "framework",
+      "future"
+    ],
+    "moves": [
+      "designed-in room for expansion",
+      "permanent initial structure",
+      "resident-completed growth",
+      "phased construction"
+    ],
+    "note": "An initial housing framework leaves planned capacity for residents to extend homes as circumstances evolve.",
+    "whyRelevant": "Compare when adaptable design depends on future action, agency and time rather than mobile partitions.",
+    "prompt": "What should be fixed now, and what should remain open for later adaptation?",
+    "sourceLabel": "Harvard GSD case archive",
+    "sourceUrl": "https://udcsa.gsd.harvard.edu/projects/105"
   }
 ]

@@ -1,4 +1,25 @@
-## Stage C1.0 — Layout independence and drag alignment (12 October 2026)
+## Stage C1.1 — Aggregate visibility, refined alignment and pilot-informed role suggestions (12 October 2026)
+
+### New in C1.1
+
+- **Alignment:** light grey dotted, local guides, a 6-world-pixel snap threshold (instead of 9), centre/edge matching only against nearby nodes; hold Shift while dragging to temporarily bypass snapping.
+- **Selected-node zoom:** select a graph node and use Ctrl + mouse wheel on the canvas to zoom onto that node. Without a selected node, zoom remains centred on the viewport.
+- **Thought suggestions:** enriched by 230 non-duplicate ontology labels coded across P01–P10 in the corrected Pilot 01 workbook; structural goal/interpretation/action cues are given greater importance. These are *heuristic match strengths*, never calibrated probabilities or claims about future designers. Source: `data/pilot-role-examples.json`. Users retain manual category control.
+- **Fit Map:** uses the actual visible content bounds and supports smaller zoom factors so large Aggregate/Arrange maps can fit in narrow Chrome windows.
+- **Original vs Arrange:** an unstructured, naturally interwoven Original network rather than an automatic TRACEWORK-role grid. Arrange Map applies the chosen literature/framework structure, maintaining independent presentation layouts. Previously user-positioned Original nodes are never reset.
+- **Reflow Arrange:** preserved without modification.
+
+### Quick acceptance
+
+1. Aggregate → Original should show the unsorted network; Arrange should group according to the selected framework.
+2. With a large aggregate, press Fit at half-screen; all nodes should fit within the viewport.
+3. Drag nodes near one another: observe subtle dotted guides and Shift-to-bypass.
+4. Select a node; hold Ctrl and roll the mouse wheel over the map.
+5. Compare `The goal is to support private study` with `I read privacy as screening`: the first should recommend Goal; the second Interpretation.
+
+---
+
+## Historical notes: C1.0 — Layout independence and drag alignment (12 October 2026)
 
 TRACEWORK's Stage C integration begins with separate semantic-layout views and clear presentation controls. This is a complete website deployment package; extract all folders before uploading.
 
@@ -118,3 +139,14 @@ Important: TRACEWORK saves locally in the browser via `localStorage` (`tracework
 ## Research frame
 
 TRACEWORK belongs to *Traction Through Translation*: tracing the interval from source language to architectural decision. The grammar is a scaffold rather than a mandatory universal sequence; multiple reasoning frameworks and source provenances should stay legible.
+
+
+## Stage C1.2 — Operational spatial reading on every framework and node
+
+- **Every role, including Input, Interpretation, Grounding, Spatial Consequence, Evaluation, Goal and Freeform Note**, can expand a **Spatial read** on the node: intentionally simple plan and 3D/axonometric *schematics* suggested by terms in its wording. When words lack spatial cues, drawings remain generic and are expressly **not evidence or finished designs**.
+- The inspector shows distinct **Overall suggestion** (system-level design question), **Detail suggestion** (specific plan, section, 3D, measurement or operation to test), and a reasoning probe. These work within TRACEWORK, Freeform and all literature frameworks. They operationalise the user's reasoning without claiming any source author prescribed the prompts.
+- **Architectural feature-based case studies:** precedents are matched against the *current hotspot or node words*, not the general pavilion project. Role-based pavilion defaults are removed. Added cross-program references include EPFL Rolex Learning Center (topography/movement), Sendai Mediatheque (structure/programme) and Quinta Monroy (incremental adaptation). Project sources are linked. No match is shown as such rather than inventing a relevant precedent.
+- **Direct node bubble actions:** `↗ Link nodes` opens a target/direction chooser (with the existing connection rules and undo). `⌕ Case study` selects the node and opens/scrolls to its feature-matched references in the inspector. Existing drag-to-connect ports remain.
+- Only ten+ curated cases are stored locally, so the suggestions are illustrative and cannot claim exhaustive case-based retrieval, generated 3D geometry or independently verified site-specific performance.
+
+**Release note:** This is a replacement for the previous C1.1 package, not an additional ZIP to merge into GitHub. Extract the complete C1.2 ZIP before uploading; preserve `css/`, `js/`, and `data/` directories.

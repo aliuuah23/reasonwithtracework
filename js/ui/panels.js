@@ -1,7 +1,8 @@
 import { interpretationPrompt, groundingPrompt, consequencePrompt, evaluationPrompt, goalPrompt } from '../input/prompt-engine.js';
 import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
-import { findCaseStudies } from '../evidence/case-studies.js';
+import { findCaseStudies } from '../evidence/case-studies.js?v=c1.2';
+import { operationalSuggestions } from '../reasoning/operational-design.js';
 import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
@@ -57,6 +58,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
       <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p><button class="secondary-button compact hotspot-inspector-edit" data-edit-hotspot-selection="${esc(hotspot.id)}">✎ Edit source selection</button></div>
       <div class="framework-lens-note"><strong>${esc(framework.label)}</strong><span>${esc(framework.source||'')}</span><p>${esc(framework.description)}</p></div>
       ${frameworkNextForm({status:'active',label:hotspot.text},framework,role,guide)}
+      ${operationalMarkup(hotspot.text,'input',framework.label)}
       ${caseStudyMarkup(cases)}
       ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
     restoreInspectorDraft(root,key);
@@ -75,7 +77,8 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     <div class="guided-help-note">Choose a cue if useful. It will move into the same writing field so it can be extended, qualified or rewritten before it becomes a node.</div>
     <label class="field-label">Write / extend the interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
-    ${caseStudyMarkup(cases)}
+    ${operationalMarkup(hotspot.text,'input',framework.label)}
+      ${caseStudyMarkup(cases)}
     ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
   restoreInspectorDraft(root,key);
   const input=root.querySelector('#customInterpretation');
@@ -117,6 +120,7 @@ export async function renderNodeInspector(node,state,handlers){
     root.innerHTML=`
       <div class="inspector-head" style="--node-color:${colors.note}"><span class="inspector-type"><i></i>Loose note</span><h3>${esc(node.label)}</h3><p>Unclassified on purpose. Keep it loose, or convert it when its role becomes clearer.</p></div>
       <div class="inspector-section"><h4>TRACEWORK suggestion</h4><span class="classification-chip" style="--node-color:${colors[suggestion]||colors.note}"><i></i>${esc(typeLabels[suggestion]||suggestion)}</span><p style="color:var(--muted);font-size:11px;line-height:1.5;margin:9px 0 0">${esc(node.meta?.classificationReason||'The wording resembles this reasoning role.')}</p><div class="inspector-actions"><button class="primary-button compact" id="convertNote">Convert to ${esc(typeLabels[suggestion]||suggestion)}</button></div></div>
+      ${operationalMarkup(node.label,'note','Freeform')}
       ${caseStudyMarkup(cases)}
       <div class="inspector-section"><h4>Note actions</h4><div class="inspector-actions"><button class="secondary-button" id="editNode">Edit</button></div></div>`;
     restoreInspectorDraft(root,key);
@@ -149,6 +153,7 @@ export async function renderNodeInspector(node,state,handlers){
     <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progress}</div></div>
     ${metaMarkup(node,framework,frameworkRole)}
     ${next}
+    ${operationalMarkup(node.label,node.type,framework.label)}
     ${caseStudyMarkup(cases)}
     <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}${node.type==='input' && node.meta?.hotspotId?'<button class="secondary-button action-help" id="editInputHotspot">✎ Edit source selection</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
   if(framework.id!=='tracework'&&framework.id!=='freeform') bindFrameworkNext(root,node,framework,frameworkRole,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(node,text,roleId,extra));
@@ -163,9 +168,20 @@ export async function renderNodeInspector(node,state,handlers){
   root.querySelectorAll('[data-case-study]').forEach(b=>b.onclick=()=>handlers.onCaseStudy?.(b.dataset.caseStudy));
 }
 
+function operationalMarkup(text,type,frameworkLabel){
+  const s=operationalSuggestions(text,type,frameworkLabel);
+  return `<section class="inspector-section operational-reading" aria-label="Spatial translation suggestions">
+    <h4>Operational design · ${esc(s.frame)}</h4>
+    <p class="operational-disclaimer">These are questions for spatialising this wording, not generated design solutions.</p>
+    <div class="operation-choice"><strong>Overall suggestion</strong><p>${esc(s.overall)}</p></div>
+    <div class="operation-choice"><strong>Detail suggestion</strong><p>${esc(s.detail)}</p></div>
+    <div class="operation-next"><strong>Reasoning check</strong> ${esc(s.probe)}</div>
+    <p class="operational-disclaimer">Open <strong>Spatial read</strong> on the node for schematic plan / 3D tests; compare a related case below when an architectural term matches.</p>
+  </section>`;
+}
 function caseStudyMarkup(items){
-  if(!items?.length)return '';
-  return `<div class="inspector-section"><h4>Related case studies</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Specific spatial features to compare — useful when the next reasoning step feels unclear, never prescribed answers.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
+  if(!items?.length)return `<section class="inspector-section case-study-section"><h4>Architectural feature precedents</h4><p class="operational-disclaimer">No confident feature match for this wording yet. Add a specific architectural term (e.g. screen, route, seating, canopy or structure) to surface relevant projects.</p></section>`;
+  return `<div class="inspector-section case-study-section"><h4>Architectural feature precedents</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Matched to the words of this particular node, not automatically to the project typology. Compare features; never copy as prescriptions.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>Matched: ${esc((c._matched||[]).slice(0,4).join(' · ')||c.feature)} · ${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
 }
 
 function frameworkNextForm(node,framework,currentRole,guide){

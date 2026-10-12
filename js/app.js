@@ -8,21 +8,21 @@ import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
 import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=c1.0';
-import { classifyThought } from './input/thought-classifier.js';
+import { classifyThought, setPilotRoleExamples } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=c1.0';
+import { renderGraph } from './graph/graph-renderer.js?v=c1.2';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
-import { loadCaseStudies } from './evidence/case-studies.js';
+import { loadCaseStudies } from './evidence/case-studies.js?v=c1.2';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.2';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
@@ -66,12 +66,21 @@ async function init(){
   pathways = await loadPathways();
   caseStudies = await loadCaseStudies();
   pilotEvidence = await loadPilotEvidence();
+  // C1.1: local, transparently coded P01–P10 node examples inform role matches.
+  try{
+    const examplesResponse=await fetch('./data/pilot-role-examples.json?v=C1.1');
+    if(examplesResponse.ok)setPilotRoleExamples(await examplesResponse.json());
+  }catch(error){ console.warn('Pilot role examples unavailable: rule-only classification remains active.',error); }
   renderLegend(frameworkLegend('tracework'));
   bindGlobalEvents();
   bindTutorialTriggers();
   updateUndoButton();
   bindCanvasPan(els.graphViewport);
-  bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo});
+  bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo,
+    getSelectedNode:()=>{
+      const id=[...selectedNodeIds][0]||getState().activeNodeId;
+      return id?els.graphNodes?.querySelector(`[data-id="${CSS.escape(String(id))}"]`):null;
+    }});
   await seedTestProject();
   await seedAggregateTestProject();
   renderProjectShelf();
@@ -416,6 +425,8 @@ function renderGraphState(){
     onNodeClick:(id,e)=>selectNode(id,e),
     onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node)editNode(node); },
     onNodePreviewToggle:id=>toggleSpatialPreview(id),
+    onNodeQuickLink:id=>openNodeQuickLink(id),
+    onNodeCaseStudy:id=>showNodeCaseStudy(id),
     onEdgeClick:id=>selectEdge(id),
     onEdgeQuickDisconnect:id=>disconnectEdge(id),
     onNodeContext:(id,e)=>openNodeContext(id,e.clientX,e.clientY),
@@ -1802,9 +1813,39 @@ function togglePathFocus(){
   toast(`Focused on ${focused.nodes.length} reasoning move${focused.nodes.length===1?'':'s'}. Show all restores the ${workspaceMapMode==='aggregate'?'aggregate map':'canvas'}.`);
 }
 
+function showNodeCaseStudy(id){
+  selectNode(id);
+  // Inspector case studies are based on the selected node's wording and framework,
+  // not merely the parent pavilion brief. Scroll only after async matching completes.
+  let attempts=0;
+  const focus=()=>{
+    const section=document.querySelector('#inspectorContent .case-study-section');
+    if(section){section.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+    if(attempts++<8)requestAnimationFrame(focus);
+  };
+  requestAnimationFrame(focus);
+}
+function openNodeQuickLink(id){
+  const source=getState().nodes.find(n=>n.id===id);
+  if(!source)return;
+  const choices=getState().nodes.filter(n=>n.id!==id);
+  if(!choices.length){toast('Add another reasoning node before making a connection.');return;}
+  const optionHtml=choices.map(n=>`<option value="${escapeHtml(n.id)}">${escapeHtml((typeLabels[n.type]||n.type)+' · '+n.label.slice(0,90))}</option>`).join('');
+  openModal(`<h2 id="modalTitle">Link reasoning nodes</h2><p>Connect this node to another thought. Choose the direction; TRACEWORK checks the relationship through the active framework.</p><div class="node-use-card"><strong>${escapeHtml(source.label)}</strong></div><label class="field-label" for="quickLinkTarget">Other node</label><select class="field-input" id="quickLinkTarget">${optionHtml}</select><label class="field-label" for="quickLinkDirection">Relationship direction</label><select class="field-input" id="quickLinkDirection"><option value="out">This node → selected node</option><option value="in">Selected node → this node</option></select><p class="guided-validation" id="quickLinkValidation"></p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmQuickLink">Connect nodes</button></div>`,{onOpen:modal=>{
+    modal.querySelector('#confirmQuickLink').onclick=()=>{
+      const target=getState().nodes.find(n=>n.id===modal.querySelector('#quickLinkTarget').value);
+      const from=modal.querySelector('#quickLinkDirection').value==='in'?target:source;
+      const to=from===source?target:source;
+      const result=connectionCheck(from,to,getState().edges,pilotEvidence,{frameworkId:getState().frameworkId||'tracework'});
+      if(!result.ok){modal.querySelector('#quickLinkValidation').textContent=result.reason;return;}
+      closeModal();connectNodes(from,to,result);
+    };
+  }});
+}
+
 function toggleSpatialPreview(id){
   const node=getState().nodes.find(n=>n.id===id);
-  if(!node || node.type!=='consequence')return;
+  if(!node)return;
   updateState(s=>{
     const n=s.nodes.find(n=>n.id===id);
     if(n)n.meta={...(n.meta||{}),spatialPreviewOpen:!n.meta?.spatialPreviewOpen};
@@ -2202,16 +2243,27 @@ function updateAggregateControls(state){
 }
 
 function aggregateOriginalPositions(state){
-  const nodes=state.nodes||[];
-  const fallback=frameworkAggregateLayout(state,'tracework');
+  // Original is intentionally the combined *unstructured reasoning network*.
+  // Never fabricate TRACEWORK-grammar columns here; framework sorting is Arrange's job.
+  // Honour manually saved original placements, while spreading overlapping focus-local
+  // node coordinates just enough to make a legible, naturally tangled overview.
+  const nodes=state.nodes||[],hotspots=state.hotspots||[];
+  const hotspotOrder=new Map(hotspots.map((h,i)=>[h.id,i]));
+  const hotspotCount=Math.max(1,new Set(nodes.map(n=>n.meta?.hotspotId||'__loose__')).size);
   const out=new Map();
-  nodes.forEach(n=>{
+  nodes.forEach((n,index)=>{
     const original=n.meta?.aggregateOriginalPosition;
-    if(original && Number.isFinite(Number(original.x)) && Number.isFinite(Number(original.y))){out.set(n.id,{x:Number(original.x),y:Number(original.y)});return;}
-    const legacy=n.meta?.aggregatePositions?.tracework;
-    if(legacy && Number.isFinite(Number(legacy.x)) && Number.isFinite(Number(legacy.y))){out.set(n.id,{x:Number(legacy.x),y:Number(legacy.y)});return;}
-    if(Number.isFinite(Number(n.meta?.aggregateX)) && Number.isFinite(Number(n.meta?.aggregateY))){out.set(n.id,{x:Number(n.meta.aggregateX),y:Number(n.meta.aggregateY)});return;}
-    out.set(n.id,fallback.get(n.id)||{x:Number(n.x)||80,y:Number(n.y)||80});
+    if(original&&Number.isFinite(Number(original.x))&&Number.isFinite(Number(original.y))){
+      out.set(n.id,{x:Number(original.x),y:Number(original.y)});return;
+    }
+    const spot=hotspotOrder.get(n.meta?.hotspotId)??hotspots.length;
+    // Source-local x/y maintain the reasoning geometry. Small radial offsets
+    // separate otherwise-identical traces, without inventing role-based columns.
+    const angle=(spot*2.399963229728653)%(2*Math.PI);
+    const radius=92+Math.sqrt(spot)*112;
+    const x=(Number.isFinite(Number(n.x))?Number(n.x):80)+Math.cos(angle)*radius+480;
+    const y=(Number.isFinite(Number(n.y))?Number(n.y):80)+Math.sin(angle)*radius+490;
+    out.set(n.id,{x:Math.max(0,x),y:Math.max(0,y)});
   });
   return out;
 }
@@ -2346,38 +2398,32 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     return deoverlapAggregateLayout(nodes,positions);
   }
 
-  const roleIndex=new Map(categories.map((c,i)=>[c.id,i]));
-  const xByRole=new Map(categories.map((c,i)=>[c.id,90+i*470]));
-  const noteX=110+Math.max(1,categories.length)*470;
-  const hotspotOrder=[];
-  const seen=new Set();
-  (state.hotspots||[]).forEach(h=>{ if(nodes.some(n=>n.meta?.hotspotId===h.id)){ hotspotOrder.push(h.id); seen.add(h.id); } });
-  nodes.forEach(n=>{ const id=n.meta?.hotspotId||'__loose__'; if(!seen.has(id)){hotspotOrder.push(id);seen.add(id);} });
-
-  const laneGap=405;
+  // Ordered/framework layouts: each role gets a readable column, while hotspot
+  // groups stay adjacent within that role. Avoid old 405px row lanes, which
+  // multiplied whitespace and made Arrange look like a stretched spreadsheet.
+  const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
+  const byRole=new Map([...categories.map(c=>[c.id,[]]),['__note__',[]]]);
+  nodes.forEach(n=>{
+    const role=n.type==='note'?'__note__':frameworkRoleForNode(n,frameworkId)?.id||categories[0]?.id;
+    if(!byRole.has(role))byRole.set(role,[]);
+    byRole.get(role).push(n);
+  });
   const positions=new Map();
-  const counts=new Map();
-  const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
-
-  hotspotOrder.forEach((hotspotId,laneIndex)=>{
-    const cluster=nodes.filter(n=>(n.meta?.hotspotId||'__loose__')===hotspotId);
-    cluster.sort((a,b)=>{
-      const ar=frameworkRoleForNode(a,frameworkId),br=frameworkRoleForNode(b,frameworkId);
-      const ai=a.type==='note'?99:(roleIndex.get(ar?.id)??90),bi=b.type==='note'?99:(roleIndex.get(br?.id)??90);
-      return ai-bi || String(a.createdAt||'').localeCompare(String(b.createdAt||''));
+  [...byRole.entries()].forEach(([role,group],index)=>{
+    group.sort((a,b)=>{
+      const ah=hotspotIndex.get(a.meta?.hotspotId)??9999,bh=hotspotIndex.get(b.meta?.hotspotId)??9999;
+      return ah-bh||String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id));
     });
-    cluster.forEach(n=>{
-      const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
-      const role=frameworkRoleForNode(n,frameworkId);
-      const roleId=n.type==='note'?'note':role?.id;
-      const key=`${hotspotId}:${roleId||n.type}`;
-      const nth=counts.get(key)||0; counts.set(key,nth+1);
-      const jitterX=(hash(n.id)%35)-17;
-      const jitterY=(hash(`${n.id}-y`)%31)-15;
-      const baseY=70+laneIndex*laneGap;
-      const x=(n.type==='note'?noteX:(xByRole.get(roleId)??noteX))+jitterX+(laneIndex%2?18:0);
-      const y=baseY+nth*235+jitterY;
-      positions.set(n.id,{x,y});
+    let cursorY=96,lastHotspot=null;
+    group.forEach(n=>{
+      const saved=savedPosition(n);
+      if(saved){positions.set(n.id,saved);return;}
+      if(lastHotspot!==null && lastHotspot!==n.meta?.hotspotId)cursorY+=25;
+      lastHotspot=n.meta?.hotspotId;
+      const lines=Math.max(0,Math.ceil(String(n.label||'').length/34)-2);
+      const height=Math.min(240,112+lines*18+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
+      positions.set(n.id,{x:100+index*425,y:cursorY});
+      cursorY+=height+72;
     });
   });
   return deoverlapAggregateLayout(nodes,positions);
@@ -2448,7 +2494,7 @@ function setAggregateLayout(mode='original'){
   selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
   renderWorkspace();
   setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
-  toast(arranged?'Arrange map · align and present nodes here without changing your Original or Focus layout.':'Original map · source layout. Moving nodes here also shifts saved Arrange positions.');
+  toast(arranged?'Arrange map · framework-aware layout. Rearrange without altering Original.':'Original map · unstructured combined network. Source movements are reflected in Arrange.');
 }
 
 function scopedTrace(state){

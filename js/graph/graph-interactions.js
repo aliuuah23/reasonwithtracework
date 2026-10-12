@@ -4,7 +4,7 @@ export function applyZoom(viewport,stage,surface,scale,{preserveCenter=true}={})
   const old=Number(surface.dataset.zoom||1);
   const naturalW=Number(surface.dataset.worldWidth||parseFloat(surface.style.width)||1100);
   const naturalH=Number(surface.dataset.worldHeight||parseFloat(surface.style.height)||700);
-  const next=clamp(scale,.35,1.6);
+  const next=clamp(scale,.02,1.6);
 
   let worldCX=0,worldCY=0;
   if(preserveCenter){
@@ -25,12 +25,18 @@ export function applyZoom(viewport,stage,surface,scale,{preserveCenter=true}={})
 }
 
 export function fitGraph(viewport,stage,surface){
-  const minX=Number(surface.dataset.contentMinX||0),minY=Number(surface.dataset.contentMinY||0);
-  const maxX=Number(surface.dataset.contentMaxX||surface.dataset.worldWidth||1100),maxY=Number(surface.dataset.contentMaxY||surface.dataset.worldHeight||700);
-  const contentW=Math.max(320,maxX-minX),contentH=Math.max(220,maxY-minY);
-  const scale=clamp(Math.min((viewport.clientWidth-90)/contentW,(viewport.clientHeight-90)/contentH),.35,1.12);
+  // The previous .35 minimum made a large aggregate impossible to fit at half-screen.
+  const raw=[surface.dataset.contentMinX,surface.dataset.contentMinY,surface.dataset.contentMaxX,surface.dataset.contentMaxY].map(Number);
+  const [minX,minY,maxX,maxY]=raw;
+  if(!raw.every(Number.isFinite)||maxX<=minX||maxY<=minY)return applyZoom(viewport,stage,surface,1,{preserveCenter:false});
+  const availableW=Math.max(100,viewport.clientWidth-32),availableH=Math.max(100,viewport.clientHeight-32);
+  const contentW=Math.max(1,maxX-minX),contentH=Math.max(1,maxY-minY);
+  const scale=clamp(Math.min(availableW/contentW,availableH/contentH),.02,1.3);
   applyZoom(viewport,stage,surface,scale,{preserveCenter:false});
-  viewport.scrollTo({left:Math.max(0,minX*scale-45),top:Math.max(0,minY*scale-45),behavior:'smooth'});
+  // Centre actual occupied node bounds, rather than an arbitrary world origin.
+  const left=Math.max(0,((minX+maxX)*scale-viewport.clientWidth)/2);
+  const top=Math.max(0,((minY+maxY)*scale-viewport.clientHeight)/2);
+  viewport.scrollTo({left,top,behavior:'instant'});
   return scale;
 }
 
@@ -68,11 +74,20 @@ export function bindCanvasPan(viewport){
   viewport.addEventListener('pointercancel',finish);
 }
 
-export function bindWheelZoom(viewport,{getZoom,setZoom}){
+export function bindWheelZoom(viewport,{getZoom,setZoom,getSelectedNode}){
   viewport.addEventListener('wheel',e=>{
     if(!(e.ctrlKey||e.metaKey)) return;
     e.preventDefault();
     const delta=e.deltaY>0?-.08:.08;
+    const selected=getSelectedNode?.();
     setZoom(getZoom()+delta);
+    if(selected && selected.isConnected){
+      // Ctrl + mouse wheel zooms *onto* the selected card instead of the canvas centre.
+      const scale=Math.max(.02,Number(getZoom())||1);
+      const cx=selected.offsetLeft+selected.offsetWidth/2;
+      const cy=selected.offsetTop+selected.offsetHeight/2;
+      viewport.scrollLeft=Math.max(0,cx*scale-viewport.clientWidth/2);
+      viewport.scrollTop=Math.max(0,cy*scale-viewport.clientHeight/2);
+    }
   },{passive:false});
 }

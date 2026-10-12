@@ -9,7 +9,7 @@ const CANVAS_ORIGIN_Y=680;
 let lastNodeActivation={id:null,time:0};
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeDragStart,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeQuickLink,onNodeCaseStudy,onNodeDragStart,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
   selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null,frameworkId='tracework'
 }){
   const world=autoLayout(nodes);
@@ -40,6 +40,20 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId)).join('');
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
+  // Fit should measure the *rendered* cards. Long labels and expanded previews
+  // can exceed their nominal 112px height, especially in dense Aggregate maps.
+  const rendered=[...els.nodes.querySelectorAll('.graph-node')];
+  if(rendered.length){
+    const left=Math.min(...rendered.map(n=>n.offsetLeft));
+    const top=Math.min(...rendered.map(n=>n.offsetTop));
+    const right=Math.max(...rendered.map(n=>n.offsetLeft+n.offsetWidth));
+    const bottom=Math.max(...rendered.map(n=>n.offsetTop+n.offsetHeight));
+    els.surface.dataset.contentMinX=String(Math.max(0,left-14));
+    els.surface.dataset.contentMinY=String(Math.max(0,top-14));
+    els.surface.dataset.contentMaxX=String(right+14);
+    els.surface.dataset.contentMaxY=String(bottom+14);
+  }
+
   // Drag-only alignment aids, similar to editor smart guides. They never become graph data.
   let alignmentLayer=els.surface.querySelector('.graph-alignment-guides');
   if(!alignmentLayer){
@@ -52,11 +66,21 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   const verticalGuide=alignmentLayer.querySelector('.vertical');
   const horizontalGuide=alignmentLayer.querySelector('.horizontal');
   const clearGuides=()=>{verticalGuide.classList.remove('visible');horizontalGuide.classList.remove('visible');};
-  const showGuides=({x=null,y=null}={})=>{
+  const showGuides=({x=null,y=null,xFrom=null,xTo=null,yFrom=null,yTo=null}={})=>{
     verticalGuide.classList.toggle('visible',x!==null);
     horizontalGuide.classList.toggle('visible',y!==null);
-    if(x!==null)verticalGuide.style.left=`${x}px`;
-    if(y!==null)horizontalGuide.style.top=`${y}px`;
+    if(x!==null){
+      verticalGuide.style.left=`${x}px`;
+      verticalGuide.style.top=`${Math.max(0,yFrom??0)}px`;
+      verticalGuide.style.bottom='auto';
+      verticalGuide.style.height=`${Math.max(24,(yTo??size.height)-(yFrom??0))}px`;
+    }
+    if(y!==null){
+      horizontalGuide.style.top=`${y}px`;
+      horizontalGuide.style.left=`${Math.max(0,xFrom??0)}px`;
+      horizontalGuide.style.right='auto';
+      horizontalGuide.style.width=`${Math.max(24,(xTo??size.width)-(xFrom??0))}px`;
+    }
   };
   clearGuides();
 
@@ -155,7 +179,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
     el.addEventListener('click',e=>{
-      if(e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
+      if(e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview'))return;
       if(el.classList.contains('dragging'))return;
       const now=Date.now(),id=el.dataset.id;
       if(lastNodeActivation.id===id && now-lastNodeActivation.time<360){
@@ -178,6 +202,12 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
     el.querySelector('.node-type')?.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
       onNodeTypeClick?.(el.dataset.id,e);
+    });
+    el.querySelector('.node-quick-link')?.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();onNodeQuickLink?.(el.dataset.id,e);
+    });
+    el.querySelector('.node-quick-case')?.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();onNodeCaseStudy?.(el.dataset.id,e);
     });
     el.querySelector('.node-preview-toggle')?.addEventListener('click',e=>{
       e.preventDefault();e.stopPropagation();
@@ -229,9 +259,9 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
     ? `${baseHelp} Source Inputs stay tied to the brief.`
     : `${baseHelp} Click the category label to change this ${framework.id==='tracework'||framework.id==='freeform'?'node type':'framework role'}.`;
   const ports='<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drag from here to find a source for this node"></button><button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect this node forward"></button>';
-  const previewOpen=n.type==='consequence'&&Boolean(n.meta?.spatialPreviewOpen);
-  const previewButton=n.type==='consequence'?`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Expand a schematic spatial reading of this text">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`:'';
-  const preview=previewOpen?spatialPreviewMarkup(n.label):'';
+  const previewOpen=Boolean(n.meta?.spatialPreviewOpen);
+  const previewButton=`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Show schematic plan and 3D translation questions">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`;
+  const preview=previewOpen?spatialPreviewMarkup(n.label,n.type):'';
   const provenanceId=inferLegacyProvenance(n);
   const provenance=provenanceLabel(provenanceId);
   const provenanceChip=(n.type==='input'||provenanceId!=='designer')?`<span class="node-provenance" title="Origin / provenance">${escapeHtml(provenance)}</span>`:'';
@@ -240,12 +270,13 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
+      <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose another node to connect to" aria-label="Connect this reasoning node">↗ Link nodes</button><button type="button" class="node-quick-action node-quick-case" title="Find relevant feature-based architectural case studies">⌕ Case study</button></div>
       <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${previewButton}</div>
     </div></article>`;
 }
 
 
-function spatialPreviewMarkup(text=''){
+function spatialPreviewMarkup(text='',nodeType='note'){
   const lower=String(text).toLowerCase();
   const has=(...words)=>words.some(w=>lower.includes(w));
   const cues=[];
@@ -286,7 +317,7 @@ function spatialPreviewMarkup(text=''){
   if(cues.includes('reconfiguration')) ax.push('<path d="M31 56 C39 63 53 64 62 57" class="spatial-arrow" marker-end="url(#arrowAx)"/>');
 
   return `<div class="spatial-preview" aria-label="Schematic spatial reading">
-    <div class="spatial-preview-head"><strong>Possible spatial read</strong><span>schematic · text cues, not a proposed solution</span></div>
+    <div class="spatial-preview-head"><strong>Possible spatial read</strong><span>${escapeHtml(nodeType)} · schematic questions only; not generated design evidence</span></div>
     <div class="spatial-preview-grid">
       <figure><svg viewBox="0 0 100 72" aria-label="Plan sketch"><defs><marker id="arrowPlan" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z" class="spatial-marker"/></marker></defs>${plan.join('')}</svg><figcaption>plan sketch</figcaption></figure>
       <figure><svg viewBox="0 0 100 72" aria-label="Simple axonometric sketch"><defs><marker id="arrowAx" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z" class="spatial-marker"/></marker></defs>${ax.join('')}</svg><figcaption>simple 3D</figcaption></figure>
@@ -325,7 +356,7 @@ function isOnActivePath(edge,activeNodeId,edges){
 function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions,onGuides,onClearGuides}){
   let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
+    if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview'))return;
     if(locked)return;
     e.stopPropagation();
     // A text field can remain focused after the user clicks a non-focusable graph
@@ -363,25 +394,41 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     const maxOriginY=Math.max(...[...origins.values()].map(o=>o.y));
     dx=Math.min(maxX-maxOriginX,Math.max(20-minOriginX,dx));
     dy=Math.min(maxY-maxOriginY,Math.max(20-minOriginY,dy));
-    // Snap the dragged selection to nearby node edges or centres (9 world pixels).
-    // Exclude all dragged nodes and prefer the closest matching axis independently.
+    // Local, softly snapping smart guides: only compare spatially nearby cards.
+    // Prefer matching the same anchor (centre-centre or edge-edge) over arbitrary
+    // edge-to-centre snaps. Shift temporarily suppresses snapping for precision.
     const dragged=new Set(origins.keys()),primary=origins.get(el.dataset.id)||origins.values().next().value;
     const pWidth=primary.el.offsetWidth||230,pHeight=primary.el.offsetHeight||112;
     const px=primary.x+dx,py=primary.y+dy;
-    const myX=[px,px+pWidth/2,px+pWidth],myY=[py,py+pHeight/2,py+pHeight];
     let bestX=null,bestY=null;
-    positions.forEach((other,id)=>{
-      if(dragged.has(id))return;
-      const otherEl=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
-      const w=otherEl?.offsetWidth||230,h=otherEl?.offsetHeight||112;
-      const candidateX=[other.x,other.x+w/2,other.x+w];
-      const candidateY=[other.y,other.y+h/2,other.y+h];
-      myX.forEach(v=>candidateX.forEach(c=>{const delta=c-v;if(Math.abs(delta)<=9&&(!bestX||Math.abs(delta)<Math.abs(bestX.delta)))bestX={delta,guide:c};}));
-      myY.forEach(v=>candidateY.forEach(c=>{const delta=c-v;if(Math.abs(delta)<=9&&(!bestY||Math.abs(delta)<Math.abs(bestY.delta)))bestY={delta,guide:c};}));
-    });
+    if(!e.shiftKey){
+      positions.forEach((other,id)=>{
+        if(dragged.has(id))return;
+        const otherEl=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
+        const w=otherEl?.offsetWidth||230,h=otherEl?.offsetHeight||112;
+        // Ignore distant nodes: guides should describe visible neighbourhoods.
+        const nearbyX=Math.abs((px+pWidth/2)-(other.x+w/2))<340;
+        const nearbyY=Math.abs((py+pHeight/2)-(other.y+h/2))<265;
+        if(nearbyY){
+          [0,.5,1].forEach((fraction,index)=>{
+            const guide=other.x+w*fraction,delta=guide-(px+pWidth*fraction);
+            const cost=Math.abs(delta)+(index===1?0:1.25);
+            if(Math.abs(delta)<=6 && (!bestX||cost<bestX.cost))bestX={delta,guide,cost,from:Math.min(py,other.y)-16,to:Math.max(py+pHeight,other.y+h)+16};
+          });
+        }
+        if(nearbyX){
+          [0,.5,1].forEach((fraction,index)=>{
+            const guide=other.y+h*fraction,delta=guide-(py+pHeight*fraction);
+            const cost=Math.abs(delta)+(index===1?0:1.25);
+            if(Math.abs(delta)<=6 && (!bestY||cost<bestY.cost))bestY={delta,guide,cost,from:Math.min(px,other.x)-16,to:Math.max(px+pWidth,other.x+w)+16};
+          });
+        }
+      });
+    }
     if(bestX)dx+=bestX.delta;
     if(bestY)dy+=bestY.delta;
-    onGuides?.({x:bestX?.guide??null,y:bestY?.guide??null});
+    onGuides?.({x:bestX?.guide??null,y:bestY?.guide??null,
+      xFrom:bestY?.from,xTo:bestY?.to,yFrom:bestX?.from,yTo:bestX?.to});
     origins.forEach((o,id)=>{
       const x=o.x+dx,y=o.y+dy;
       o.el.style.left=`${x}px`;o.el.style.top=`${y}px`;
