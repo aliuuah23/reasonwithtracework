@@ -1,0 +1,15 @@
+TRACEWORK STAGE C1.3 — SPATIAL LITERACY STUDIO + REFERENCE CLARITY
+
+1. REPLACED C1.2 generic miniature spatial sketches with a larger term-grounded Spatial Reading Studio accessible from any reasoning node or right inspector, across all frameworks.
+2. Architectural vocabulary for vestibule/foyer, threshold, corridor/route, courtyard, atrium, ramp, screen/partition/privacy, canopy/shelter, seating, façade, daylight, stairs and flexible arrangements. Whole phrase matching; common plurals supported.
+3. For recognised terms: two different annotated plans and sections, definitions, operational explanations, constraints/questions to investigate, typological feature examples, separate built projects, and external sourced readings where verified.
+4. Distinct reference types: A. Examples of the architectural element itself; B. Named built-project precedents; C. Source articles, guides or readings. Typology of the overarching project no longer overrides a word like vestibule.
+5. Curated example: vestibule → two doors/buffer in plan and section; thermal-airlock, residential foyer and offset entry feature types; Studio Wills + Architects Singapore example; US Access Board door-clearance source and lobby definition.
+6. Multi-term support: e.g. “atrium with stairs” switches diagrams independently. Unsupported text is flagged honestly, with step-by-step investigation prompts rather than a blank image or fabricated spatial model.
+7. Node connection pop-up: identifies selected starting node and destination, shows both labels and the arrow direction, validates the connection before enabling Create.
+8. Right panel: built projects explicitly separate from feature typologies and spatial literacy. Updated tutorial and comprehensive README.
+9. Kept Stage C1.2 maps, framework selector, classifier, hotpots, project combination and undo code intact.
+
+VALIDATION: JavaScript syntax all pass; JSON parses; 13 architectural term detection cases; isolated Chrome for term modal, switching, responsive width and unknown-word fallback; isolated Chrome for link dialog and connection flow. Full project browser navigation in test environment blocked by browser administrator, so deployment acceptance testing remains necessary.
+
+LIMITATIONS: Offline curated dictionary, not live AI synthesis. Diagrams represent relationships, not dimensional, life-safety or code-compliant designs. Nodes without known spatial terms require human grounding. External case links depend on source availability.

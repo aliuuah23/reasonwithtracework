@@ -1,7 +1,7 @@
 let cache=null;
 export async function loadCaseStudies(){
   if(cache)return cache;
-  cache=await (await fetch('./data/case-studies.json?v=c1.2')).json();
+  cache=await (await fetch('./data/case-studies.json?v=c1.3')).json();
   return cache;
 }
 

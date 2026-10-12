@@ -141,7 +141,7 @@ Important: TRACEWORK saves locally in the browser via `localStorage` (`tracework
 TRACEWORK belongs to *Traction Through Translation*: tracing the interval from source language to architectural decision. The grammar is a scaffold rather than a mandatory universal sequence; multiple reasoning frameworks and source provenances should stay legible.
 
 
-## Stage C1.2 — Operational spatial reading on every framework and node
+## Stage C1.2 (previous release) — Operational spatial reading on every framework and node
 
 - **Every role, including Input, Interpretation, Grounding, Spatial Consequence, Evaluation, Goal and Freeform Note**, can expand a **Spatial read** on the node: intentionally simple plan and 3D/axonometric *schematics* suggested by terms in its wording. When words lack spatial cues, drawings remain generic and are expressly **not evidence or finished designs**.
 - The inspector shows distinct **Overall suggestion** (system-level design question), **Detail suggestion** (specific plan, section, 3D, measurement or operation to test), and a reasoning probe. These work within TRACEWORK, Freeform and all literature frameworks. They operationalise the user's reasoning without claiming any source author prescribed the prompts.
@@ -150,3 +150,22 @@ TRACEWORK belongs to *Traction Through Translation*: tracing the interval from s
 - Only ten+ curated cases are stored locally, so the suggestions are illustrative and cannot claim exhaustive case-based retrieval, generated 3D geometry or independently verified site-specific performance.
 
 **Release note:** This is a replacement for the previous C1.1 package, not an additional ZIP to merge into GitHub. Extract the complete C1.2 ZIP before uploading; preserve `css/`, `js/`, and `data/` directories.
+
+
+## Stage C1.3 — Spatial Literacy Studio (term-grounded architectural learning)
+
+- **Spatial read** on any node or right-hand inspector now opens a large accessible pop-up with labelled, term-specific *plan* and *section* diagrams, definitions, mechanisms, spatial tests, and linked references. No previous one-size-fits-all miniature drawings.
+- **Matching rules:** offline explicit architectural vocabulary with whole-term matching; displays up to four independently matched architectural terms. The examples and diagrams are educational typologies, not generated models, scales or compliance drawings.
+- **Two different reference families:** **A. Feature examples** (vestibule as entry airlock, foyer, offset doors, etc.) and **B. Named built projects** (e.g., Studio Wills + Architects apartment renovation demonstrating an entry foyer). **C. Readings** link to specific supporting sources. No parent-pavilion bias.
+- **Unsupported language:** never a blank visual and never a fabricated architectural layout. Displays the reason for insufficient match, three steps to develop spatial evidence, and example architectural terms to explore. More terms can be added via `js/reasoning/spatial-literacy.js`.
+- **Node linking:** replaced ambiguous 'selected node' wording with a source/target preview, explicit arrow direction, relationship validation and a disabled invalid Connect action.
+- **Source references:** ArchDaily (Studio Wills + Architects, 2018): https://www.archdaily.com/954840/apartment-renovation-in-singapore-studio-wills-plus-architects ; US Access Board entrances/doors and vestibules: https://www.access-board.gov/ada/guides/chapter-4-entrances-doors-and-gates/ ; Designing Buildings entrance lobbies: https://www.designingbuildings.co.uk/wiki/Lobby ; ArchDaily entry thresholds: https://www.archdaily.com/1181422/before-the-living-room-entry-thresholds-in-compact-urban-homes .
+
+### Verification examples
+1. Node text 'I want a vestibule': term detected; meaningful two-door transition in plan and section; three distinct vestibule types; Studio Wills project separately; sourced reading.
+2. Node text 'A pavilion with a vestibule': vestibule term read as a distinct architectural feature, without substituting a generic pavilion.
+3. Node text 'introduce a ramp and screens': both terms detected and switchable, with different diagrams and requirements.
+4. Node text with no known spatial term: candid no-match guide, never blank/mislabeled geometry.
+5. Link node: source and destination clearly shown, direction preview changes before connecting.
+
+**Limit:** This offline dictionary does not understand arbitrary design statements the way a generative architectural model could; its matches and diagrams cover only the curated terms. Add new terms and verified examples before claiming broader coverage.

@@ -842,3 +842,46 @@ html.tutorial-tour-active{overflow:hidden}
 .operational-disclaimer {color:var(--muted);font-size:10px;line-height:1.5;margin:2px 0 4px;}
 .operation-next {font-size:10px;line-height:1.5;}
 .case-study-section .case-study-button small {line-height:1.5;}
+
+
+/* C1.3 | spatial literacy studio: genuine term-specific diagrams and sourced examples */
+.modal:has(.spatial-modal){width:min(1030px,96vw);max-height:min(90vh,940px);padding:clamp(12px,2vw,26px);overflow-y:auto}
+.spatial-modal{font-size:13px;color:var(--text);max-width:100%}
+.spatial-modal h2{font-size:22px;margin:0 0 13px}
+.spatial-context{background:#f7f8fc;border:1px solid #e2e6ef;padding:15px;border-radius:13px;margin-bottom:13px}
+.spatial-context blockquote{margin:7px 0;font-weight:700;font-size:15px;line-height:1.45;border-left:3px solid #7c82b9;padding-left:12px}
+.spatial-context small,.spatial-subhead{font-size:11px;color:#5c6679;line-height:1.5}
+.spatial-eyebrow{display:block;font-size:10px;color:#596780;font-weight:750;letter-spacing:.05em;text-transform:uppercase}
+.spatial-term-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 16px}
+.spatial-term-tab{border:1px solid #cdd5e2;border-radius:20px;background:#fff;color:#29364a;padding:7px 11px;cursor:pointer;font-size:12px;font-weight:700}
+.spatial-term-tab.active{background:#383f65;color:white;border-color:#383f65}
+.spatial-term-panel{display:none}.spatial-term-panel.active{display:block}
+.spatial-term-intro{padding-bottom:7px}.spatial-term-intro h3{font-size:20px;margin:5px 0}.spatial-term-intro p{margin:5px 0 9px;color:#303b4c}
+.spatial-study-views{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:16px 0}
+.spatial-study-views figure{margin:0;border:1px solid #dfe3ec;border-radius:12px;background:#f9fafc;padding:8px;min-width:0}
+.spatial-literacy-svg{display:block;max-width:100%;height:auto;min-height:154px;margin:0 auto}
+.spatial-study-views figcaption{font-size:11px;color:#536077;line-height:1.4;padding:6px}
+.spatial-read-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:14px 0}
+.spatial-read-columns section{min-width:0;background:#f8f9fc;border-radius:12px;border:1px solid #e3e7ef;padding:13px}
+.spatial-read-columns h4{margin:0 0 10px;font-size:13px;color:#273247}
+.spatial-read-columns ol{padding-left:18px;margin:5px 0}.spatial-read-columns li{margin:6px 0;line-height:1.5}
+.spatial-read-columns a{color:#364b93;text-decoration:underline;text-underline-offset:3px;font-size:12px;overflow-wrap:anywhere}
+.spatial-example{background:white;border:1px solid #e4e8ee;border-radius:9px;padding:10px;margin:8px 0}
+.spatial-example strong,.spatial-example small{display:block}.spatial-example small{font-size:10px;color:#64748b;margin:3px 0}
+.spatial-example p{margin:4px 0;color:#435168;line-height:1.5;font-size:12px}
+.spatial-unmatched{background:#f8f9fc;border-radius:12px;padding:14px}
+.spatial-unmatched ol{line-height:1.8}
+.spatial-reading-card p{color:#45536a;font-size:12px;line-height:1.5}
+.spatial-reading-card .spatial-open-modal{margin:10px 0 0;width:100%;text-align:center;justify-content:center}
+.spatial-term-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.spatial-term-chips span{background:#e6ebf8;color:#334361;border-radius:20px;padding:4px 8px;font-size:11px;font-weight:700}
+.link-guide-modal .link-endpoint{border:1px solid #d9dfeb;border-radius:10px;background:#f5f7fb;padding:12px;display:grid;gap:4px;overflow-wrap:anywhere}
+.link-guide-modal .link-endpoint span{font-size:10px;color:#5c6a83;letter-spacing:.05em;font-weight:750}
+.link-guide-modal .link-endpoint strong{font-size:13px}
+.link-guide-modal .link-endpoint small{font-size:11px;color:#667085}
+.link-guide-modal .link-direction-symbol{text-align:center;padding:8px;color:#52647f;font-size:11px;font-weight:750}
+.link-guide-modal .guided-validation{line-height:1.45;overflow-wrap:anywhere}
+@media(max-width:650px){.spatial-study-views,.spatial-read-columns{grid-template-columns:minmax(0,1fr)}.modal:has(.spatial-modal){width:98vw;max-height:94vh;padding:12px}.spatial-literacy-svg{min-height:130px}}
+/* Width accounting prevents a 96vw modal plus padding from overflowing half-screen Chrome. */
+.modal:has(.spatial-modal){box-sizing:border-box;width:min(1030px,calc(100vw - 28px));max-width:100%}
+.modal .spatial-modal,.modal .spatial-modal *{box-sizing:border-box}

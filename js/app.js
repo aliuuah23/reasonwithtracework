@@ -14,18 +14,19 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=c1.2';
+import { renderGraph } from './graph/graph-renderer.js?v=c1.3';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
-import { loadCaseStudies } from './evidence/case-studies.js?v=c1.2';
+import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.2';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.3';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
+import { spatialReadModalMarkup, bindSpatialModal } from './reasoning/spatial-literacy.js';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
@@ -424,7 +425,7 @@ function renderGraphState(){
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
     onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node)editNode(node); },
-    onNodePreviewToggle:id=>toggleSpatialPreview(id),
+    onNodePreviewToggle:id=>showSpatialReadForNode(id),
     onNodeQuickLink:id=>openNodeQuickLink(id),
     onNodeCaseStudy:id=>showNodeCaseStudy(id),
     onEdgeClick:id=>selectEdge(id),
@@ -1829,19 +1830,62 @@ function openNodeQuickLink(id){
   const source=getState().nodes.find(n=>n.id===id);
   if(!source)return;
   const choices=getState().nodes.filter(n=>n.id!==id);
-  if(!choices.length){toast('Add another reasoning node before making a connection.');return;}
-  const optionHtml=choices.map(n=>`<option value="${escapeHtml(n.id)}">${escapeHtml((typeLabels[n.type]||n.type)+' · '+n.label.slice(0,90))}</option>`).join('');
-  openModal(`<h2 id="modalTitle">Link reasoning nodes</h2><p>Connect this node to another thought. Choose the direction; TRACEWORK checks the relationship through the active framework.</p><div class="node-use-card"><strong>${escapeHtml(source.label)}</strong></div><label class="field-label" for="quickLinkTarget">Other node</label><select class="field-input" id="quickLinkTarget">${optionHtml}</select><label class="field-label" for="quickLinkDirection">Relationship direction</label><select class="field-input" id="quickLinkDirection"><option value="out">This node → selected node</option><option value="in">Selected node → this node</option></select><p class="guided-validation" id="quickLinkValidation"></p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmQuickLink">Connect nodes</button></div>`,{onOpen:modal=>{
+  if(!choices.length){toast('Add a second reasoning node, then connect these two thoughts.');return;}
+  const optionHtml=choices.map(n=>`<option value="${escapeHtml(n.id)}">${escapeHtml((typeLabels[n.type]||n.type)+' — '+n.label.slice(0,100))}</option>`).join('');
+  openModal(`<div class="link-guide-modal"><h2 id="modalTitle">Connect two reasoning nodes</h2>
+    <p>A link is a relationship between two thoughts. The starting node is already chosen; now choose which other node it connects to.</p>
+    <div class="link-endpoint"><span>1 · THIS NODE (START)</span><strong>${escapeHtml(source.label)}</strong><small>${escapeHtml(typeLabels[source.type]||source.type)}</small></div>
+    <div class="link-direction-symbol">↓ relationship direction ↓</div>
+    <label class="field-label" for="quickLinkTarget">2 · CHOOSE THE OTHER NODE (DESTINATION)</label>
+    <select class="field-input" id="quickLinkTarget">${optionHtml}</select>
+    <div class="link-endpoint link-target-preview" id="linkTargetPreview"></div>
+    <label class="field-label" for="quickLinkDirection">Which thought leads to which?</label>
+    <select class="field-input" id="quickLinkDirection"><option value="out">This node → other node (a next move)</option><option value="in">Other node → this node (what led here)</option></select>
+    <p class="guided-validation" id="quickLinkValidation" role="status"></p>
+    <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmQuickLink">Create connection →</button></div></div>`,{onOpen:modal=>{
+    const picker=modal.querySelector('#quickLinkTarget');
+    const preview=modal.querySelector('#linkTargetPreview');
+    const direction=modal.querySelector('#quickLinkDirection');
+    const updatePreview=()=>{
+      const target=getState().nodes.find(n=>n.id===picker.value);
+      if(!target)return;
+      preview.innerHTML=`<span>SELECTED DESTINATION</span><strong>${escapeHtml(target.label)}</strong><small>${escapeHtml(typeLabels[target.type]||target.type)}</small>`;
+      const from=direction.value==='out'?source:target;
+      const to=direction.value==='out'?target:source;
+      const result=connectionCheck(from,to,getState().edges,pilotEvidence,{frameworkId:getState().frameworkId||'tracework'});
+      modal.querySelector('#quickLinkValidation').textContent=result.ok?`Preview: “${from.label.slice(0,42)}” → “${to.label.slice(0,42)}”`:result.reason;
+      modal.querySelector('#confirmQuickLink').disabled=!result.ok;
+    };
+    picker.onchange=updatePreview;direction.onchange=updatePreview;updatePreview();
     modal.querySelector('#confirmQuickLink').onclick=()=>{
-      const target=getState().nodes.find(n=>n.id===modal.querySelector('#quickLinkTarget').value);
-      const from=modal.querySelector('#quickLinkDirection').value==='in'?target:source;
-      const to=from===source?target:source;
+      const target=getState().nodes.find(n=>n.id===picker.value);
+      if(!target)return;
+      const from=direction.value==='out'?source:target;
+      const to=direction.value==='out'?target:source;
       const result=connectionCheck(from,to,getState().edges,pilotEvidence,{frameworkId:getState().frameworkId||'tracework'});
       if(!result.ok){modal.querySelector('#quickLinkValidation').textContent=result.reason;return;}
       closeModal();connectNodes(from,to,result);
     };
   }});
 }
+
+function showSpatialRead(text,type){
+  openModal(spatialReadModalMarkup(text,type,caseStudies),{onOpen:bindSpatialModal});
+}
+function showSpatialReadForNode(id){
+  const node=getState().nodes.find(n=>n.id===id);
+  if(node)showSpatialRead(node.label,node.type);
+}
+
+// Inspector: the same spatial studio is available across all reasoning frameworks.
+document.addEventListener('click',event=>{
+  const button=event.target.closest('.spatial-open-modal');
+  if(!button)return;
+  event.preventDefault();
+  const text=button.dataset.spatialText||'';
+  const role=button.dataset.spatialType||'note';
+  showSpatialRead(text,role);
+});
 
 function toggleSpatialPreview(id){
   const node=getState().nodes.find(n=>n.id===id);

@@ -260,8 +260,8 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
     : `${baseHelp} Click the category label to change this ${framework.id==='tracework'||framework.id==='freeform'?'node type':'framework role'}.`;
   const ports='<button class="node-port port-in" type="button" aria-label="Connect into this node" title="Drag from here to find a source for this node"></button><button class="node-port port-out" type="button" aria-label="Connect from this node" title="Drag from here to connect this node forward"></button>';
   const previewOpen=Boolean(n.meta?.spatialPreviewOpen);
-  const previewButton=`<button type="button" class="node-preview-toggle" aria-expanded="${previewOpen?'true':'false'}" title="Show schematic plan and 3D translation questions">${previewOpen?'Hide spatial read':'Spatial read'} ${previewOpen?'▴':'▾'}</button>`;
-  const preview=previewOpen?spatialPreviewMarkup(n.label,n.type):'';
+  const previewButton=`<button type="button" class="node-preview-toggle" title="Open an expanded term-specific spatial read with annotated plan and section">Spatial read ↗</button>`;
+  const preview=''; // No misleading generic drawings inside cards: open the detailed spatial learning studio.
   const provenanceId=inferLegacyProvenance(n);
   const provenance=provenanceLabel(provenanceId);
   const provenanceChip=(n.type==='input'||provenanceId!=='designer')?`<span class="node-provenance" title="Origin / provenance">${escapeHtml(provenance)}</span>`:'';
@@ -270,7 +270,7 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
-      <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose another node to connect to" aria-label="Connect this reasoning node">↗ Link nodes</button><button type="button" class="node-quick-action node-quick-case" title="Find relevant feature-based architectural case studies">⌕ Case study</button></div>
+      <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose a second node and preview the relationship" aria-label="Connect this reasoning node to another thought">↗ Connect to…</button><button type="button" class="node-quick-action node-quick-case" title="See separately listed built-project references in the right inspector; feature examples are in Spatial read">⌕ Case study</button></div>
       <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${previewButton}</div>
     </div></article>`;
 }
