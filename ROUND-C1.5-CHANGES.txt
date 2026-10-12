@@ -1,0 +1,6 @@
+TRACEWORK C1.5
+- Better selected-node spatial term resolution
+- Clear Spatial Feature Examples versus Built-Project Precedents in right inspector
+- Standalone Spatial Studio category headings
+- Preserved C1.4 diagram and reference vocabulary
+- Bumped module/style query versions

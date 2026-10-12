@@ -3,7 +3,7 @@ import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js?v=c1.3';
 import { operationalSuggestions } from '../reasoning/operational-design.js';
-import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c1.4';
+import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c1.5';
 import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
@@ -189,8 +189,8 @@ function operationalMarkup(text,type,frameworkLabel){
   </section>`;
 }
 function caseStudyMarkup(items){
-  if(!items?.length)return `<section class="inspector-section case-study-section"><h4>B. Built-project precedents (separate from feature types)</h4><p class="operational-disclaimer">No documented built-project match for this particular feature yet. Add a specific architectural term (e.g. screen, route, seating, canopy or structure) to surface relevant projects.</p></section>`;
-  return `<div class="inspector-section case-study-section"><h4>B. Built-project precedents (separate from feature types)</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Actual built-project references, separate from the definitions and examples of architectural features above. Compare features; never copy as prescriptions.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>Matched: ${esc((c._matched||[]).slice(0,4).join(' · ')||c.feature)} · ${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
+  if(!items?.length)return `<section class="inspector-section case-study-section"><h4>Built-Project Precedents</h4><p class="operational-disclaimer">No sufficiently relevant documented building is available for this wording in the curated library. Explore a specific feature above, or search for documented buildings in the Spatial Reading Studio.</p></section>`;
+  return `<div class="inspector-section case-study-section"><h4>Built-Project Precedents</h4><p style="color:var(--muted);font-size:10px;line-height:1.5;margin:-3px 0 9px">Documented buildings using a related feature. Distinct from the Spatial Feature Examples above; compare the operation, not the building form.</p><div class="case-study-list">${items.map(c=>`<div class="case-study-entry"><button class="case-study-button" data-case-study="${attr(c.id)}"><span>${esc(c.feature||'Spatial feature')} · ${esc(c.designer)} · ${esc(String(c.year))}</span><strong>${esc(c.name)}</strong><small>Matched: ${esc((c._matched||[]).slice(0,4).join(' · ')||c.feature)} · ${esc(c.prompt)}</small></button>${c.sourceUrl?`<a class="case-study-source" href="${attr(c.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(c.sourceLabel||'Project source')} ↗</a>`:''}</div>`).join('')}</div></div>`;
 }
 
 function frameworkNextForm(node,framework,currentRole,guide){

@@ -901,3 +901,11 @@ html.tutorial-tour-active{overflow:hidden}
 .spatial-axo-figure .spatial-literacy-svg{min-height:0;}
 @media(max-width:940px){.spatial-study-views:has(.spatial-axo-figure){grid-template-columns:repeat(2,minmax(0,1fr));}.spatial-axo-figure{grid-column:1/-1;}}
 @media(max-width:650px){.spatial-study-views:has(.spatial-axo-figure){grid-template-columns:minmax(0,1fr);}.spatial-axo-figure{grid-column:auto;}}
+
+/* C1.5: clear separation of feature examples and built-project precedents. */
+.spatial-feature-card,.case-study-section{min-width:0;overflow-wrap:anywhere}
+.spatial-feature-card h4,.case-study-section h4{font-size:12px;line-height:1.4;margin:0 0 8px;color:#23344d}
+.spatial-feature-item{border:1px solid #e5e9f1;border-radius:10px;background:#f9fafd;padding:9px 10px;margin:7px 0}
+.spatial-feature-item strong{display:block;font-size:12px;line-height:1.4;color:#263553}
+.spatial-feature-item p,.spatial-card-intro{color:#5e6b81;font-size:11px;line-height:1.55;margin:4px 0}
+.spatial-version{font-size:10px;font-weight:600;color:#667085;vertical-align:middle;margin-left:5px}

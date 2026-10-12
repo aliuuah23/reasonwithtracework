@@ -22,11 +22,11 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.3';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.5';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
-import { spatialReadModalMarkup, bindSpatialModal } from './reasoning/spatial-literacy.js?v=c1.4';
+import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c1.5';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
@@ -1874,7 +1874,12 @@ function showSpatialRead(text,type,focusedText=''){
 }
 function showSpatialReadForNode(id){
   const node=getState().nodes.find(n=>n.id===id);
-  if(node)showSpatialRead(node.label,node.type);
+  if(node){
+    const fromHotspot=node.meta?.hotspotId?getState().hotspots?.find(h=>h.id===node.meta.hotspotId)?.text:'';
+    const candidates=[node.label,node.text,node.meta?.sourceText,fromHotspot].filter(Boolean);
+    const text=candidates.find(v=>detectSpatialTerms(v).length)||candidates[0]||'';
+    showSpatialRead(text,node.type);
+  }
 }
 
 // Inspector: the same spatial studio is available across all reasoning frameworks.
@@ -1886,7 +1891,11 @@ document.addEventListener('click',event=>{
   const state=getState();
   const active=state.nodes?.find(n=>n.id===state.activeNodeId)||state.nodes?.find(n=>selectedNodeIds.has(n.id));
   const hot=state.hotspots?.find(h=>h.id===state.activeHotspotId);
-  const text=button.dataset.spatialText||active?.label||hot?.text||'';
+  const inspectorHeading=button.closest('#inspectorContent')?.querySelector('.inspector-head h3')?.textContent?.trim();
+  // Prefer a term-bearing sentence from the ACTIVE inspector. Some old saved
+  // hotspots and asynchronous inspector redraws retain outdated data-* text.
+  const candidates=[inspectorHeading,button.dataset.spatialText,active?.label,hot?.text].filter(v=>typeof v==='string'&&v.trim());
+  const text=candidates.find(v=>detectSpatialTerms(v).length)||candidates[0]||'';
   const role=button.dataset.spatialType||active?.type||(hot?'input':'note');
   showSpatialRead(text,role);
 });

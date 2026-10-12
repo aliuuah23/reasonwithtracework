@@ -1,3 +1,28 @@
+# TRACEWORK Stage C1.5 — Final Spatial Reading & Inspector Tightening
+
+**Purpose:** Keep the C1.4 spatial diagrams, user-driven term investigation and supported-vocabulary limits intact while making automatic term recognition more reliable and the right inspector easier to understand.
+
+## C1.5 changes
+
+1. **Term resolution:** Spatial Reading opens from the current selected inspector sentence or active graph node. Older cached data attributes and legacy source labels no longer automatically override a detected architectural term. The pop-up displays a small C1.5 version marker for deployment checks.
+2. **Right panel:** Feature studies and built-project precedents are visibly separate. Spatial Feature Examples shows up to three specific variants of the recognised element; Built-Project Precedents shows named documented buildings (or explicitly says there is no relevant built match). No unexplained A/B numbering.
+3. **Studio categories:** Spatial Feature Examples, Built Projects Using This Feature, and Readings/Guidance/Drawings use self-contained titles without A/B/C labels.
+4. **Accuracy:** Curated offline vocabulary only. Unsupported wording does not produce an unrelated diagram; users can select and investigate any phrase manually.
+5. **Existing functionality:** map arrangements, alignment, zoom, classifier, editable hotspots, node linking, case-reference links, Ctrl+Z and tutorials are otherwise unchanged.
+
+## Quick acceptance
+
+- Select the Goal node **I want a vestibule** and click Spatial Read directly. Verify Vestibule plan and section open *without* typing it into the search.
+- Read the right inspector: **Spatial Feature Examples** and **Built-Project Precedents** should be distinct blocks, with no orphan **B.** heading.
+- Search for an unsupported phrase in Spatial Reading Studio; confirm there is no fabricated diagram.
+- Inspect the Spatial Reading Studio's **C1.5** version label to rule out stale JS imports.
+
+## Known limitations and release status
+
+This is a curated spatial reading resource, not a general AI model generating verified architecture for arbitrary text. Project precedents exist only where sufficiently documented. A final end-to-end project trace, project merge/reopen, and release regression still warrant acceptance testing before declaring full freeze.
+
+---
+
 # TRACEWORK Stage C1.4 — Spatial Reading / Tutorial Repair
 
 **Main fix:** Spatial Reading Studio now passes actual selected node text from both the inspector and map, and allows searching or highlighting an architectural phrase from the node quote. The result gives precise diagrams when terms are supported, and does not invent one for unknown wording.
