@@ -1,0 +1,12 @@
+TRACEWORK C2.4 — Final homepage and navigation usability pass (12 Oct 2026)
+
+1. Removed two confusing homepage controls: Restore exported JSON and Keep 2 test briefs. No data or imports were deleted; the import feature remains at My Trace > Import saved JSON, and example restoration remains available from the homepage's separate Restore long + short test projects button.
+2. Pathway Bank: when no trace is open, show a clear empty state and Go to Workspace action, rather than an inactive search with no explanation.
+3. My Trace: when no trace is open, list existing projects or show No traces saved yet. Import saved JSON remains available even without a project; hide export, audit, map export and destructive reset actions unless a trace is open.
+4. Discussion: show an empty discussion page with explanation and Workspace CTA when no project is active, rather than an inactive form. When a trace opens, restore the normal project discussion form and node-anchored commenting.
+5. The primary ribbon remains usable under 1050px wide, on a compact horizontally scrollable second row; it no longer vanishes on half-screen/mobile views.
+6. Home confirmation and tutorial text updated to explain the new interface.
+6. Retained C2.3 module startup repair, restored sample projects, C2.2 framework slideshow, spatial reading, map exports, map arrangement and undo.
+7. No stored project was migrated, erased or reset.
+
+Validation target: no-project ribbon navigation, CTA home, import availability, project-specific controls only with project, examples restore, full workspace and discussion after opening saved example, JS syntax, ZIP integrity.

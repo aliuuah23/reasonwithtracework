@@ -10,9 +10,9 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=c2.0">
+  <link rel="stylesheet" href="css/components.css?v=c2.4-final">
   <link rel="stylesheet" href="css/graph.css?v=c2.0">
-  <link rel="stylesheet" href="css/responsive.css?v=c2.0">
+  <link rel="stylesheet" href="css/responsive.css?v=c2.4-final">
 </head>
 <body>
   <header class="topbar">
@@ -69,7 +69,7 @@
         </div>
       </div>
 
-      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Local for now · future accounts can use private studios or classrooms.</span></div><div class="project-grid" id="projectShelf"></div><div class="project-shelf-tools"><button type="button" class="secondary-button" id="combineProjectsButton" disabled>Combine projects (select 2+)</button><button type="button" class="secondary-button" id="importJsonHomeButton">Restore exported JSON</button><div class="test-cleanup-actions" id="testCleanupActions"></div></div></section>
+      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Local for now · future accounts can use private studios or classrooms.</span></div><div class="project-grid" id="projectShelf"></div><div class="project-shelf-tools"><button type="button" class="secondary-button" id="combineProjectsButton" disabled>Combine projects (select 2+)</button></div></section>
 
       <div class="landing-proof" aria-label="TRACEWORK workflow">
         <span>Language</span><i></i><span>Interpretation</span><i></i><span>Grounding</span><i></i><span>Spatial consequence</span><i></i><span>Evaluation</span><i></i><span>Goal</span>
@@ -286,11 +286,11 @@
             <p>Chosen, alternative, unresolved and rejected paths stay visible so the design can be discussed later.</p>
           </div>
           <div class="trace-actions">
-            <button class="secondary-button" id="exportJsonButton">Export project</button>
+            <button class="secondary-button" data-requires-project id="exportJsonButton">Export project</button>
             <button class="secondary-button" id="importJsonButton" type="button">Import saved JSON</button><input type="file" id="importJsonFile" accept=".json,application/json" hidden>
-            <button class="secondary-button" id="projectAuditButton" type="button">Project check</button>
-            <button class="secondary-button" id="exportMapTraceButton" type="button">Export map · SVG / PNG / PDF</button>
-            <button class="secondary-button danger-subtle" id="resetLocalDataButton">Reset local data</button>
+            <button class="secondary-button" data-requires-project id="projectAuditButton" type="button">Project check</button>
+            <button class="secondary-button" data-requires-project id="exportMapTraceButton" type="button">Export map · SVG / PNG / PDF</button>
+            <button class="secondary-button danger-subtle" data-requires-project id="resetLocalDataButton">Reset local data</button>
           </div>
         </div>
         <div class="trace-dashboard" id="traceDashboard"></div>
@@ -309,7 +309,7 @@
             <h3>Project discussion</h3>
             <div class="discussion-list" id="discussionList"></div>
           </section>
-          <aside class="discussion-card">
+          <aside class="discussion-card" id="discussionComposerCard">
             <h3>Add a note</h3>
             <label class="field-label" for="discussionScope">Attach to</label>
             <select class="field-input" id="discussionScope"><option value="project">Whole project</option></select>
@@ -330,6 +330,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=c2.3-recovery"></script>
+  <script type="module" src="js/app.js?v=c2.4-final"></script>
 </body>
 </html>

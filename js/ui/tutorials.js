@@ -12,7 +12,7 @@ const tutorials = {
       {selector:'.brief-mode-toggle',title:'Choose how the source enters',body:'Quick brief is for compact prompts. Long brief / document is for larger briefs that can be filed into editable chunks.'},
       {selector:'#landingBrief',title:'Start from real language',body:'Paste the wording you actually received or are working with. TRACEWORK begins from language rather than assuming the design problem is already resolved.'},
       {selector:'#startTracingButton',title:'Enter the reasoning workspace',body:'Start tracing creates the project locally in this browser. Nothing is published by opening a trace.'},
-      {selector:'#projectShelf',title:'Return to saved traces',body:'Saved projects remain in this browser. Open an existing trace, combine projects while retaining source provenance, or restore a previously exported JSON using Restore exported JSON.'}
+      {selector:'#projectShelf',title:'Return to saved traces',body:'Saved projects remain in this browser. Open an existing trace or combine projects while retaining source provenance. To recover a JSON backup, open My Trace and choose Import saved JSON.'}
     ]
   },
   landing: {

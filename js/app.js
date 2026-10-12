@@ -164,7 +164,6 @@ function bindGlobalEvents(){
   $('#exportMapButton').onclick=openMapExport;
   $('#exportMapTraceButton').onclick=()=>{showView('workspace');openMapExport();};
   $('#importJsonButton').onclick=()=>$('#importJsonFile').click();
-  $('#importJsonHomeButton').onclick=()=>$('#importJsonFile').click();
   $('#importJsonFile').onchange=handleProjectImport;
   $('#projectAuditButton').onclick=openProjectAudit;
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
@@ -377,7 +376,14 @@ function showView(view){
   else if(view==='trace') hasProject?renderTraceDashboard(getState()):renderSavedTraceLibrary();
   else if(view==='discussion') hasProject?renderDiscussion():renderDiscussionBlank();
 
-  const exportButton=$('#exportJsonButton'); if(exportButton) exportButton.disabled=!hasProject;
+  // These actions require an open project. Import remains accessible in
+  // My Trace even if all projects have been deleted or the browser is new.
+  document.querySelectorAll('[data-requires-project]').forEach(button=>{
+    button.classList.toggle('hidden',!hasProject);
+    button.disabled=!hasProject;
+  });
+  const composer=$('#discussionComposerCard');
+  if(composer)composer.classList.toggle('hidden',!hasProject);
   window.scrollTo({top:0,behavior:'auto'});
 }
 
@@ -984,17 +990,30 @@ function textOffsetWithin(root,node,offset){
   return total;
 }
 
+// Clear empty states keep every top-ribbon destination usable before a
+// trace is opened. The navigation must never appear broken or do nothing.
+function emptySubview(title,description,action='Go to Workspace'){
+  return `<div class="trace-empty-view"><span class="trace-empty-symbol" aria-hidden="true">◇</span><h3>${escapeHtml(title)}</h3><p>${escapeHtml(description)}</p><button type="button" class="secondary-button empty-go-workspace">${escapeHtml(action)} →</button></div>`;
+}
+function wireEmptyStateActions(root){
+  root?.querySelectorAll('.empty-go-workspace').forEach(button=>button.onclick=()=>showView('workspace'));
+}
 function renderPathwayBlank(){
   const root=$('#pathwayGrid');
   if(!root)return;
-  const search=$('#pathwaySearch'); if(search){search.value='';search.disabled=true;}
-  root.innerHTML='<div class="front-subview-note">Start or open a trace in Workspace first. Pathway Bank will then respond to the language and reasoning in that project rather than showing generic pathways.</div>';
+  const search=$('#pathwaySearch');
+  if(search){search.value='';search.disabled=true;search.placeholder='Open a trace to search its pathways';search.closest('.search-field')?.classList.add('hidden');}
+  root.innerHTML=emptySubview('No active reasoning pathway yet','Open or start a trace to explore pathways connected to its design language. This bank does not prescribe a solution.');
+  wireEmptyStateActions(root);
 }
 
 function renderSavedTraceLibrary(){
   const root=$('#traceDashboard'); if(!root)return;
   const projects=listProjects();
-  if(!projects.length){ root.innerHTML='<div class="empty-state-card" style="grid-column:1/-1">No traces are saved in this browser yet. Start one in Workspace and it will appear here.</div>'; return; }
+  if(!projects.length){
+    root.innerHTML=emptySubview('No traces saved yet','Your reasoning maps and project history will appear here once you start a trace. You can also import a previously exported project using Import saved JSON above.');
+    wireEmptyStateActions(root);return;
+  }
   root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
   root.querySelectorAll('[data-open-library-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openLibraryProject));
   root.querySelectorAll('[data-delete-library-project]').forEach(b=>b.onclick=()=>confirmDeleteSavedProject(b.dataset.deleteLibraryProject));
@@ -1002,15 +1021,20 @@ function renderSavedTraceLibrary(){
 
 function renderDiscussionBlank(){
   const list=$('#discussionList'),scope=$('#discussionScope'),text=$('#discussionText'),button=$('#addDiscussionButton'),preview=$('#discussionAnchorPreview');
-  if(list)list.innerHTML='<div class="empty-state-card" style="padding:28px">Open or start a trace first. Discussion belongs to a specific project, so nothing is shared or attached globally.</div>';
-  if(scope){scope.innerHTML='<option>Open a trace to attach a note</option>';scope.disabled=true;}
-  if(text){text.value='';text.disabled=true;text.placeholder='Open a trace first…';}
+  if(list){
+    list.innerHTML=emptySubview('No project discussion yet','Discussion is available here even before you open a project. Open or start a trace to add a comment, critique or rationale linked to that project or a specific node. Notes stay in this browser.');
+    wireEmptyStateActions(list);
+  }
+  // There is no global discussion backend; hide the inactive composer instead
+  // of showing controls that appear interactive but cannot submit.
+  if(scope){scope.innerHTML='<option value="project">Whole project</option>';scope.disabled=true;}
+  if(text){text.value='';text.disabled=true;}
   if(button)button.disabled=true;
   if(preview){preview.classList.add('hidden');preview.innerHTML='';}
 }
 
 async function renderPathwayCards(query=''){
-  const search=$('#pathwaySearch'); if(search)search.disabled=false;
+  const search=$('#pathwaySearch'); if(search){search.disabled=false;search.placeholder='Search a concept, e.g. flexibility';search.closest('.search-field')?.classList.remove('hidden');}
   const items=await searchPathways(query); const root=$('#pathwayGrid');
   root.innerHTML=items.length?items.map(pathCard).join(''):'<div class="empty-state-card">No starter pathways match that search.</div>';
   root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(items.find(p=>p.id===b.dataset.inspectPath)));
@@ -1069,7 +1093,7 @@ function confirmRejectBranch(branchId,node){
 
 function confirmReturnHome(){
   saveProject(getState());
-  openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is saved in this browser. Going home closes the active workspace session, so Pathway Bank, My Trace and Discussion will no longer carry this project until you reopen it.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();resetState();selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();showLanding();}});
+  openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is saved in this browser. Going home closes the active workspace session. Pathway Bank, My Trace and Discussion stay accessible, and the project can be reopened from Your traces.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();resetState();selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();showLanding();}});
 }
 
 function confirmLeaveForAbout(){
@@ -1265,12 +1289,6 @@ function renderProjectShelf(){
   const projects=allProjects;
   wrap.classList.toggle('hidden',!projects.length);
   root.innerHTML=projects.map(p=>`<article class="project-card"><label class="project-select-label"><input type="checkbox" data-merge-project="${escapeHtml(p.projectId)}" ${projectMergeSelection.has(p.projectId)?'checked':''} aria-label="Select ${escapeHtml(shelfName(p))} for combining"></label><div class="project-description"><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
-  const cleanup=$('#testCleanupActions');
-  if(cleanup){
-    const stale=allProjects.filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
-    cleanup.innerHTML=stale.length?`<button type="button" class="secondary-button" id="tidyTestProjectsButton">Keep 2 test briefs · retire ${stale.length} old test${stale.length===1?'':'s'}</button>`:'';
-    cleanup.querySelector('#tidyTestProjectsButton')?.addEventListener('click',confirmCleanTestProjects);
-  }
   const combineButton=$('#combineProjectsButton');
   if(combineButton){
     combineButton.disabled=projectMergeSelection.size<2;

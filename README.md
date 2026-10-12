@@ -1,3 +1,48 @@
+# TRACEWORK C2.4 — Final Usability Pass
+
+**12 October 2026 · built on C2.3 critical recovery.**
+
+## What's new
+
+- **Clear homepage:** the confusing *Restore exported JSON* and *Keep 2 test briefs* actions have been removed from the project shelf. Projects themselves are unchanged.
+- **Safe recovery remains:** choose **My Trace → Import saved JSON** at any time, including before opening a project. The **Restore long + short test projects** button remains under the main brief field; it recreates only missing built-in examples and does not replace work.
+- **Responsive ribbon navigation:** at half-screen widths, a compact horizontal ribbon is accessible rather than hidden.
+- **Meaningful navigation with no project:** Pathway Bank, My Trace and Discussion open readable empty states with an action to return to Workspace, rather than disabled controls that look broken. My Trace shows any saved projects, even without an active project.
+- **Contextual tools:** when no project is open, My Trace hides project-only export/audit/reset controls but continues to offer JSON recovery. Project discussion and its node-anchored form return when a project is opened.
+- **No migrations or resets:** current local projects, frameworks, graphs, spatial reads, exports, undo and discussions remain saved in the browser.
+
+## Quick start
+
+1. On **Workspace**, paste a brief, load an example, restore the long/short samples, or open an existing trace under **Your traces**.
+2. On **Pathway Bank**, explore prompts informed by the active design trace. Without a project, the empty page explains how to start.
+3. On **My Trace**, inspect history, alternatives and sources. Import a previous JSON backup from this tab whenever needed; once a project is open, SVG/PNG/PDF map and JSON project exports are available.
+4. On **Discussion**, attach a local question, critique or design rationale to a project or node. The page remains visible without an active project, but does not falsely suggest global/community posting is available.
+5. On **About**, access the clickable framework walkthroughs and linked reading library.
+
+## Project safety and known limits
+
+- Projects are saved to **this browser**, not synced to an account. Back up meaningful work as JSON periodically.
+- Combining projects copies reasoning and keeps originals, while restoring examples only recreates missing sample IDs.
+- Spatial reads are schematic, curated aids to design reasoning, not precise automatic design drawings for arbitrary phrases. If a term is unfamiliar, TRACEWORK offers research/reading directions instead of fabricating a model.
+- Discussion is local to an open project; it is not a public or shared forum.
+- User-journey and map-export behaviour still need end-to-end testing with a complete studio trace, beyond the targeted interface tests for this release.
+
+## Deployment
+
+Extract this ZIP, then upload the **contents of the extraction** to the GitHub repository root, keeping `css/`, `data/` and `js/` nested. Wait for GitHub Pages to deploy and refresh once using Ctrl+Shift+R. Never clear site data to install an update.
+
+## Release lineage
+
+- **B1.5–B2.3:** hotspot highlighting, editing, responsive UI, undo, framework selection and map layouts.
+- **C1.0–C1.5:** map organisation, classifier, spatial-reading studio, feature examples and built precedent organisation.
+- **C2.0–C2.2:** audits, exports, JSON restore, linked readings and framework walkthroughs.
+- **C2.3:** repaired a module parse error that had disabled site navigation and sample restoration.
+- **C2.4:** simplified homepage and safe project-less ribbon navigation.
+
+See `ROUND-C2.4-FINAL-USABILITY.txt` and earlier `ROUND-*` files for detailed history.
+
+---
+
 # TRACEWORK C2.3 — Critical Site Recovery
 
 **12 October 2026 · recovery release built from C2.2.**

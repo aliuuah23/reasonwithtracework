@@ -995,3 +995,12 @@ html.tutorial-tour-active{overflow:hidden}
 .reference-entry-footer a{font-size:12px}
 .reference-entry-footer small{font-size:10px;color:#73798b}
 @media(max-width:650px){.framework-explorer-backdrop{padding:8px}.framework-explorer-dialog{max-height:94vh;border-radius:14px}.framework-explorer-roles{grid-template-columns:1fr}.framework-explorer-top{padding:17px 16px 8px}.framework-explorer-body{padding:12px 16px}.framework-explorer-progress{margin:8px 16px 0}.framework-explorer-footer{padding:12px 13px 15px}.framework-explorer-control{min-width:0;padding:9px}.framework-explorer-dots{gap:5px}}
+
+/* C2.4 — meaningful empty views without an active project. */
+.trace-empty-view{grid-column:1/-1;width:min(100%,720px);margin:24px auto;padding:40px clamp(18px,4vw,48px);border:1px dashed var(--border-strong);border-radius:20px;background:var(--surface);text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;box-sizing:border-box;}
+.trace-empty-view .trace-empty-symbol{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:#f0efff;color:#5a56d9;font-size:30px;line-height:1;}
+.trace-empty-view h3{margin:2px 0 0;font-size:20px;line-height:1.25;letter-spacing:-.02em;color:var(--text);}
+.trace-empty-view p{max-width:490px;margin:0 0 6px;font-size:13px;line-height:1.65;color:var(--muted);}
+.trace-empty-view button{margin-top:5px;}
+#traceView [data-requires-project].hidden,#discussionComposerCard.hidden{display:none!important;}
+@media(max-width:760px){.trace-empty-view{margin:10px auto;padding:26px 17px}.trace-empty-view h3{font-size:18px}}
