@@ -1,7 +1,7 @@
 {
   "version": 3,
   "projectId": "tracework-test-aggregate-pavilion-v1",
-  "projectName": "Aggregate test trace — Student pavilion",
+  "projectName": "Long brief — Flexible Pavilion",
   "brief": "PROJECT AIM\n\nDesign a small pavilion for university students on campus. The pavilion should support everyday pause, rest and informal use between classes.\n\nUSERS\n\nThe pavilion should accommodate both individuals and small groups. Students may work alone, talk, eat or gather in changing group sizes.\n\nENVIRONMENT\n\nThe pavilion should respond to heat, rain, natural ventilation, shade and existing vegetation. It should remain visually open while still providing shelter.\n\nMOVEMENT\n\nStudents should be able to approach and move through the pavilion easily. The main circulation route should remain unobstructed.\n\nPRIVACY\n\nDifferent degrees of privacy should be possible without completely enclosing the pavilion.\n\nSEATING\n\nProvide seating that can support both individual and collective occupation. The pavilion should later accommodate twenty additional users without increasing its sheltered footprint.\n\nDURATION\n\nSupport short pauses between classes as well as longer periods of study, rest and social occupation.",
   "briefMode": "document",
   "briefFileName": "",
@@ -107,11 +107,11 @@
     },
     {
       "id": "agg-hot-5",
-      "text": "degrees of privacy",
+      "text": "Different degrees of privacy",
       "concept": "degrees of privacy",
-      "start": 631,
+      "start": 621,
       "end": 649,
-      "reason": "Privacy is relational rather than a single enclosed condition.",
+      "reason": "Privacy is relational rather than a single enclosed condition; the entire phrase is the hotspot.",
       "chunkId": "chunk-5",
       "source": "suggested"
     },

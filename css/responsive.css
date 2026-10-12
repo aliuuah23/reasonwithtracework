@@ -123,3 +123,39 @@
   .canvas-state-actions .trace-check-button{flex:0 1 auto}
   .aggregate-controls select{flex:1 1 120px}
 }
+
+/* Round B1.1 · edge-safe classifier help in compressed workspaces */
+@media (max-width:1280px){
+  .thought-match.classification-help:nth-child(-n+2)::after{
+    left:0;right:auto;transform:translate(0,3px);
+  }
+  .thought-match.classification-help:nth-child(-n+2):hover::after,
+  .thought-match.classification-help:nth-child(-n+2):focus-visible::after{
+    transform:translate(0,0);
+  }
+  .thought-match.classification-help:nth-last-child(-n+2)::after{
+    left:auto;right:0;transform:translate(0,3px);
+  }
+  .thought-match.classification-help:nth-last-child(-n+2):hover::after,
+  .thought-match.classification-help:nth-last-child(-n+2):focus-visible::after{
+    transform:translate(0,0);
+  }
+}
+
+
+/* Round B1.2 · never hide or ellipsise classifier reasoning at narrow widths */
+@media (max-width:1280px){
+  .thought-reading #thoughtReason{display:block!important;flex:1 0 100%;width:100%;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
+@media (max-width:560px){
+  .thought-reading small#thoughtReason{display:block!important}
+}
+
+
+/* Round B1.3 · preserve complete classifier reasoning at every responsive width */
+@media (max-width:1280px){
+  .thought-reason{display:block!important;width:auto!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
+@media (max-width:560px){
+  .thought-reason{display:block!important}
+}

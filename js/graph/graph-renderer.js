@@ -9,7 +9,7 @@ const CANVAS_ORIGIN_Y=680;
 let lastNodeActivation={id:null,time:0};
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeDragStart,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
   selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null,frameworkId='tracework'
 }){
   const world=autoLayout(nodes);
@@ -175,6 +175,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
         if(pos){pos.x=x;pos.y=y;}
         redrawEdges();
       },
+      onDragStart:ids=>onNodeDragStart?.(ids),
       onMove:(id,x,y)=>onNodeMove?.(id,x-CANVAS_ORIGIN_X,y-CANVAS_ORIGIN_Y),
       getScale
     });
@@ -299,12 +300,17 @@ function isOnActivePath(edge,activeNodeId,edges){
   return path.has(edge.id);
 }
 
-function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
+function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
   let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
     if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
     if(locked)return;
     e.stopPropagation();
+    // A text field can remain focused after the user clicks a non-focusable graph
+    // card. Blur it here so Ctrl/Cmd+Z after a drag belongs to the canvas rather
+    // than silently undoing text in the command line.
+    const focused=document.activeElement;
+    if(focused && focused!==el && focused.matches?.('input,textarea,select,[contenteditable="true"]')) focused.blur();
     const dragIds=getDragIds?.()||[el.dataset.id];
     origins=new Map();
     dragIds.forEach(id=>{
@@ -321,8 +327,13 @@ function bindDrag(el,{bounds,onLiveMove,onMove,getScale,locked=false,getDragIds=
     const scale=Math.max(.01,Number(getScale?.()||1));
     let dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
     if(Math.abs(dx)+Math.abs(dy)<=1&&!moved)return;
-    moved=true;
-    origins.forEach(({el:target})=>target.classList.add('dragging'));
+    if(!moved){
+      // Capture undo exactly once, immediately before the first visual movement.
+      // A click without movement therefore creates no fake undo step.
+      onDragStart?.([...origins.keys()]);
+      moved=true;
+      origins.forEach(({el:target})=>target.classList.add('dragging'));
+    }
     const maxX=Math.max(20,bounds.width-250),maxY=Math.max(20,bounds.height-112);
     const minOriginX=Math.min(...[...origins.values()].map(o=>o.x));
     const minOriginY=Math.min(...[...origins.values()].map(o=>o.y));

@@ -1,7 +1,7 @@
 {
   "version": 3,
   "projectId": "tracework-test-pavilion",
-  "projectName": "My test trace \u2014 Flexible pavilion",
+  "projectName": "Short brief — Flexible Pavilion",
   "brief": "Design a flexible pavilion for university students that supports community interaction and individual use. Add 20 more seats for peak periods without increasing the sheltered footprint, while keeping the main pedestrian route unobstructed.",
   "hotspots": [
     {
@@ -84,7 +84,7 @@
       "label": "Physical reconfiguration",
       "branchId": "trace-hotspot-test-1",
       "meta": {
-        "who": "Individual users \u00b7 Small groups",
+        "who": "Individual users · Small groups",
         "when": "Throughout the day"
       },
       "status": "active",

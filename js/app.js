@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.8';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js';
+import { renderGraph } from './graph/graph-renderer.js?v=b1.8';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.8';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -58,6 +58,7 @@ let aggregateArrangeSession = null;
 let aggregateArrangeBlend = 100;
 const undoStack = [];
 const MAX_UNDO = 30;
+const projectMergeSelection=new Set();
 
 async function init(){
   cacheEls();
@@ -150,6 +151,12 @@ function bindGlobalEvents(){
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
   $('#addDiscussionButton').onclick=addDiscussionNote;
   els.freeThoughtInput.addEventListener('input',updateThoughtSuggestion);
+  // Explicitly keep editing keys native inside the command line. The workspace
+  // has global Delete/Ctrl+Z shortcuts, so this guard prevents a focused textarea
+  // from ever deleting a node or consuming its own text undo/delete action.
+  els.freeThoughtInput.addEventListener('keydown',e=>{
+    if(['Backspace','Delete'].includes(e.key) || ((e.ctrlKey||e.metaKey) && ['z','y'].includes(e.key.toLowerCase()))) e.stopPropagation();
+  });
   els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
   if(els.thoughtProvenanceSelect) els.thoughtProvenanceSelect.addEventListener('change',updateThoughtSuggestion);
   els.addFreeThoughtButton.onclick=addFreeThought;
@@ -168,7 +175,8 @@ function bindGlobalEvents(){
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   if(els.arrangeBlendSlider) els.arrangeBlendSlider.oninput=()=>applyAggregateArrangeBlend(Number(els.arrangeBlendSlider.value)||0);
-  document.addEventListener('keydown',handleWorkspaceKeydown);
+  document.addEventListener('keydown',handleWorkspaceKeydown,{capture:true});
+  bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
     if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
@@ -355,7 +363,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
+  renderBrief(state,{onHotspot:selectHotspot,onDeleteHotspot:deleteHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   updateMapModeControls(state);
   updateFrameworkControls(state);
   if(workspaceMapMode==='aggregate') updateAggregateControls(state);
@@ -414,6 +422,11 @@ function renderGraphState(){
     onNodeTypeClick:(id,e)=>openNodeTypeMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence,{frameworkId:getState().frameworkId}),
+    onNodeDragStart:ids=>{
+      // Capture the snapshot before any pointer movement mutates the rendered
+      // positions. One drag gesture = one undo step, including groups/selections.
+      checkpoint((ids||[]).length>1?'move selected reasoning nodes':'move reasoning node');
+    },
     onNodeMove:(id,x,y)=>{
       let materialised=null;
       if(workspaceMapMode==='aggregate' && aggregateArrangeSession)materialised=currentAggregateArrangement(getState());
@@ -535,6 +548,25 @@ async function selectHotspot(id){
   const latest=getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
   await renderHotspotInspector(hotspot,getState(),hotspotHandlers(latest?.id));
   setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`),canvasZoom),80);
+}
+
+function deleteHotspot(id){
+  const state=getState(),hotspot=state.hotspots.find(h=>h.id===id);
+  if(!hotspot)return;
+  const inputs=state.nodes.filter(n=>n.type==='input'&&n.meta?.hotspotId===id);
+  const downstream=state.edges.filter(e=>inputs.some(n=>n.id===e.source||n.id===e.target)).length;
+  if(!window.confirm(`Delete hotspot “${hotspot.text}”?${inputs.length?` Its ${inputs.length} source node(s) will also be removed.`:''}${downstream?' Connected reasoning nodes will remain, but their wires to this source will be disconnected.':''} You can undo this with Ctrl+Z.`))return;
+  checkpoint('delete hotspot');
+  const removed=new Set(inputs.map(n=>n.id));
+  updateState(s=>{
+    s.hotspots=s.hotspots.filter(h=>h.id!==id);
+    s.nodes=s.nodes.filter(n=>!removed.has(n.id));
+    s.edges=s.edges.filter(e=>!removed.has(e.source)&&!removed.has(e.target));
+    if(s.selectedHotspotId===id)s.selectedHotspotId=null;
+    if(removed.has(s.activeNodeId))s.activeNodeId=null;
+  });
+  selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
+  renderWorkspace();toast('Hotspot deleted. Ctrl+Z restores it.');
 }
 
 function hotspotHandlers(inputNodeId=null){
@@ -812,7 +844,7 @@ function renderSavedTraceLibrary(){
   const root=$('#traceDashboard'); if(!root)return;
   const projects=listProjects();
   if(!projects.length){ root.innerHTML='<div class="empty-state-card" style="grid-column:1/-1">No traces are saved in this browser yet. Start one in Workspace and it will appear here.</div>'; return; }
-  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
+  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
   root.querySelectorAll('[data-open-library-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openLibraryProject));
   root.querySelectorAll('[data-delete-library-project]').forEach(b=>b.onclick=()=>confirmDeleteSavedProject(b.dataset.deleteLibraryProject));
 }
@@ -939,14 +971,134 @@ function stripLegacyAggregateDemo(project){
   return true;
 }
 
+// Two canonical test fixtures only. The browser may also contain older tests
+// saved under unrelated generated IDs; those are retired only with confirmation.
+const CANONICAL_TEST_IDS=new Set(['tracework-test-pavilion','tracework-test-aggregate-pavilion-v1']);
+function isNamedTestProject(p){
+  return Boolean(p && (
+    String(p.projectId||'').startsWith('tracework-test-') ||
+    /\b(?:test|testing)\b/i.test(String(p.projectName||''))
+  ));
+}
+function shelfName(p){
+  if(p?.projectId==='tracework-test-pavilion')return 'Short brief — Flexible Pavilion';
+  if(p?.projectId==='tracework-test-aggregate-pavilion-v1')return 'Long brief — Flexible Pavilion';
+  return p?.projectName||'Untitled trace';
+}
+function downloadRetiredTestBackup(projects){
+  if(!projects.length)return;
+  const content={exportedAt:new Date().toISOString(),purpose:'Retired TRACEWORK test projects',projects};
+  const blob=new Blob([JSON.stringify(content,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`tracework-retired-tests-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function confirmCleanTestProjects(){
+  const retired=listProjects().filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
+  if(!retired.length)return;
+  const descriptions=retired.map(p=>`<li>${escapeHtml(shelfName(p))}</li>`).join('');
+  openModal(`<h2 id="modalTitle">Keep only the two pavilion test briefs?</h2>
+    <p>Retire ${retired.length} older test trace${retired.length===1?'':'s'} listed below. TRACEWORK downloads a JSON backup before removal. The long and short test projects, and any other saved work, will stay.</p>
+    <ul>${descriptions}</ul>
+    <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmCleanTests">Back up and tidy tests</button></div>`,{
+      onOpen:m=>m.querySelector('#confirmCleanTests').onclick=async()=>{
+        // Preserve the user's modifications to canonical tests. Recreate them
+        // only if missing, then retire only extra test-labelled traces.
+        try{
+          const names=['test-project.json','aggregate-test-project.json'];
+          for(const name of names){
+            const response=await fetch(`./data/${name}?v=b1.6`);
+            if(response.ok)ensureProject(await response.json());
+          }
+          localStorage.removeItem('tracework.dismissedTestProject.v1');
+          localStorage.removeItem('tracework.dismissedAggregateTestProject.v1');
+          downloadRetiredTestBackup(retired);
+          retired.forEach(p=>deleteProject(p.projectId));
+          closeModal();renderProjectShelf();toast(`Tidied ${retired.length} older test traces. Backup downloaded.`);
+        }catch(err){console.error(err);toast('Could not tidy tests. Your saved traces were not deleted.');}
+      }
+    });
+}
+
 function renderProjectShelf(){
   const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
   if(!wrap||!root)return;
-  const projects=listProjects().slice(0,8);
+  const allProjects=listProjects();
+  const projects=allProjects;
   wrap.classList.toggle('hidden',!projects.length);
-  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  root.innerHTML=projects.map(p=>`<article class="project-card"><label class="project-select-label"><input type="checkbox" data-merge-project="${escapeHtml(p.projectId)}" ${projectMergeSelection.has(p.projectId)?'checked':''} aria-label="Select ${escapeHtml(shelfName(p))} for combining"></label><div class="project-description"><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  const cleanup=$('#testCleanupActions');
+  if(cleanup){
+    const stale=allProjects.filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
+    cleanup.innerHTML=stale.length?`<button type="button" class="secondary-button" id="tidyTestProjectsButton">Keep 2 test briefs · retire ${stale.length} old test${stale.length===1?'':'s'}</button>`:'';
+    cleanup.querySelector('#tidyTestProjectsButton')?.addEventListener('click',confirmCleanTestProjects);
+  }
+  const combineButton=$('#combineProjectsButton');
+  if(combineButton){
+    combineButton.disabled=projectMergeSelection.size<2;
+    combineButton.textContent=projectMergeSelection.size>=2?`Combine ${projectMergeSelection.size} projects`:'Combine projects (select 2+)';
+    combineButton.onclick=confirmCombineProjects;
+  }
+  root.querySelectorAll('[data-merge-project]').forEach(input=>input.onchange=()=>{
+    if(input.checked)projectMergeSelection.add(input.dataset.mergeProject);
+    else projectMergeSelection.delete(input.dataset.mergeProject);
+    if(combineButton){combineButton.disabled=projectMergeSelection.size<2;combineButton.textContent=projectMergeSelection.size>=2?`Combine ${projectMergeSelection.size} projects`:'Combine projects (select 2+)';}
+  });
   root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
   root.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); confirmDeleteSavedProject(b.dataset.deleteProject); });
+}
+
+// Combines a COPY of the selected project briefs, their hotspots and their
+// reasoning graphs. Original projects remain untouched in local storage.
+function confirmCombineProjects(){
+  const parts=listProjects().filter(p=>projectMergeSelection.has(p.projectId));
+  if(parts.length<2){toast('Select at least two projects first.');return;}
+  const summary=parts.map(p=>`<li>${escapeHtml(shelfName(p))}</li>`).join('');
+  openModal(`<h2 id="modalTitle">Combine ${parts.length} projects?</h2><p>Creates a NEW project with each original brief kept as a separate source section. Hotspots, nodes and connections are copied into it. Your originals stay untouched.</p><ul>${summary}</ul><label class="combine-name-label">Name of combined project<input class="field-input" id="combinedProjectName" value="Combined trace" maxlength="80"></label><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmCombineProjects">Create combined project</button></div>`,{
+    onOpen:m=>m.querySelector('#confirmCombineProjects').onclick=()=>{
+      const title=m.querySelector('#combinedProjectName').value.trim()||'Combined trace';
+      try{
+        const merged=combineProjectCopies(parts,title);
+        if(!saveProject(merged))throw new Error('Browser storage is full or unavailable');
+        projectMergeSelection.clear();closeModal();replaceState(merged);enterApp(false);
+        toast(`Combined ${parts.length} projects into “${title}”. Originals were preserved.`);
+      }catch(err){console.error(err);toast('Could not save the combined project. Originals remain unchanged.');}
+    }
+  });
+}
+function combineProjectCopies(parts,title){
+  let brief='';
+  const chunks=[],hotspots=[],nodes=[],edges=[],history=[];
+  for(const [idx,p] of parts.entries()){
+    const prefix=`merged-${idx+1}-`;
+    const source=String(p.brief||'');
+    if(!source)continue;
+    if(brief)brief+='\n\n';
+    const start=brief.length;
+    brief+=source;
+    const chunkId=`${prefix}source`;
+    chunks.push({id:chunkId,index:chunks.length,title:shelfName(p),start,end:brief.length,text:source,manual:true});
+    const sourceHotspots=repairHotspotRanges(source,p.hotspots||[]);
+    for(const h of sourceHotspots){
+      hotspots.push({...h,id:prefix+h.id,chunkId,start:start+h.start,end:start+h.end});
+    }
+    for(const node of p.nodes||[]){
+      const meta={...(node.meta||{})};
+      if(meta.hotspotId)meta.hotspotId=prefix+meta.hotspotId;
+      if(meta.groupId)meta.groupId=prefix+meta.groupId;
+      nodes.push({...structuredClone(node),id:prefix+node.id,branchId:prefix+(node.branchId||'branch-1'),meta,
+        x:Number.isFinite(Number(node.x))?Number(node.x):null,
+        y:Number.isFinite(Number(node.y))?Number(node.y)+(idx*230):null});
+    }
+    for(const edge of p.edges||[])edges.push({...structuredClone(edge),id:prefix+edge.id,source:prefix+edge.source,target:prefix+edge.target});
+    history.push({id:`${prefix}merge`,action:'Project included',detail:shelfName(p),time:new Date().toISOString()});
+  }
+  return {version:2,projectId:`tw-combined-${Date.now()}`,projectName:title,brief,briefMode:'document',briefChunks:chunks,
+    activeBriefChunkId:chunks[0]?.id||null,sourceFileName:'Combined projects',frameworkId:parts[0]?.frameworkId||'tracework',
+    frameworkLocked:false,hotspots,nodes,edges,selectedHotspotId:null,activeNodeId:null,activeBranchId:'branch-1',
+    view:'workspace',history,comments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
 
 function openSavedProject(id){
@@ -1026,6 +1178,57 @@ function addDiscussionNote(){
   logEvent('Discussion note added',text.slice(0,70)); $('#discussionText').value=''; renderDiscussion(); toast('Added to discussion.');
 }
 
+let classificationHelpPopover=null;
+function hideClassificationHelp(){
+  classificationHelpPopover?.remove();
+  classificationHelpPopover=null;
+}
+function showClassificationHelp(target){
+  const help=target?.dataset?.help;
+  if(!help)return;
+  hideClassificationHelp();
+  const tip=document.createElement('div');
+  tip.className='classification-help-popover';
+  tip.textContent=help;
+  document.body.appendChild(tip);
+  const r=target.getBoundingClientRect();
+  const tr=tip.getBoundingClientRect();
+  const gap=10,pad=12;
+  let left=r.left+(r.width/2)-(tr.width/2);
+  left=Math.max(pad,Math.min(left,window.innerWidth-tr.width-pad));
+  let top=r.top-tr.height-gap;
+  if(top<pad) top=r.bottom+gap;
+  top=Math.max(pad,Math.min(top,window.innerHeight-tr.height-pad));
+  tip.style.left=`${Math.round(left)}px`;
+  tip.style.top=`${Math.round(top)}px`;
+  classificationHelpPopover=tip;
+}
+function bindClassificationHelp(){
+  // Help is delegated globally so every role/legend/classifier tooltip uses the
+  // same viewport-aware popover. This avoids pseudo-elements being clipped by
+  // half-screen panels or the command dock.
+}
+function bindGlobalHelpPopovers(){
+  if(document.documentElement.dataset.helpPopoversBound==='1')return;
+  document.documentElement.dataset.helpPopoversBound='1';
+  document.addEventListener('pointerover',e=>{
+    const target=e.target.closest?.('[data-help]');
+    if(!target)return;
+    if(e.relatedTarget && target.contains(e.relatedTarget))return;
+    showClassificationHelp(target);
+  });
+  document.addEventListener('pointerout',e=>{
+    const target=e.target.closest?.('[data-help]');
+    if(!target)return;
+    if(e.relatedTarget && target.contains(e.relatedTarget))return;
+    hideClassificationHelp();
+  });
+  document.addEventListener('focusin',e=>{ const target=e.target.closest?.('[data-help]'); if(target)showClassificationHelp(target); });
+  document.addEventListener('focusout',e=>{ if(e.target.closest?.('[data-help]'))hideClassificationHelp(); });
+  window.addEventListener('resize',hideClassificationHelp,{passive:true});
+  window.addEventListener('scroll',hideClassificationHelp,{passive:true,capture:true});
+}
+
 function updateThoughtSuggestion(){
   if(!els.freeThoughtInput)return;
   const text=els.freeThoughtInput.value.trim();
@@ -1080,6 +1283,7 @@ function updateThoughtSuggestion(){
       els.thoughtTypeSelect.dataset.manual='1';
       updateThoughtSuggestion();
     });
+    bindClassificationHelp();
   }
 }
 
@@ -1189,27 +1393,35 @@ function connectNodes(source,target,result){
   toast('Reasoning moves connected.');
 }
 
+function isTextEditingContext(e){
+  // Keyboard shortcuts must never steal Backspace/Delete/Ctrl+Z from an active
+  // text field. Check both the event target and activeElement because rerenders
+  // or nested labels can make the event target less specific than the focused field.
+  const candidates=[e?.target,document.activeElement].filter(Boolean);
+  return candidates.some(el=>{
+    if(!(el instanceof Element))return false;
+    return Boolean(el.matches?.('input,textarea,select,[contenteditable="true"]') || el.closest?.('input,textarea,select,[contenteditable="true"]'));
+  });
+}
+
 function handleWorkspaceKeydown(e){
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     e.preventDefault(); undoLast(); return;
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
     e.preventDefault();openNodeSearch();return;
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='g'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
     e.preventDefault();toggleGroupSelected(Boolean(e.shiftKey));return;
   }
   if(!['Delete','Backspace'].includes(e.key))return;
   const target=e.target;
-  if(target && (target.matches?.('input,textarea,select,[contenteditable="true"]') || target.closest?.('.modal')))return;
+  if(isTextEditingContext(e) || target?.closest?.('.modal'))return;
   if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
 
   if(selectedEdgeId){
@@ -1263,8 +1475,36 @@ function handleWorkspaceKeydown(e){
   renderWorkspace();toast('Node deleted. Downstream reasoning remains available to reconnect.');
 }
 
+function captureUndoUI(){
+  return {
+    workspaceMapMode,
+    aggregateHotspotFilter,
+    aggregateChunkFilter,
+    aggregateTypeFilter,
+    aggregateStatusFilter,
+    aggregateArrangeSession:aggregateArrangeSession?structuredClone(aggregateArrangeSession):null,
+    aggregateArrangeBlend,
+    canvasZoom,
+    focusPathRootId,
+    selectedEdgeId,
+    selectedNodeIds:[...selectedNodeIds]
+  };
+}
+function restoreUndoUI(ui={}){
+  workspaceMapMode=ui.workspaceMapMode==='aggregate'?'aggregate':'focus';
+  aggregateHotspotFilter=ui.aggregateHotspotFilter||'all';
+  aggregateChunkFilter=ui.aggregateChunkFilter||'all';
+  aggregateTypeFilter=ui.aggregateTypeFilter||'all';
+  aggregateStatusFilter=ui.aggregateStatusFilter||'all';
+  aggregateArrangeSession=ui.aggregateArrangeSession?structuredClone(ui.aggregateArrangeSession):null;
+  aggregateArrangeBlend=Number.isFinite(Number(ui.aggregateArrangeBlend))?Number(ui.aggregateArrangeBlend):100;
+  canvasZoom=Number.isFinite(Number(ui.canvasZoom))?Number(ui.canvasZoom):1;
+  focusPathRootId=ui.focusPathRootId||null;
+  selectedEdgeId=ui.selectedEdgeId||null;
+  selectedNodeIds=new Set(ui.selectedNodeIds||[]);
+}
 function checkpoint(label='change'){
-  undoStack.push({label,state:structuredClone(getState())});
+  undoStack.push({label,state:structuredClone(getState()),ui:captureUndoUI()});
   if(undoStack.length>MAX_UNDO)undoStack.shift();
   updateUndoButton();
 }
@@ -1272,9 +1512,11 @@ function undoLast(){
   const entry=undoStack.pop();
   if(!entry){toast('Nothing to undo yet.');return;}
   replaceState(entry.state);
-  selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();closeNodeContext();
+  restoreUndoUI(entry.ui||{});
+  traceIssueNodeIds.clear();closeNodeContext();
   updateUndoButton();
   renderWorkspace();
+  updateZoomLabel();
   toast(`Undid ${entry.label}.`);
 }
 function updateUndoButton(){if(els.undoButton)els.undoButton.disabled=undoStack.length===0;}
