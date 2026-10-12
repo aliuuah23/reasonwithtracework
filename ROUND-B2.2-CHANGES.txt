@@ -1,0 +1,9 @@
+TRACEWORK B2.2 | Final Stage B edit reliability pass
+
+- Consistent pointer across read-only source text; drag-to-select remains.
+- Edit hotspot: flexible whitespace matches multi-line selection, improved disabled-Save explanations, preserved linked reasoning and undo.
+- Add hotspot now undoable through Ctrl+Z.
+- Updated Workspace tutorial (edit, deletion, shortcut behavior).
+- Preserved current working highlight engine, Ctrl+Z node movement, layout, combine-project implementation.
+
+Not yet claimed: undo for all UI clicks, live browser-only behavior in a user-owned project, Stage C Aggregate Map finalisation.

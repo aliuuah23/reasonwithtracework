@@ -27,7 +27,9 @@ const tutorials = {
   workspace: {
     eyebrow:'WORKSPACE TOUR', title:'Reading and building a trace',
     steps:[
-      {selector:'.source-panel',title:'Source panel',body:'Move between brief chunks, inspect suggested hotspots, or select exact text manually. Source material stays separate from the reasoning you add.'},
+      {selector:'.source-panel',title:'Source panel',body:'Move between brief sections, select hotspots, or drag across source words to create new hotspots. The brief is read-only until you choose Edit Brief.'},
+      {selector:'#hotspotList',title:'Change or remove a hotspot',body:'Use ✎ beside a hotspot to replace its selected source wording. Type an exact passage or drag-select words in the edit window; Save updates the original hotspot without disconnecting its reasoning. Use × to delete a hotspot.'},
+      {selector:'#undoButton',title:'Undo meaningful edits',body:'Ctrl+Z or Undo reverses edits such as hotspot changes, additions, deletions and node moves. When typing inside a text field, Ctrl+Z instead uses normal text undo. Navigation and ordinary clicks are not undoable edits.'},
       {selector:'#frameworkSelect',title:'Choose a reasoning lens',body:'TRACEWORK Grammar is the default. Literature frameworks change the legend, prompts and classifications without rewriting the underlying thought.'},
       {selector:'#frameworkLockButton',title:'Lock the project lens',body:'Lock the chosen framework when a project should stay in one reading mode. The lock persists with the project and can be reopened at any time.'},
       {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port, double-click to edit, and right-click for lock, grouping or disconnection controls.'},

@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Round B2.1 · Interactive Source Editing + Stage B stabilisation**  
+**Round B2.2 · Hotspot Edit Reliability + Stage B completion testing**  
 12 October 2026 · Status: test deployment, NOT final public release.
 
 TRACEWORK is an experimental browser-based architectural design reasoning environment. It connects ambiguous source language to explicit interpretation, grounding, spatial consequence, evaluation and design aims, with optional framework lenses. Its purpose is to make the designer’s reasoning trace inspectable and discussable, not to automate design decisions.
@@ -39,11 +39,19 @@ TRACEWORK is an experimental browser-based architectural design reasoning enviro
 
 Site root: `index.html`, `about.html`, `README.md`, `css/`, `js/`, `data/`. `js/app.js` is the module entrypoint. `js/ui/workspace.js` renders source language and hotspots; `js/ui/panels.js` handles inspector content; `js/input/hotspot-detector.js` detects and normalises ranges; `js/core/state.js` manages in-memory state; `js/core/storage.js` stores browser-local projects. `css/` provides UI styles. JSON datasets under `data/` include prompts and reference examples.
 
-**Deploy on GitHub website:** Extract ALL contents of `TRACEWORK_Round_B2.1_DEPLOY.zip`; drag the entire folder contents (especially the nested `css/`, `js/`, `data/` directories) into the repository upload page. Ensure paths remain nested; do not upload the ZIP itself or flatten individual folders. Commit normally. GitHub Desktop is an optional alternative.
+**Deploy on GitHub website:** Extract ALL contents of `TRACEWORK_Round_B2.2_DEPLOY.zip`; drag the entire folder contents (especially the nested `css/`, `js/`, `data/` directories) into the repository upload page. Ensure paths remain nested; do not upload the ZIP itself or flatten individual folders. Commit normally. GitHub Desktop is an optional alternative.
 
 Important: TRACEWORK saves locally in the browser via `localStorage` (`tracework.projects.v3`). Deploying code does not reset stored traces. **Do not clear site data** to fix a visual bug. Export a JSON backup before any intentional cleanup. Combining projects makes copies and preserves originals.
 
-## B2.1 acceptance tests
+## B2.2 latest changes
+
+- Read-only brief now uses a pointer consistently across the full paragraph (including ordinary words), while retaining native drag-to-select.
+- Editing source-bound hotspots accepts case-insensitive text and flexible whitespace, including phrases split across multiple lines; the modal gives a clear reason when Save is unavailable.
+- Creating a manual hotspot now adds an undo checkpoint. Existing hotspot edit/delete and node movement undo are preserved.
+- Workspace tutorial explains edit, delete, read-only source and the distinction between project undo and native text field undo.
+- Project/brief combining and independent Aggregate Map refinement are still separate work; this release does not claim to implement site-wide undo for every click.
+
+## B2.2 acceptance tests
 
 1. Open a long brief (the pavilion test) → Privacy → select `Different degrees of privacy`, then select a shorter overlapping term. The full phrase remains bold/highlighted, with natural wrapping.
 2. In hotspot chips, click **✎** on Privacy. Replace `Different degrees of privacy` with `privacy` (when not already stored as an identical hotspot), or drag an alternative phrase in the modal. Save; confirm the chip and source-node label update while linked interpretations remain.

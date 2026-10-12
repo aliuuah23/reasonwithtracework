@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.1';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.2';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b2.1';
+import { renderGraph } from './graph/graph-renderer.js?v=b2.2';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.1';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.2';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -568,29 +568,30 @@ function editHotspot(id){
   const original=String(hotspot.text||'');
   const idx=source.toLocaleLowerCase().indexOf(original.toLocaleLowerCase());
   openModal(`<h2 id="modalTitle">Edit hotspot</h2>
-    <p>Change which <strong>exact words in this brief</strong> belong to this hotspot. Edit the phrase below, or drag across the passage to select it. Existing linked reasoning is preserved.</p>
+    <p>Edit the wording or <strong>drag to select words in the passage below</strong>. The revised hotspot must quote the source brief (not invent new wording). Your linked reasoning stays attached.</p>
     <label class="hotspot-edit-label" for="hotspotEditInput">Selected phrase</label>
     <input class="field-input" id="hotspotEditInput" value="${escapeHtml(original)}" autocomplete="off" spellcheck="false">
     <div class="hotspot-edit-feedback" id="hotspotEditFeedback" role="status">The phrase must appear in the current brief section.</div>
-    <div class="selection-brief hotspot-edit-source" id="hotspotEditSource" tabindex="0" aria-label="Choose a different phrase from this source section">${escapeHtml(source)}</div>
-    <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancel</button><button type="button" class="primary-button compact" id="saveHotspotEdit">Save selection</button></div>`,{
+    <div class="hotspot-edit-source-caption">Or drag over the exact words below, then press Save:</div>
+    <div class="selection-brief hotspot-edit-source" id="hotspotEditSource" tabindex="0" aria-label="Drag to select alternative words in the brief">${escapeHtml(source)}</div>
+    <div class="modal-actions"><button type="button" class="secondary-button" id="cancelHotspotEdit" data-close-modal>Cancel</button><button type="button" class="primary-button compact" id="saveHotspotEdit">Save selection</button></div>`,{
       onOpen:m=>{
         const input=m.querySelector('#hotspotEditInput'), feedback=m.querySelector('#hotspotEditFeedback');
         const passage=m.querySelector('#hotspotEditSource'), save=m.querySelector('#saveHotspotEdit');
         // Offset anchoring handles repeated words by preferring the previous position.
+        // B2.2: match words across source line breaks / repeated spaces.
         const locate=()=>{
-          const wanted=input.value.trim();
+          const wanted=input.value.trim().replace(/\s+/g,' ');
           if(!wanted)return null;
-          const hits=[],lower=source.toLocaleLowerCase(),target=wanted.toLocaleLowerCase();
-          let at=0;
-          while((at=lower.indexOf(target,at))!==-1){
-            const normalized=normaliseHotspotSelection(source,at,at+target.length);
-            if(normalized.text===source.slice(normalized.start,normalized.end) &&
-                normalized.text.toLocaleLowerCase()===wanted.toLocaleLowerCase())
-              hits.push(normalized);
-            at+=Math.max(1,target.length);
+          const escaped=wanted.split(' ').map(token=>token.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')).join('\\s+');
+          let matcher;
+          try{matcher=new RegExp(escaped,'giu');}catch{return null;}
+          const hits=[],expected=Math.max(0,(Number(hotspot.start)||0)-baseOffset);
+          for(const match of source.matchAll(matcher)){
+            if(match.index==null || !match[0])continue;
+            const snapped=normaliseHotspotSelection(source,match.index,match.index+match[0].length);
+            if(snapped.text)hits.push(snapped);
           }
-          const expected=Math.max(0,(Number(hotspot.start)||0)-baseOffset);
           return hits.sort((a,b)=>Math.abs(a.start-expected)-Math.abs(b.start-expected))[0]||null;
         };
         const check=()=>{
@@ -598,9 +599,9 @@ function editHotspot(id){
           const duplicate=found && getState().hotspots.some(h=>h.id!==id &&
             (Number(h.start)||0)===baseOffset+found.start && (Number(h.end)||0)===baseOffset+found.end);
           save.disabled=!found||Boolean(duplicate);
-          feedback.textContent=duplicate?'That exact selection is already a hotspot.':
-            found?'Selection found in the source. Linked reasoning will be retained.':
-            'Select or enter an exact phrase from the current brief section.';
+          feedback.textContent=duplicate?'Already selected elsewhere. Choose different words or edit that hotspot.':
+            found?'Ready to save · '+found.text+' · linked reasoning stays attached.':
+            'Cannot save yet: select words from the passage or type wording found in this section. Spaces and line breaks are accepted.';
           return found;
         };
         input.addEventListener('input',check);
@@ -632,7 +633,7 @@ function editHotspot(id){
             s.nodes.filter(n=>n.type==='input'&&n.meta?.hotspotId===id).forEach(n=>n.label=editedText);
           });
           logEvent('Hotspot selection revised',`${original} → ${editedText}`);
-          closeModal();renderWorkspace();toast('Hotspot updated. Linked reasoning preserved; Ctrl+Z to undo.');
+          closeModal();renderWorkspace();toast('Hotspot updated. Linked reasoning preserved; press Ctrl+Z or use Undo to restore the previous phrase.');
         };
         check();input.focus();input.select();
       }
@@ -908,6 +909,7 @@ function manualPhrase(){
         const duplicate=getState().hotspots.some(h=>h.start===picked.start&&h.end===picked.end);
         if(duplicate){toast('That exact word or phrase is already a hotspot.');return;}
         const h={id:`hotspot-manual-${Date.now()}`,text:picked.text,concept:'custom',source:'designer',start:picked.start,end:picked.end,reason:'Selected by designer for interpretation',kind:/\s/.test(picked.text)?'phrase':'word',chunkId:chunk?.id||null};
+        checkpoint('add hotspot');
         updateState(s=>{s.hotspots.push(h);s.hotspots.sort((a,b)=>a.start-b.start);});
         closeModal(); showHotspotSuggestions=true; els.toggleHotspotsButton.textContent='Hide suggestions'; renderWorkspace(); selectHotspot(h.id);
       };

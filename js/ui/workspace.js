@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.1';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.2';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -281,21 +281,11 @@ export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
       .sort((a,b)=>(b.end-b.start)-(a.end-a.start));
     if(covering.length)handlers.onHotspot(covering[0].id);
   };
-  // Use a pointer when the cursor is over a clickable highlighted phrase,
-  // and a text cursor everywhere else. Preserve native drag-to-select behaviour.
-  doc.onmousemove=e=>{
-    if(!resolved.length){doc.style.cursor='text';return;}
-    // Hit-test the exact browser Range rectangles, which remain accurate for
-    // bold inline pieces and multiline phrases (caret offsets can snap to an
-    // adjacent character and incorrectly report 'text').
-    const overHotspot=resolved.some(h=>{
-      const r=rangeFor(h.start,h.end);
-      return r&&[...r.getClientRects()].some(box=>e.clientX>=box.left-1&&e.clientX<=box.right+1&&e.clientY>=box.top&&e.clientY<=box.bottom);
-    });
-    doc.style.cursor=overHotspot?'pointer':'text';
-  };
-  doc.onmouseleave=()=>{doc.style.cursor='text';};
-  doc.style.cursor='text';
+  // B2.2: the source brief is a read-only interactive surface. Use one clear
+  // cursor across all its words, while keeping drag-to-select native behaviour.
+  doc.onmousemove=null;
+  doc.onmouseleave=null;
+  doc.style.cursor='pointer';
 }
 
 // Kept for any legacy callers/tests; production uses paintBriefHighlights.

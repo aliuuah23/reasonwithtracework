@@ -817,3 +817,10 @@ html.tutorial-tour-active{overflow:hidden}
 .hotspot-inspector-edit {margin-top:11px;max-width:100%;white-space:normal;text-align:left;}
 .inspector-panel .inspector-actions{flex-wrap:wrap;}
 .inspector-panel .inspector-actions .secondary-button{min-width:0;flex:1 1 110px;white-space:normal;text-align:center;}
+
+/* B2.2 · consistent pointer over read-only source, native drag selection preserved */
+#briefDocument.brief-document, #briefDocument.brief-document * { cursor:pointer!important; }
+#briefDocument.brief-document { user-select:text!important; -webkit-user-select:text!important; }
+.hotspot-edit-source-caption {font-size:11px;color:var(--muted);margin:13px 0 0;line-height:1.45;}
+.hotspot-edit-source {cursor:text!important;user-select:text!important;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:12px;}
+.hotspot-edit-feedback {min-height:28px;line-height:1.45;}
