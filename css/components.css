@@ -830,3 +830,6 @@ html.tutorial-tour-active{overflow:hidden}
 .aggregate-layout-toggle{display:inline-flex;gap:2px;align-items:center;max-width:100%;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--surface-soft);flex-wrap:wrap;}
 .aggregate-layout-toggle .aggregate-action{white-space:nowrap;border-radius:999px;padding:5px 9px;}
 .aggregate-layout-toggle .aggregate-action.active{background:var(--surface);color:var(--accent-dark);box-shadow:0 1px 4px rgba(28,31,46,.1);}
+
+/* C1.0 · descriptive layout caption never pushes the filter controls out of panel. */
+.aggregate-layout-explainer { color:var(--muted);font-size:9px;white-space:normal;max-width:100%;line-height:1.4; }

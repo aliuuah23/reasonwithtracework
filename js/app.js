@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.3';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=c1.0';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b2.3';
+import { renderGraph } from './graph/graph-renderer.js?v=c1.0';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.3';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -118,7 +118,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),reflowArrangeButton:$('#reflowArrangeButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
   });
 }
 
@@ -175,6 +175,7 @@ function bindGlobalEvents(){
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   if(els.originalAggregateButton) els.originalAggregateButton.onclick=()=>setAggregateLayout('original');
+  if(els.reflowArrangeButton) els.reflowArrangeButton.onclick=reflowAggregateMap;
   document.addEventListener('keydown',handleWorkspaceKeydown,{capture:true});
   bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
@@ -428,43 +429,51 @@ function renderGraphState(){
       checkpoint((ids||[]).length>1?'move selected reasoning nodes':'move reasoning node');
     },
     onNodeMove:(id,x,y)=>{
-      // B2.3: One position change propagates by the SAME displacement to focus,
-      // original aggregate and each framework arrangement. Layouts retain their
-      // different structure, while manually moved nodes stay in sync in every view.
+      // Stage C: Source positions travel FORWARD into Arrange, never backwards.
+      // Edits in Arrange are presentation-only and cannot change Original or Focus.
       const state=getState();
-      const n=state.nodes.find(node=>node.id===id);
-      if(!n)return;
-      const shown=workspaceMapMode==='aggregate'
-        ? currentAggregateArrangement(state).get(id)||{x:Number(n.x)||0,y:Number(n.y)||0}
-        : {x:Number(n.x)||0,y:Number(n.y)||0};
-      const dx=x-shown.x,dy=y-shown.y;
+      const node=state.nodes.find(n=>n.id===id);
+      if(!node)return;
+      const isArranged=workspaceMapMode==='aggregate' && aggregateArrangeBlend===100;
+      const current=isArranged
+        ? aggregateArrangeSession?.target.get(id)||frameworkAggregateLayout(state,state.frameworkId||'tracework').get(id)
+        : workspaceMapMode==='aggregate'
+          ? aggregateOriginalPositions(state).get(id)
+          : {x:Number(node.x)||0,y:Number(node.y)||0};
+      if(!current)return;
+      const dx=x-current.x,dy=y-current.y;
       if(!Number.isFinite(dx)||!Number.isFinite(dy)||(!dx&&!dy))return;
+      if(isArranged){
+        const frameworkId=state.frameworkId||'tracework';
+        const target={x:current.x+dx,y:current.y+dy};
+        // Persist independently of Original and Focus; survives refresh/framework switching.
+        updateState(st=>{
+          const n=st.nodes.find(item=>item.id===id);if(!n)return;
+          n.meta={...(n.meta||{}),aggregateArrangedPositions:{...(n.meta?.aggregateArrangedPositions||{}),[frameworkId]:target}};
+        });
+        if(aggregateArrangeSession)aggregateArrangeSession.target.set(id,target);
+        return;
+      }
+      const original=aggregateOriginalPositions(state).get(id)||{x:Number(node.x)||0,y:Number(node.y)||0};
       updateState(st=>{
-        const node=st.nodes.find(item=>item.id===id);if(!node)return;
-        node.x=(Number(node.x)||0)+dx;
-        node.y=(Number(node.y)||0)+dy;
-        const meta=node.meta={...(node.meta||{})};
-        const original=aggregateOriginalPositions(state).get(id)||{x:Number(n.x)||0,y:Number(n.y)||0};
+        const n=st.nodes.find(item=>item.id===id);if(!n)return;
+        n.x=(Number(n.x)||0)+dx;n.y=(Number(n.y)||0)+dy;
+        const meta=n.meta={...(n.meta||{})};
         meta.aggregateOriginalPosition={x:original.x+dx,y:original.y+dy};
+        // Existing user-arranged layouts follow a source edit by the same displacement.
+        // A subsequent Arrange operation may still use the active framework's layout.
         if(meta.aggregateArrangedPositions){
-          const edited={...meta.aggregateArrangedPositions};
-          Object.entries(edited).forEach(([key,pos])=>{
+          const updated={...meta.aggregateArrangedPositions};
+          Object.entries(updated).forEach(([framework,pos])=>{
             if(pos&&Number.isFinite(Number(pos.x))&&Number.isFinite(Number(pos.y)))
-              edited[key]={x:Number(pos.x)+dx,y:Number(pos.y)+dy};
+              updated[framework]={x:Number(pos.x)+dx,y:Number(pos.y)+dy};
           });
-          meta.aggregateArrangedPositions=edited;
+          meta.aggregateArrangedPositions=updated;
         }
       });
       if(aggregateArrangeSession){
         for(const map of [aggregateArrangeSession.before,aggregateArrangeSession.target]){
-          const pos=map.get(id);if(pos)map.set(id,{x:pos.x+dx,y:pos.y+dy});
-        }
-        // Remember manual changes to arranged locations across a page reload.
-        if(workspaceMapMode==='aggregate' && aggregateArrangeBlend===100){
-          const target=aggregateArrangeSession.target.get(id);
-          if(target)updateState(st=>{const node=st.nodes.find(item=>item.id===id);if(node){
-            node.meta={...(node.meta||{}),aggregateArrangedPositions:{...(node.meta?.aggregateArrangedPositions||{}),[aggregateArrangeSession.frameworkId]:{...target}}};
-          }});
+          const p=map.get(id);if(p)map.set(id,{x:p.x+dx,y:p.y+dy});
         }
       }
     },
@@ -1618,7 +1627,7 @@ function restoreUndoUI(ui={}){
   aggregateTypeFilter=ui.aggregateTypeFilter||'all';
   aggregateStatusFilter=ui.aggregateStatusFilter||'all';
   aggregateArrangeSession=ui.aggregateArrangeSession?structuredClone(ui.aggregateArrangeSession):null;
-  aggregateArrangeBlend=Number.isFinite(Number(ui.aggregateArrangeBlend))?Number(ui.aggregateArrangeBlend):100;
+  aggregateArrangeBlend=Number.isFinite(Number(ui.aggregateArrangeBlend))?Number(ui.aggregateArrangeBlend):0;
   canvasZoom=Number.isFinite(Number(ui.canvasZoom))?Number(ui.canvasZoom):1;
   focusPathRootId=ui.focusPathRootId||null;
   selectedEdgeId=ui.selectedEdgeId||null;
@@ -2063,8 +2072,9 @@ function updateFrameworkControls(state){
   if(els.arrangeAggregateButton){
     els.arrangeAggregateButton.classList.toggle('active',arranged);
     els.arrangeAggregateButton.setAttribute('aria-pressed',String(arranged));
-    els.arrangeAggregateButton.title=`Arrange the aggregate through ${framework.label}. Node moves will also update Original and Focus maps.`;
+    els.arrangeAggregateButton.title=`Arrange the aggregate through ${framework.label}. Arrange edits only affect this framework layout; Original and Focus remain unchanged.`;
   }
+  if(els.reflowArrangeButton)els.reflowArrangeButton.classList.toggle('hidden',!arranged);
   if(els.originalAggregateButton){
     els.originalAggregateButton.classList.toggle('active',!arranged);
     els.originalAggregateButton.setAttribute('aria-pressed',String(!arranged));
@@ -2142,7 +2152,7 @@ function setWorkspaceMapMode(mode='focus'){
   renderWorkspace();
   if(next==='aggregate') {
     setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },50);
-    toast('Aggregate map · every focus map in this project is now visible together.');
+    toast('Aggregate map · Original preserves your source layout; Arrange provides an independent framework view.');
   }
 }
 
@@ -2403,6 +2413,25 @@ function workspaceTrace(state){
   return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
 }
 
+// Stage C: deliberately reflow the active framework without affecting source positions.
+function reflowAggregateMap(){
+  if(workspaceMapMode!=='aggregate'||aggregateArrangeBlend!==100)return;
+  const state=getState(),frameworkId=state.frameworkId||'tracework';
+  checkpoint(`reflow ${frameworkId} presentation`);
+  updateState(st=>st.nodes.forEach(node=>{
+    const saved=node.meta?.aggregateArrangedPositions;
+    if(!saved||!Object.prototype.hasOwnProperty.call(saved,frameworkId))return;
+    const remaining={...saved};delete remaining[frameworkId];
+    node.meta={...(node.meta||{}),aggregateArrangedPositions:remaining};
+  }));
+  const target=frameworkAggregateLayout(getState(),frameworkId);
+  aggregateArrangeSession={frameworkId,before:aggregateOriginalPositions(getState()),target:new Map(target)};
+  aggregateArrangeBlend=100;
+  renderWorkspace();
+  setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
+  toast('Framework arrangement regenerated. Original and Focus maps are unchanged; Ctrl+Z restores the previous arrangement.');
+}
+
 // A deliberate two-position toggle, never a blend slider.
 function arrangeAggregateMap(){setAggregateLayout('arranged');}
 function setAggregateLayout(mode='original'){
@@ -2419,7 +2448,7 @@ function setAggregateLayout(mode='original'){
   selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
   renderWorkspace();
   setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
-  toast(arranged?'Arrange map · framework layout. Moving nodes also moves them in Original and Focus maps.':'Original map · user layout. Moving nodes also moves them in Arrange and Focus maps.');
+  toast(arranged?'Arrange map · align and present nodes here without changing your Original or Focus layout.':'Original map · source layout. Moving nodes here also shifts saved Arrange positions.');
 }
 
 function scopedTrace(state){

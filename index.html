@@ -9,10 +9,10 @@
   <link rel="preconnect" href="https://www.archdaily.com" crossorigin>
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css?v=b2.3">
-  <link rel="stylesheet" href="css/components.css?v=b2.3">
-  <link rel="stylesheet" href="css/graph.css?v=b2.3">
-  <link rel="stylesheet" href="css/responsive.css?v=b2.3">
+  <link rel="stylesheet" href="css/layout.css?v=c1.0">
+  <link rel="stylesheet" href="css/components.css?v=c1.0">
+  <link rel="stylesheet" href="css/graph.css?v=c1.0">
+  <link rel="stylesheet" href="css/responsive.css?v=c1.0">
 </head>
 <body>
   <header class="topbar">
@@ -188,7 +188,7 @@
                 <div class="aggregate-layout-toggle" role="group" aria-label="Aggregate layout">
                   <button class="aggregate-action active" id="originalAggregateButton" type="button" aria-pressed="true">Original map</button>
                   <button class="aggregate-action" id="arrangeAggregateButton" type="button" aria-pressed="false">Arrange map</button>
-                </div>
+                </div><button class="aggregate-action hidden" id="reflowArrangeButton" type="button" title="Regenerate the framework layout without changing Original positions. Undo is available.">↺ Reflow Arrange</button><span class="aggregate-layout-explainer" title="Original stores design working positions; Arrange is a separate framework-informed presentation layout. Changes in Arrange do not move Original nodes.">Original → Arrange · independent layouts</span>
               </div>
             </div>
             <div class="toolbar-actions">
@@ -326,6 +326,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=b2.3"></script>
+  <script type="module" src="js/app.js?v=c1.0"></script>
 </body>
 </html>

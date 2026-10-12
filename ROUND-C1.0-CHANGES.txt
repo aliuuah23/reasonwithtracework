@@ -1,0 +1,1 @@
+TRACEWORK Stage C1.0: dark wires; one-way Original/Focus → Arrange movement; Arrange never overwrites Original; snapping alignment guides; updated Aggregate toolbar, tutorial notes and README. Added non-destructive Reflow Arrange with undo.

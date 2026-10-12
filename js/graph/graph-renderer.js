@@ -40,6 +40,26 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId)).join('');
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
+  // Drag-only alignment aids, similar to editor smart guides. They never become graph data.
+  let alignmentLayer=els.surface.querySelector('.graph-alignment-guides');
+  if(!alignmentLayer){
+    alignmentLayer=document.createElement('div');
+    alignmentLayer.className='graph-alignment-guides';
+    alignmentLayer.setAttribute('aria-hidden','true');
+    alignmentLayer.innerHTML='<div class="graph-align-guide vertical"></div><div class="graph-align-guide horizontal"></div>';
+    els.surface.appendChild(alignmentLayer);
+  }
+  const verticalGuide=alignmentLayer.querySelector('.vertical');
+  const horizontalGuide=alignmentLayer.querySelector('.horizontal');
+  const clearGuides=()=>{verticalGuide.classList.remove('visible');horizontalGuide.classList.remove('visible');};
+  const showGuides=({x=null,y=null}={})=>{
+    verticalGuide.classList.toggle('visible',x!==null);
+    horizontalGuide.classList.toggle('visible',y!==null);
+    if(x!==null)verticalGuide.style.left=`${x}px`;
+    if(y!==null)horizontalGuide.style.top=`${y}px`;
+  };
+  clearGuides();
+
 
   const nodeAnchor=(id,side='out')=>{
     const el=els.nodes.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
@@ -177,6 +197,8 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
       },
       onDragStart:ids=>onNodeDragStart?.(ids),
       onMove:(id,x,y)=>onNodeMove?.(id,x-CANVAS_ORIGIN_X,y-CANVAS_ORIGIN_Y),
+      onGuides:showGuides,
+      onClearGuides:clearGuides,
       getScale
     });
   });
@@ -300,7 +322,7 @@ function isOnActivePath(edge,activeNodeId,edges){
   return path.has(edge.id);
 }
 
-function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions}){
+function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions,onGuides,onClearGuides}){
   let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
     if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
@@ -341,10 +363,29 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     const maxOriginY=Math.max(...[...origins.values()].map(o=>o.y));
     dx=Math.min(maxX-maxOriginX,Math.max(20-minOriginX,dx));
     dy=Math.min(maxY-maxOriginY,Math.max(20-minOriginY,dy));
+    // Snap the dragged selection to nearby node edges or centres (9 world pixels).
+    // Exclude all dragged nodes and prefer the closest matching axis independently.
+    const dragged=new Set(origins.keys()),primary=origins.get(el.dataset.id)||origins.values().next().value;
+    const pWidth=primary.el.offsetWidth||230,pHeight=primary.el.offsetHeight||112;
+    const px=primary.x+dx,py=primary.y+dy;
+    const myX=[px,px+pWidth/2,px+pWidth],myY=[py,py+pHeight/2,py+pHeight];
+    let bestX=null,bestY=null;
+    positions.forEach((other,id)=>{
+      if(dragged.has(id))return;
+      const otherEl=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
+      const w=otherEl?.offsetWidth||230,h=otherEl?.offsetHeight||112;
+      const candidateX=[other.x,other.x+w/2,other.x+w];
+      const candidateY=[other.y,other.y+h/2,other.y+h];
+      myX.forEach(v=>candidateX.forEach(c=>{const delta=c-v;if(Math.abs(delta)<=9&&(!bestX||Math.abs(delta)<Math.abs(bestX.delta)))bestX={delta,guide:c};}));
+      myY.forEach(v=>candidateY.forEach(c=>{const delta=c-v;if(Math.abs(delta)<=9&&(!bestY||Math.abs(delta)<Math.abs(bestY.delta)))bestY={delta,guide:c};}));
+    });
+    if(bestX)dx+=bestX.delta;
+    if(bestY)dy+=bestY.delta;
+    onGuides?.({x:bestX?.guide??null,y:bestY?.guide??null});
     origins.forEach((o,id)=>{
       const x=o.x+dx,y=o.y+dy;
       o.el.style.left=`${x}px`;o.el.style.top=`${y}px`;
-      const pos=positions.get(id); if(pos){pos.x=x;pos.y=y;}
+      const pos=positions.get(id);if(pos){pos.x=x;pos.y=y;}
       onLiveMove?.(id,x,y);
     });
   });
@@ -353,6 +394,7 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     if(moved){
       origins.forEach((o,id)=>onMove?.(id,parseFloat(o.el.style.left),parseFloat(o.el.style.top)));
     }
+    onClearGuides?.();
     try{el.releasePointerCapture(e.pointerId);}catch{}
     start=null;
     setTimeout(()=>origins?.forEach(({el:target})=>target.classList.remove('dragging')),0);

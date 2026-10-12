@@ -1,3 +1,36 @@
+## Stage C1.0 — Layout independence and drag alignment (12 October 2026)
+
+TRACEWORK's Stage C integration begins with separate semantic-layout views and clear presentation controls. This is a complete website deployment package; extract all folders before uploading.
+
+### Changes in C1.0
+
+1. **Wires are darker neutral grey**, preserving the existing active/selected and evidence-specific distinctions.
+2. **Original Map is the editable source layout**. Moving nodes in Original or Focus also shifts saved Arrange positions, so deliberate source corrections carry forward.
+3. **Arrange Map is independent**. Changing a node's position in Arrange stays in the active framework's presentation layout and **does not move it in Original or Focus**. The layout is saved per framework in project data.
+4. **Smart alignment guides** appear when a dragged node's left/centre/right or top/middle/bottom aligns with another node. The movement snaps when within 9 unscaled pixels. It works on selected groups and does not change reasoning data.
+5. Added **Reflow Arrange** to regenerate only the active framework arrangement, with Ctrl+Z and no effect on Original/Focus.
+6. Added a short explanation of the two layouts to the Aggregate toolbar. Kept filtering, framework selector, full hotspot highlighting/editing, undo and project combining untouched.
+
+### Acceptance checks
+
+- Open Aggregate Map → Original: move a node → switch to Arrange and verify the independent framework arrangement remains available.
+- Move a node in Arrange → switch to Original and Focus. Original/Focus should not move because of the Arrange edit; return to Arrange to confirm it kept its own location.
+- Drag one node close to the left/centre/right or vertical level of another: thin lavender guides appear and the node snaps into alignment; releasing hides them.
+- Ctrl+Z after each type of movement restores the correct map state.
+- Wires stay visible at normal and aggregate zoom without obscuring selected connections.
+
+### Deployment
+
+1. **Extract All** from the ZIP.
+2. Upload the root files **together with the intact css/, js/, data/ folders** to the GitHub repository root. No duplicate flat files.
+3. Commit and wait for GitHub Pages. In Chrome, perform one hard refresh.
+
+### Stage C remaining
+
+Full start-to-finish trace acceptance testing, project-level aggregation and documentation refinement, then a stable release freeze. Framework-aware Arrange modes and project-wide filters are already present; this version stabilises map independence rather than inventing new reasoning steps.
+
+---
+
 ## Round B2.3 — Shared map positions and layout toggle (12 Oct 2026)
 
 - The read-only brief now darkens and underlines a hotspot phrase on pointer hover without altering text or selection.

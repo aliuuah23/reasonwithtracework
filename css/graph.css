@@ -202,3 +202,15 @@
 .graph-node:hover { z-index:14; }
 .graph-node.selected { z-index:24; }
 .graph-node.dragging { z-index:32; }
+
+
+/* Stage C1.0 — visible neutral wires and live editor alignment guides. */
+.graph-surface .trace-edge:not(.selected):not(.wire-hover) { stroke:#777e8b; opacity:.94; }
+.graph-surface.aggregate-map .trace-edge:not(.selected):not(.wire-hover) { opacity:.89; }
+.graph-surface .trace-edge.edge-muted:not(.selected) { stroke:#a0a6b0; opacity:.70; }
+.graph-surface .trace-edge.rejected:not(.selected) { opacity:.42; }
+.graph-alignment-guides { position:absolute; inset:0; z-index:25; pointer-events:none; overflow:hidden; }
+.graph-align-guide { position:absolute; display:none; pointer-events:none; background:rgba(88,83,191,.74); box-shadow:0 0 0 1px rgba(255,255,255,.48); }
+.graph-align-guide.visible { display:block; }
+.graph-align-guide.vertical { top:0; bottom:0; width:1px; }
+.graph-align-guide.horizontal { left:0; right:0; height:1px; }
