@@ -527,3 +527,13 @@ html.tutorial-tour-active{overflow:hidden}
   -webkit-box-decoration-break:clone;
 }
 .thought-matches,.thought-dock{overflow:visible}
+
+
+/* Round B1.2 · classifier help uses a body-level popover so half-screen panels cannot clip it */
+.thought-match.classification-help::after{content:none!important;display:none!important}
+.classification-help-popover{
+  position:fixed; z-index:1200; width:min(320px,calc(100vw - 16px)); padding:10px 11px;
+  border-radius:10px; background:#171a21; color:#fff; font-size:10px; font-weight:520;
+  line-height:1.5; text-align:left; white-space:normal; overflow-wrap:anywhere;
+  box-shadow:0 14px 34px rgba(20,24,38,.28); pointer-events:none;
+}

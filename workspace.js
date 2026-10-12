@@ -44,18 +44,36 @@ function resolveHotspotForText(text,h,expectedStart=Number(h.start)||0){
   const source=String(text||'');
   let start=Math.max(0,Math.min(Number(expectedStart)||0,source.length));
   let end=Math.max(start,Math.min(start+Math.max(0,(Number(h.end)||0)-(Number(h.start)||0)),source.length));
-  const current=source.slice(start,end);
-  if(h.text && comparableText(current)!==comparableText(h.text)){
+
+  // Stored wording is the semantic source of truth. Long-brief chunks can exclude
+  // headings even though their absolute ranges still include them, so absolute
+  // offsets are only a hint. If the full intended phrase exists in the visible
+  // chunk, always use that exact phrase rather than trusting the old range.
+  if(h.text){
     const found=nearestLocalMatch(source,h.text,start);
-    if(found){start=found.start;end=found.end;}
+    if(found){ start=found.start; end=found.end; }
   }
+
   const snapped=normaliseHotspotSelection(source,start,end);
   return {...h,start:snapped.start,end:snapped.end};
 }
 
-function relativeHotspots(hotspots,chunk){
+function chunkContentStart(fullBrief,chunk){
+  if(!chunk) return 0;
+  const full=String(fullBrief||'');
+  const visible=String(chunk.text||'');
+  const hinted=Math.max(0,Number(chunk.start)||0);
+  if(!full || !visible) return hinted;
+  const nearby=full.indexOf(visible,Math.max(0,hinted-16));
+  if(nearby>-1 && nearby<=hinted+160) return nearby;
+  const anywhere=full.indexOf(visible);
+  return anywhere>-1?anywhere:hinted;
+}
+
+function relativeHotspots(hotspots,chunk,fullBrief=''){
   if(!chunk) return hotspots;
-  return hotspots.map(h=>resolveHotspotForText(chunk.text,h,(Number(h.start)||0)-(Number(chunk.start)||0)));
+  const contentStart=chunkContentStart(fullBrief,chunk);
+  return hotspots.map(h=>resolveHotspotForText(chunk.text,h,(Number(h.start)||0)-contentStart));
 }
 
 function isDesignerSelected(h){
@@ -75,7 +93,7 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   const scoped=chunkScopedHotspots(state,chunk);
   const filtered=filterHotspots(scoped,hotspotFilter);
   const visible=showSuggestions?filtered:filtered.filter(isDesignerSelected);
-  const relative=relativeHotspots(visible,chunk);
+  const relative=relativeHotspots(visible,chunk,state.brief);
   const selectedId=state.selectedHotspotId;
 
   const nav=document.getElementById('briefChunkNav');

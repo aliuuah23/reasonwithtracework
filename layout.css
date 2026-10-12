@@ -177,3 +177,12 @@
   text-overflow:clip;
   line-height:1.42;
 }
+
+
+/* Round B1.2 · always show the complete classifier explanation */
+.thought-reading{flex-wrap:wrap;align-items:flex-start}
+.thought-reading #thoughtReason{
+  display:block!important; flex:1 0 100%; width:100%; max-width:none; min-width:0;
+  white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
+  line-height:1.45; margin-top:2px;
+}

@@ -56,7 +56,6 @@ let aggregateTypeFilter = 'all';
 let aggregateStatusFilter = 'all';
 let aggregateArrangeSession = null;
 let aggregateArrangeBlend = 100;
-let nodeMoveUndoCaptured = false;
 const undoStack = [];
 const MAX_UNDO = 30;
 
@@ -415,14 +414,12 @@ function renderGraphState(){
     onNodeTypeClick:(id,e)=>openNodeTypeMenu(id,e.clientX,e.clientY),
     onConnect:(source,target,result)=>connectNodes(source,target,result),
     canConnect:(source,target,edges)=>connectionCheck(source,target,edges,pilotEvidence,{frameworkId:getState().frameworkId}),
+    onNodeDragStart:ids=>{
+      // Capture the snapshot before any pointer movement mutates the rendered
+      // positions. One drag gesture = one undo step, including groups/selections.
+      checkpoint((ids||[]).length>1?'move selected reasoning nodes':'move reasoning node');
+    },
     onNodeMove:(id,x,y)=>{
-      // A drag can finish several selected/grouped nodes synchronously. Capture
-      // one pre-drag snapshot only, so Ctrl+Z restores the whole move together.
-      if(!nodeMoveUndoCaptured){
-        checkpoint(selectedNodeIds.size>1?'move selected reasoning nodes':'move reasoning node');
-        nodeMoveUndoCaptured=true;
-        queueMicrotask(()=>{nodeMoveUndoCaptured=false;});
-      }
       let materialised=null;
       if(workspaceMapMode==='aggregate' && aggregateArrangeSession)materialised=currentAggregateArrangement(getState());
       if(workspaceMapMode==='aggregate'){aggregateArrangeSession=null;aggregateArrangeBlend=100;els.arrangeBlendControl?.classList.add('hidden');}
@@ -1034,6 +1031,40 @@ function addDiscussionNote(){
   logEvent('Discussion note added',text.slice(0,70)); $('#discussionText').value=''; renderDiscussion(); toast('Added to discussion.');
 }
 
+let classificationHelpPopover=null;
+function hideClassificationHelp(){
+  classificationHelpPopover?.remove();
+  classificationHelpPopover=null;
+}
+function showClassificationHelp(target){
+  const help=target?.dataset?.help;
+  if(!help)return;
+  hideClassificationHelp();
+  const tip=document.createElement('div');
+  tip.className='classification-help-popover';
+  tip.textContent=help;
+  document.body.appendChild(tip);
+  const r=target.getBoundingClientRect();
+  const tr=tip.getBoundingClientRect();
+  const gap=8, pad=8;
+  let left=r.left+(r.width/2)-(tr.width/2);
+  left=Math.max(pad,Math.min(left,window.innerWidth-tr.width-pad));
+  let top=r.top-tr.height-gap;
+  if(top<pad) top=Math.min(window.innerHeight-tr.height-pad,r.bottom+gap);
+  tip.style.left=`${Math.round(left)}px`;
+  tip.style.top=`${Math.round(Math.max(pad,top))}px`;
+  classificationHelpPopover=tip;
+}
+function bindClassificationHelp(){
+  if(!els.thoughtMatches)return;
+  els.thoughtMatches.querySelectorAll('.classification-help').forEach(button=>{
+    button.addEventListener('mouseenter',()=>showClassificationHelp(button));
+    button.addEventListener('mouseleave',hideClassificationHelp);
+    button.addEventListener('focus',()=>showClassificationHelp(button));
+    button.addEventListener('blur',hideClassificationHelp);
+  });
+}
+
 function updateThoughtSuggestion(){
   if(!els.freeThoughtInput)return;
   const text=els.freeThoughtInput.value.trim();
@@ -1088,6 +1119,7 @@ function updateThoughtSuggestion(){
       els.thoughtTypeSelect.dataset.manual='1';
       updateThoughtSuggestion();
     });
+    bindClassificationHelp();
   }
 }
 

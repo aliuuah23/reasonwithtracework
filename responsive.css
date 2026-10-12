@@ -141,3 +141,12 @@
     transform:translate(0,0);
   }
 }
+
+
+/* Round B1.2 · never hide or ellipsise classifier reasoning at narrow widths */
+@media (max-width:1280px){
+  .thought-reading #thoughtReason{display:block!important;flex:1 0 100%;width:100%;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+}
+@media (max-width:560px){
+  .thought-reading small#thoughtReason{display:block!important}
+}
