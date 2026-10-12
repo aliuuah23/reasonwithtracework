@@ -7,7 +7,7 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots } from './input/hotspot-detector.js';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
@@ -151,6 +151,7 @@ function bindGlobalEvents(){
   $('#addDiscussionButton').onclick=addDiscussionNote;
   els.freeThoughtInput.addEventListener('input',updateThoughtSuggestion);
   els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
+  if(els.thoughtProvenanceSelect) els.thoughtProvenanceSelect.addEventListener('change',updateThoughtSuggestion);
   els.addFreeThoughtButton.onclick=addFreeThought;
   els.addLooseNoteButton.onclick=addLooseNote;
   if(els.undoButton) els.undoButton.onclick=undoLast;
@@ -297,6 +298,12 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
 
 function enterApp(autoSelect=true){
   canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  const entering=getState();
+  if(entering.brief && entering.hotspots?.length){
+    const repaired=attachChunksToHotspots(repairHotspotRanges(entering.brief,entering.hotspots),entering.briefChunks||[]);
+    const changed=repaired.some((h,i)=>h.start!==entering.hotspots[i]?.start || h.end!==entering.hotspots[i]?.end || h.text!==entering.hotspots[i]?.text || h.chunkId!==entering.hotspots[i]?.chunkId);
+    if(changed) patchState({hotspots:repaired},{silent:true});
+  }
   showNodeTypes=getState().frameworkId!=='freeform';
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
@@ -716,7 +723,7 @@ function editNode(node){
         const n=s.nodes.find(x=>x.id===node.id); if(!n)return;
         n.label=val; n.type=nextType; n.updatedAt=new Date().toISOString();
         if(nextType==='note'){
-          const c=classifyThought(val);
+          const c=classifyThought(val,{provenance:nextProvenance});
           n.meta={...n.meta,suggestedType:c.type||'interpretation',classificationReason:c.reason,classificationConfidence:c.confidence,provenance:nextProvenance};
         }else{
           n.meta={...n.meta,typeEdited:changedType||n.meta?.typeEdited,provenance:nextProvenance};
@@ -764,11 +771,10 @@ function manualPhrase(){
         const start=textOffsetWithin(box,range.startContainer,range.startOffset);
         const end=textOffsetWithin(box,range.endContainer,range.endOffset);
         const a=Math.max(0,Math.min(start,end)), b=Math.min(brief.length,Math.max(start,end));
-        const text=brief.slice(a,b).trim();
+        const snapped=normaliseHotspotSelection(brief,a,b);
+        const text=snapped.text;
         if(!text){ picked=null; preview.textContent='Nothing selected yet'; confirm.disabled=true; return; }
-        const leading=brief.slice(a,b).indexOf(text);
-        const localStart=a+Math.max(0,leading);
-        picked={text,start:baseOffset+localStart,end:baseOffset+localStart+text.length};
+        picked={text,start:baseOffset+snapped.start,end:baseOffset+snapped.end};
         preview.textContent=`“${text}”`;
         confirm.disabled=false;
       };
@@ -1029,7 +1035,7 @@ function updateThoughtSuggestion(){
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const activeRole=active?frameworkRoleForNode(active,commandFrameworkId)?.id:null;
   const result=commandFrameworkId==='tracework'
-    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type})
+    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type,provenance:els.thoughtProvenanceSelect?.value||'designer'})
     : classifyFrameworkThought(text,commandFrameworkId,{canonicalType:null,afterRole:activeRole});
   const hasText=Boolean(text);
   els.addFreeThoughtButton.disabled=!hasText;
@@ -1058,10 +1064,16 @@ function updateThoughtSuggestion(){
     : `${best?.strength??Math.round((result.confidence||0)*100)}% match · ${result.reason}`;
 
   if(els.thoughtMatches){
-    els.thoughtMatches.innerHTML=(result.matches||[]).slice(0,4).map((m,i)=>{
+    const allMatches=result.matches||[];
+    const visibleMatches=commandFrameworkId==='tracework'?allMatches:allMatches.slice(0,4);
+    els.thoughtMatches.innerHTML=visibleMatches.map((m,i)=>{
       const role=commandFrameworkId==='tracework'?m.type:m.role;
       const label=commandFrameworkId==='tracework'?(typeLabels[role]||role):(m.category?.label||role);
-      return `<button type="button" class="thought-match ${role===selected?'selected':''} ${i===0?'strongest':''}" data-match-role="${escapeHtml(role)}"><span>${escapeHtml(label)}</span><strong>${m.strength}%</strong></button>`;
+      const definition=m.definition||m.category?.description||'Framework role';
+      const cues=(m.cues||[]).length?` Cues: ${(m.cues||[]).join(' + ')}.`:'';
+      const distinction=m.distinction?` ${m.distinction}`:'';
+      const help=`${definition}${cues}${distinction} Match strength is a wording fit, not a probability.`;
+      return `<button type="button" class="thought-match classification-help ${role===selected?'selected':''} ${i===0?'strongest':''}" data-help="${escapeHtml(help)}" data-match-role="${escapeHtml(role)}"><span>${escapeHtml(label)}</span><strong>${m.strength}%</strong></button>`;
     }).join('');
     els.thoughtMatches.querySelectorAll('[data-match-role]').forEach(b=>b.onclick=()=>{
       els.thoughtTypeSelect.value=b.dataset.matchRole;
@@ -1094,7 +1106,7 @@ function addFreeThought(){
   const active=state.nodes.find(n=>n.id===state.activeNodeId);
   const activeRole=active?frameworkRoleForNode(active,commandFrameworkId)?.id:null;
   const classification=commandFrameworkId==='tracework'
-    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type})
+    ? classifyThought(text,{afterType:active?.type==='note'?null:active?.type,provenance:els.thoughtProvenanceSelect?.value||'designer'})
     : classifyFrameworkThought(text,commandFrameworkId,{afterRole:activeRole});
   const selectedRole=els.thoughtTypeSelect.value||(commandFrameworkId==='tracework'?classification.type:classification.role)||'interpretation';
   const type=commandFrameworkId==='tracework'
@@ -1126,7 +1138,7 @@ function addLooseNote(){
   focusPathRootId=null;
   checkpoint('add note');
   const state=getState(); const active=state.nodes.find(n=>n.id===state.activeNodeId);
-  const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type});
+  const classification=classifyThought(text,{afterType:active?.type==='note'?null:active?.type,provenance:els.thoughtProvenanceSelect?.value||'designer'});
   const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state); const placement=visibleCanvasPlacement(scoped.nodes.length+2);
   const selectedHotspotId=workspaceMapMode==='aggregate' ? (active?.meta?.hotspotId || state.selectedHotspotId || null) : state.selectedHotspotId;
   let created=null;
@@ -1541,7 +1553,7 @@ function openNodeTypeMenu(id,x,y){
       n.type=nextType; n.updatedAt=new Date().toISOString();
       n.meta={...(n.meta||{}),typeEdited:true};
       if(nextType==='note'){
-        const c=classifyThought(n.label||'');
+        const c=classifyThought(n.label||'',{provenance:inferLegacyProvenance(n)});
         n.meta.suggestedType=c.type||'interpretation'; n.meta.classificationReason=c.reason; n.meta.classificationConfidence=c.confidence;
       }else delete n.meta.suggestedType;
       s.edges.filter(e=>e.source===id||e.target===id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});

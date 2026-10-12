@@ -31,7 +31,7 @@ const tutorials = {
       {selector:'#frameworkSelect',title:'Choose a reasoning lens',body:'TRACEWORK Grammar is the default. Literature frameworks change the legend, prompts and classifications without rewriting the underlying thought.'},
       {selector:'#frameworkLockButton',title:'Lock the project lens',body:'Lock the chosen framework when a project should stay in one reading mode. The lock persists with the project and can be reopened at any time.'},
       {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port, double-click to edit, and right-click for lock, grouping or disconnection controls.'},
-      {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are cues, not certainty.'},
+      {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are independent wording fits, not probabilities. Hover a role to see its definition and the cues that triggered it.'},
       {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow from it. The questions change with the active framework.'},
       {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together without changing the individual focus layouts.'}
     ]
@@ -173,7 +173,7 @@ export function openFrameworkTutorial(frameworkId,{firstEncounter=false}={}){
     {selector:'#frameworkSelect',title:`${data.title} · ${data.source||''}`,body:`${data.note}\n\n${data.description}`},
     {selector:'#frameworkLockButton',title:'Keep this lens fixed when needed',body:'Use the lock beside the framework selector to prevent accidental framework changes in this project. Unlock it whenever you want to compare another lens.'},
     {selector:'#ontologyLegend',title:'Read this framework’s roles',body:roleSummary||'The legend changes with the active framework.'},
-    {selector:'#thoughtDock',title:'Classify without pretending certainty',body:`The command line now reads text through ${framework.shortLabel}. Match strengths can overlap; they are cues, not probabilities. You can always change the role.`},
+    {selector:'#thoughtDock',title:'Classify without pretending certainty',body:`The command line now reads text through ${framework.shortLabel}. Match strengths can overlap; they are independent cues, not probabilities. Hover each suggested role to see what it means and why the wording matched. You can always change the role.`},
     {selector:'#inspectorPanel',title:'Probe the selected node',body:'The inspector reads the node you selected. Use “What led here?” to expose prior reasoning or “What follows?” to develop consequences, values, moves or revisions through this framework.'},
     {selector:'#aggregateMapModeButton',title:'Use the framework without losing the original map',body:'Switching frameworks does not rearrange the Aggregate Map. Arrange Map is optional; when used, the slider lets you compare the framework layout with the user’s original arrangement.'}
   ];

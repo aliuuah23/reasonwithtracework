@@ -501,3 +501,17 @@ html.tutorial-tour-active{overflow:hidden}
 .aggregate-controls{max-width:none;width:100%;margin-top:8px;column-gap:7px;row-gap:7px}
 .aggregate-controls select{flex:0 1 150px;max-width:170px}
 .aggregate-controls .arrange-blend{flex:0 0 auto}
+
+/* Round B1 · classification explanation */
+.thought-match.classification-help { position:relative; }
+.thought-match.classification-help::after {
+  content:attr(data-help); position:absolute; z-index:260; left:50%; bottom:calc(100% + 7px); transform:translate(-50%,3px);
+  width:min(290px,72vw); padding:9px 10px; border-radius:9px; background:#171a21; color:#fff; font-size:9px; font-weight:500;
+  line-height:1.48; text-align:left; white-space:normal; box-shadow:0 12px 28px rgba(20,24,38,.24); opacity:0; visibility:hidden;
+  pointer-events:none; transition:.08s ease;
+}
+.thought-match.classification-help:hover::after,.thought-match.classification-help:focus-visible::after { opacity:1; visibility:visible; transform:translate(-50%,0); }
+.thought-match.classification-help:first-child::after { left:0; transform:translate(0,3px); }
+.thought-match.classification-help:first-child:hover::after,.thought-match.classification-help:first-child:focus-visible::after { transform:translate(0,0); }
+.thought-match.classification-help:last-child::after { left:auto; right:0; transform:translate(0,3px); }
+.thought-match.classification-help:last-child:hover::after,.thought-match.classification-help:last-child:focus-visible::after { transform:translate(0,0); }

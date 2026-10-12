@@ -212,19 +212,27 @@ export function classifyFrameworkThought(text,frameworkId,{canonicalType=null,af
   const margin=Math.max(0,best.score-second.score);
   const confidence=Math.max(.28,Math.min(.9,.32+(best.score*.06)+(margin*.04)));
   const matches=ranked.slice(0,4).map((item,index)=>{
-    // Match strengths are deliberately absolute-ish rather than shares of a 100% pie.
+    // Match strengths are deliberately independent rather than shares of a 100% pie.
     // A sentence can strongly fit more than one role without making the strongest role
     // appear weaker simply because another useful reading also becomes visible.
     const strength=item.score<=0?0:Math.max(8,Math.min(92,Math.round(18+item.score*9)));
-    return {role:item.category.id,category:item.category,strength,cues:[...new Set(reasons[item.category.id])].slice(0,3),strongest:index===0};
+    const cues=[...new Set(reasons[item.category.id])].slice(0,3);
+    return {
+      role:item.category.id,category:item.category,strength,cues,strongest:index===0,
+      definition:item.category.description,
+      explanation:cues.length?`Matched because of ${cues.join(', ')}.`:'No strong wording cue detected for this role.'
+    };
   });
   const cues=[...new Set(reasons[best.category.id])].slice(0,4);
-  const cueText=cues.length?`Cues: ${cues.join(' + ')}.`:`Suggested from the overall wording.`;
+  const cueText=cues.length?`Strongest cues: ${cues.join(' + ')}.`:`Suggested from the overall wording.`;
+  const secondMatch=matches[1];
+  const close=secondMatch && secondMatch.strength>0 && Math.abs(matches[0].strength-secondMatch.strength)<=12;
+  const closeText=close?` Close reading: ${secondMatch.category.label} also fits at ${secondMatch.strength}%.`:'';
   return {
     role:best.category.id,
     category:best.category,
     confidence,
-    reason:`${cueText} Match strengths show how strongly the wording fits each role inside ${framework.label}; they are not probabilities and do not need to add to 100. Change the role whenever the framework reading does not match your intent.`,
+    reason:`${cueText}${closeText} Match strengths show how strongly the wording fits each role inside ${framework.label}; they are independent fits, not probabilities. Change the role whenever the framework reading does not match your intent.`,
     matches
   };
 }
