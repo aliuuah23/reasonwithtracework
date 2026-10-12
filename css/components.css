@@ -909,3 +909,41 @@ html.tutorial-tour-active{overflow:hidden}
 .spatial-feature-item strong{display:block;font-size:12px;line-height:1.4;color:#263553}
 .spatial-feature-item p,.spatial-card-intro{color:#5e6b81;font-size:11px;line-height:1.55;margin:4px 0}
 .spatial-version{font-size:10px;font-weight:600;color:#667085;vertical-align:middle;margin-left:5px}
+
+/* Stage C final inspector hierarchy, project recovery and trace audit */
+.operational-framework{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;margin:0 0 12px!important;color:var(--muted);font-size:10px;line-height:1.55}
+.operational-framework strong{color:var(--accent-dark);font-weight:750}
+.project-backup-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:980px;margin:18px auto 12px;padding:13px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.project-backup-bar p{margin:0;font-size:11px;color:var(--muted);line-height:1.5}
+.project-backup-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.project-backup-actions button{white-space:normal}
+.trace-audit{grid-column:1/-1}
+.trace-audit-note{font-size:11px;color:var(--muted);line-height:1.6;margin:0 0 12px}
+.trace-audit-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
+.trace-audit-step{padding:9px 10px;background:var(--surface-soft);border-radius:8px;font-size:11px;line-height:1.45}
+.trace-audit-step strong{display:block;font-size:11px;margin-bottom:3px}
+.trace-audit-step span{color:var(--muted)}
+.trace-audit-issues{padding:0 0 0 18px;font-size:11px;line-height:1.65;margin:12px 0 0}
+.trace-audit-issues li+li{margin-top:5px}
+.trace-audit-small{font-size:10px;color:var(--muted);margin-top:10px}
+@media(max-width:920px){.project-backup-bar{margin:12px 10px}.trace-audit-checks{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}}
+
+/* Stage C2.0: references are suggestions, explicitly not verified literature. */
+.spatial-research-fallback{padding:13px;margin:12px 0;border:1px solid var(--border);background:var(--surface, #f8f9fc);border-radius:13px;min-width:0}
+.spatial-research-fallback h4{margin:0 0 8px;font-size:12px;line-height:1.4;color:#21334b}
+.spatial-research-disclaimer{font-size:11px;line-height:1.6;color:var(--muted);margin:0 0 12px}
+.spatial-research-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:9px}
+.spatial-research-item{padding:10px;border:1px solid var(--border);border-radius:9px;background:#fff;overflow-wrap:anywhere}
+.spatial-research-item strong{font-size:11px;line-height:1.45}
+.spatial-research-links{display:flex;flex-wrap:wrap;gap:5px 11px;margin-top:9px}
+.spatial-research-links a{font-size:10px;font-weight:650;color:var(--accent-dark,#4344bc);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:760px){.spatial-research-items{grid-template-columns:1fr}}
+
+/* Stage C2: clearly differentiated image, vector and PDF outputs */
+.export-map-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(185px,100%),1fr));gap:10px;margin:16px 0}
+.export-map-choice{display:flex;align-items:flex-start;flex-direction:column;text-align:left;gap:6px;padding:15px;min-height:100px;white-space:normal;line-height:1.45}
+.export-map-choice strong{font-size:13px;color:var(--text)}
+.export-map-choice small{font-size:11px;line-height:1.55;color:var(--muted);font-weight:400}
+.export-map-note{font-size:11px;line-height:1.65;color:var(--muted);margin:8px 0 12px}
+.project-audit-stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.project-audit-stats span{padding:6px 9px;background:var(--surface-soft);border:1px solid var(--border);border-radius:7px;font-size:11px}

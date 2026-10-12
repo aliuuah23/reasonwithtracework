@@ -1,0 +1,11 @@
+TRACEWORK Stage C2.0 | Integrated project release candidate | 12 October 2026
+
+- Inspector: Operational Grammar placed beneath Operational Design; feature/project precedents remain separate.
+- Spatial fallback: extracted architectural keywords; scholarly/books/project research-search links for unsupported terms. Distinguish suggested links from verified citations.
+- Map exports: full-bounds SVG vector, 2× PNG raster, A3 vector PDF through browser Print → Save as PDF.
+- My Trace: Import saved JSON as a copy, Project check (diagnostic audit), Export map access.
+- Home: Restore exported JSON available on project shelf.
+- Merge: sourceProjects metadata and per-node sourceProjectName/sourceProjectId.
+- Updated README and tutorials; carried forward all C1.5 spatial-reading features.
+
+Validation: JS syntax, targeted export browser tests, selectable-text PDF, snapshot preview, sample project audit. Final full-site regression still required.

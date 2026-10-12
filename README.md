@@ -1,3 +1,42 @@
+# TRACEWORK — Stage C2.0: Integrated Project Release (12 October 2026)
+
+**Purpose:** Freeze a coherent Stage C integration candidate for Pieter's studio demonstration: cross-hotspot reasoning maps, framework interpretations, spatial-reading support, export/recovery and project quality checks. The full application still needs live-site acceptance testing before a final release freeze. There is no claim of automatic architectural correctness.
+
+## C2.0 changes
+
+1. **Operational Design → Operational Grammar:** the right inspector shows spatial operational questions, overall/detail suggestions, and then the active grammar. Spatial Feature Examples and Built-Project Precedents remain separate.
+2. **Learning even when Spatial Read has no precise match:** nodes and hotspots receive **Architectural Keywords & Suggested Readings** with topical links to Google Scholar, Google Books and built-project searches. These are **unverified external search prompts** rather than fabricated article citations; verified built examples remain a separate curated section.
+3. **Export map in three clear formats:** **SVG vector** (individually editable paths/text for Illustrator/Inkscape), **PNG raster** (2× PNG, reduced for unusually large maps), **PDF vector** (Chrome print dialog, select **Save as PDF**, A3 landscape default). All three include the complete **currently displayed/filtered map** independent of viewport scrolling and zoom; choose **Aggregate Map** and **Show all** before exporting the entire project.
+4. **JSON import without overwriting:** My Trace and the home project shelf now provide Restore/Import saved JSON. Valid projects are added as *new local copies* if a project ID already exists; original local data stays. Invalid JSON, structural errors or excessive files are rejected.
+5. **Project check:** My Trace → **Project check** audits duplicate IDs, broken edges, missing wording, hotspot ranges, brief-source links, disconnected reasoning, and open goal/evaluation/alternative opportunities. Warnings are diagnostic, not architectural judgements, and Freeform need not follow one fixed grammar.
+6. **Combining projects:** combined traces retain the original source project IDs/names and provenance on the copied nodes, while keeping original source briefs, hotspots, branches, connections and status separate.
+7. **Tutorials & documentation:** updated for project recovery, map exports, Original/Arrange layout independence and contextually labelled reading searches.
+
+### How to export a complete vector / raster map
+
+Workspace → **Aggregate Map → Show all** → choose Original or Arrange → **Export map**. Choose SVG, PNG or PDF. The PDF option opens a separate Chrome print tab; in the print destination choose **Save as PDF**. A3 landscape is recommended, but large dense reasoning graphs will be smaller on one page. SVG is preferable for close editing or enlarging a very dense map on A1 critique boards. Focus Map export intentionally exports only the current focus field.
+
+### How to recover work
+
+Export **project JSON** from My Trace before moving between browsers. On the home page choose **Restore exported JSON** or in My Trace choose **Import saved JSON**. Confirm after the project structure is checked. It is stored as a separate local trace so previous work cannot be silently overwritten. Do not use Reset local data without exporting backups.
+
+### Verification and limitations
+
+- **Validated locally:** JavaScript syntax, pilot-example classifier availability, representative project audit, architectural keyword search generation, full-bounds SVG and PNG download, Chrome vector-PDF print output (A3), PDF text extraction, ZIP structure.
+- **Needs deployed acceptance:** all real application UI flows, true Aggregate Map across complex saved traces, no-regression checks for undo, spatial reads, hotspots, and reimporting real user exports on GitHub Pages.
+- **Architectural claims:** Spatial Reading Studio is curated finite vocabulary with schematic diagrammatic studies, not a universal geometry generator or code-compliance engine. Fallback links are **research searches**, not verified sources.
+- **Storage:** Local browser prototype. JSON is the recommended backup; no account/server persistence is implied.
+
+### Install/deploy
+
+1. Extract this ZIP fully, preserve `css/`, `js/`, `data/` directories.
+2. Upload contents into the repository root and replace matching nested paths; avoid flattening files.
+3. Commit as **TRACEWORK C2.0 — Complete Stage C integration, recovery and map export**.
+4. Wait for GitHub Pages, then one Chrome hard refresh (`Ctrl + Shift + R`).
+5. First verify **My Trace → Project check** and **Export map → SVG, PNG, PDF** before a final sign-off.
+
+---
+
 # TRACEWORK Stage C1.5 — Final Spatial Reading & Inspector Tightening
 
 **Purpose:** Keep the C1.4 spatial diagrams, user-driven term investigation and supported-vocabulary limits intact while making automatic term recognition more reliable and the right inspector easier to understand.

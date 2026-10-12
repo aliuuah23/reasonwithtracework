@@ -3,7 +3,8 @@ import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js?v=c1.3';
 import { operationalSuggestions } from '../reasoning/operational-design.js';
-import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c1.5';
+import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c2.0';
+import { researchMarkup } from '../reasoning/reading-suggestions.js?v=c2.0';
 import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
@@ -62,6 +63,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
       ${spatialMiniMarkup(hotspot.text,'input')}
       ${operationalMarkup(hotspot.text,'input',framework.label)}
       ${caseStudyMarkup(cases)}
+    ${researchMarkup(hotspot.text,{compact:true})}
       ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
     restoreInspectorDraft(root,key);
     root.querySelectorAll('.spatial-open-modal').forEach(b=>{b.dataset.spatialText=hotspot.text;b.dataset.spatialType='input';});
@@ -83,6 +85,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     ${spatialMiniMarkup(hotspot.text,'input')}
       ${operationalMarkup(hotspot.text,'input',framework.label)}
       ${caseStudyMarkup(cases)}
+    ${researchMarkup(hotspot.text,{compact:true})}
     ${related.length?`<div class="inspector-section"><h4>Related pathways</h4>${related.map(r=>`<button class="choice-chip" data-related-path="${r.id}">${esc(r.concept)} · ${esc(r.steps[0].text)}</button>`).join('')}</div>`:''}`;
   restoreInspectorDraft(root,key);
   root.querySelectorAll('.spatial-open-modal').forEach(b=>{b.dataset.spatialText=hotspot.text;b.dataset.spatialType='input';});
@@ -128,6 +131,7 @@ export async function renderNodeInspector(node,state,handlers){
       ${spatialMiniMarkup(node.label,'note')}
       ${operationalMarkup(node.label,'note','Freeform')}
       ${caseStudyMarkup(cases)}
+    ${researchMarkup(node.label,{compact:true})}
       <div class="inspector-section"><h4>Note actions</h4><div class="inspector-actions"><button class="secondary-button" id="editNode">Edit</button></div></div>`;
     restoreInspectorDraft(root,key);
     root.querySelectorAll('.spatial-open-modal').forEach(b=>{b.dataset.spatialText=node.label;b.dataset.spatialType='note';});
@@ -163,6 +167,7 @@ export async function renderNodeInspector(node,state,handlers){
     ${spatialMiniMarkup(node.label,node.type)}
     ${operationalMarkup(node.label,node.type,framework.label)}
     ${caseStudyMarkup(cases)}
+    ${researchMarkup(node.label,{compact:true})}
     <div class="inspector-section"><h4>Path actions</h4><div class="inspector-actions">${node.type==='interpretation'?'<button class="secondary-button action-help" id="branchFromNode" data-help="Alternative reading = create another interpretation of the same source language. Use this when the wording itself could plausibly mean something else.">Alternative reading</button>':''}${node.type!=='goal'?'<button class="secondary-button action-help" id="forkFromNode" data-help="Fork next step = keep this node, but create another possible downstream move from it. The current reading stays the same; what happens next changes.">Fork next step</button>':''}${node.type==='input' && node.meta?.hotspotId?'<button class="secondary-button action-help" id="editInputHotspot">✎ Edit source selection</button>':''}<button class="secondary-button action-help" id="editNode" data-help="Edit the wording or reasoning role of this node. You can also double-click the node on the canvas.">Edit</button>${node.type!=='input'?(node.status==='rejected'?'<button class="secondary-button action-help" id="restoreBranch" data-help="Bring this retained reasoning route back into active consideration.">Restore path</button>':'<button class="secondary-button action-help" id="rejectBranch" data-help="Keep this route visible as reasoning history, but stop treating it as part of the active design direction.">Reject path</button>'):''}</div></div>`;
   root.querySelectorAll('.spatial-open-modal').forEach(b=>{b.dataset.spatialText=node.label;b.dataset.spatialType=node.type;});
   if(framework.id!=='tracework'&&framework.id!=='freeform') bindFrameworkNext(root,node,framework,frameworkRole,guide,(text,roleId,extra)=>handlers.onFrameworkNext?.(node,text,roleId,extra));
@@ -180,11 +185,12 @@ export async function renderNodeInspector(node,state,handlers){
 function operationalMarkup(text,type,frameworkLabel){
   const s=operationalSuggestions(text,type,frameworkLabel);
   return `<section class="inspector-section operational-reading" aria-label="Spatial translation suggestions">
-    <h4>Operational design · ${esc(s.frame)}</h4>
+    <h4>Operational Design</h4>
     <p class="operational-disclaimer">These are questions for spatialising this wording, not generated design solutions.</p>
     <div class="operation-choice"><strong>Overall suggestion</strong><p>${esc(s.overall)}</p></div>
     <div class="operation-choice"><strong>Detail suggestion</strong><p>${esc(s.detail)}</p></div>
     <div class="operation-next"><strong>Reasoning check</strong> ${esc(s.probe)}</div>
+    <p class="operational-framework">Operational Grammar <strong>${esc(s.frame)}</strong></p>
     <p class="operational-disclaimer">Open <strong>Spatial read</strong> on the node for schematic plan / 3D tests; compare a related case below when an architectural term matches.</p>
   </section>`;
 }

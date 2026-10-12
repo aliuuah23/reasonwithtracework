@@ -1,3 +1,5 @@
+import { auditProject } from './core/project-audit.js';
+import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=c2.0';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
@@ -22,11 +24,11 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c1.5';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c2.0';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
-import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c1.5';
+import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.0';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
@@ -158,6 +160,12 @@ function bindGlobalEvents(){
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
   $('#pathwaySearch').addEventListener('input',e=>renderPathwayCards(e.target.value));
   $('#exportJsonButton').onclick=()=>{exportProject(getState());toast('Project exported.');};
+  $('#exportMapButton').onclick=openMapExport;
+  $('#exportMapTraceButton').onclick=()=>{showView('workspace');openMapExport();};
+  $('#importJsonButton').onclick=()=>$('#importJsonFile').click();
+  $('#importJsonHomeButton').onclick=()=>$('#importJsonFile').click();
+  $('#importJsonFile').onchange=handleProjectImport;
+  $('#projectAuditButton').onclick=openProjectAudit;
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
   $('#addDiscussionButton').onclick=addDiscussionNote;
   els.freeThoughtInput.addEventListener('input',updateThoughtSuggestion);
@@ -1083,6 +1091,60 @@ function confirmResetLocalData(){
   }});
 }
 
+function openMapExport(){
+  if(!getState().nodes?.length){toast('Add a reasoning node before exporting a map.');return;}
+  const label=workspaceMapMode==='aggregate'?`Aggregate ${aggregateArrangeSession?'Arrange':'Original'} Map`:'Focus Map';
+  // Snapshot lazily on button click, after layout and SVG wires have refreshed.
+  openModal(`<h2 id="modalTitle">Export reasoning map</h2><p>Export the entire <strong>${escapeHtml(label)}</strong> as displayed, not only the portion currently in view. Switch to Aggregate Map first to export all paths.</p>
+  <div class="export-map-choice-grid"><button type="button" class="secondary-button export-map-choice" data-map-format="svg"><strong>SVG · Vector</strong><small>Scalable/editable nodes, labels and wires — Illustrator or Inkscape</small></button>
+  <button type="button" class="secondary-button export-map-choice" data-map-format="png"><strong>PNG · High-resolution image</strong><small>2× raster export for boards and slides</small></button>
+  <button type="button" class="secondary-button export-map-choice" data-map-format="pdf"><strong>PDF · Vector print</strong><small>A3 landscape print layout; choose Save as PDF in Chrome</small></button></div>
+  <p class="export-map-note">The chosen map layout and its visible filters are preserved. SVG and the print-to-PDF option retain vector strokes and text. For extremely dense maps, inspect legibility at the intended print size.</p>
+  <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div>`,{onOpen:m=>m.querySelectorAll('[data-map-format]').forEach(button=>button.onclick=async()=>{
+    let snap;try{snap=createMapSnapshot({surface:els.graphSurface,edges:els.graphEdges,projectName:getState().projectName,viewLabel:label,frameworkLabel:getFramework(getState().frameworkId).label});}
+    catch(err){toast(err.message||'Could not capture map.');return;}
+    const fmt=button.dataset.mapFormat;
+    if(fmt==='pdf'){try{exportMapPDF(snap);}catch(err){toast(err.message);}return;}
+    button.disabled=true;
+    try{if(fmt==='svg')exportMapSVG(snap);else await exportMapPNG(snap);toast(`${fmt.toUpperCase()} map exported.`);}
+    catch(err){toast(`Map export failed: ${err.message}`);}
+    finally{button.disabled=false;}
+  })});
+}
+function openProjectAudit(){
+  const a=auditProject(getState());
+  const row=(items,type)=>items.length?items.map(v=>`<li>${escapeHtml(v)}</li>`).join(''):`<li>No ${type} identified.</li>`;
+  openModal(`<h2 id="modalTitle">TRACEWORK project check</h2>
+  <p>Checks recorded connections, source traceability and open pathways. This is <strong>not</strong> a judgement of architectural quality.</p>
+  <div class="project-audit-stats"><span>${a.stats.nodes} nodes</span><span>${a.stats.edges} wires</span><span>${a.stats.hotspots} hotspots</span><span>${a.stats.branches} branches</span></div>
+  <h3>${a.technicallyConsistent?'✓ Structure consistent':'Structural issues to review'}</h3><ul>${row(a.problems,'structural errors')}</ul>
+  <h3>Open reasoning opportunities</h3><ul>${row(a.warnings,'additional issues')}</ul>
+  <p>Observed categories: ${a.stages.map(s=>`${escapeHtml(s.label)} ${s.recorded?'✓':'–'}`).join(' · ')}</p>
+  <div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div>`);
+}
+async function handleProjectImport(e){
+  const input=e.currentTarget,file=input.files?.[0];input.value='';if(!file)return;
+  if(file.size>12_000_000){toast('JSON backup is too large (12 MB maximum).');return;}
+  let data;try{data=JSON.parse(await file.text());}catch{toast('This is not valid JSON.');return;}
+  const candidate=data?.project?.brief?data.project:(data?.brief?data:null);
+  if(!candidate || !Array.isArray(candidate.nodes)||!Array.isArray(candidate.edges)||!Array.isArray(candidate.hotspots)){
+    toast('File is not a TRACEWORK project export.');return;
+  }
+  const audit=auditProject(candidate);
+  if(audit.problems.length){toast('This project has structural errors and was not imported.');openModal(`<h2 id="modalTitle">Import blocked</h2><p>${audit.problems.map(x=>escapeHtml(x)).join('<br>')}</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div>`);return;}
+  const existing=new Set(listProjects().map(x=>x.projectId));
+  const project=structuredClone(candidate);
+  if(!project.projectId||existing.has(project.projectId))project.projectId=`tw-import-${Date.now()}`;
+  const prevName=String(project.projectName||'Recovered trace');
+  project.projectName=existing.has(candidate.projectId)?`${prevName} (imported copy)`:prevName;
+  project.updatedAt=new Date().toISOString();
+  openModal(`<h2 id="modalTitle">Import TRACEWORK project?</h2><p><strong>${escapeHtml(project.projectName)}</strong> has ${project.nodes.length} nodes and ${project.edges.length} connections. It will be saved as a separate local project; existing work is not overwritten.</p>
+  ${audit.warnings.length?`<p>${audit.warnings.length} reasoning warnings can be reviewed after import.</p>`:''}
+  <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmProjectImport">Import copy</button></div>`,{onOpen:m=>m.querySelector('#confirmProjectImport').onclick=()=>{
+    if(!ensureProject(project)){toast('Could not save imported project. Check available browser storage.');return;}
+    closeModal();renderProjectShelf();toast('Project imported as a new local trace.');
+  }});
+}
 function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current trace stays saved in this browser. You can reopen it from the project shelf.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{saveProject(getState());resetState();closeModal();els.briefLanding.value='';if(els.projectNameLanding)els.projectNameLanding.value='';showLanding();};}}); }
 
 
@@ -1212,11 +1274,12 @@ function confirmCombineProjects(){
 }
 function combineProjectCopies(parts,title){
   let brief='';
-  const chunks=[],hotspots=[],nodes=[],edges=[],history=[];
+  const chunks=[],hotspots=[],nodes=[],edges=[],history=[],sourceProjects=[];
   for(const [idx,p] of parts.entries()){
     const prefix=`merged-${idx+1}-`;
     const source=String(p.brief||'');
     if(!source)continue;
+    sourceProjects.push({id:p.projectId,name:shelfName(p),framework:p.frameworkId||'tracework',sourceFile:p.sourceFileName||null});
     if(brief)brief+='\n\n';
     const start=brief.length;
     brief+=source;
@@ -1227,7 +1290,7 @@ function combineProjectCopies(parts,title){
       hotspots.push({...h,id:prefix+h.id,chunkId,start:start+h.start,end:start+h.end});
     }
     for(const node of p.nodes||[]){
-      const meta={...(node.meta||{})};
+      const meta={...(node.meta||{}),sourceProjectId:p.projectId,sourceProjectName:shelfName(p)};
       if(meta.hotspotId)meta.hotspotId=prefix+meta.hotspotId;
       if(meta.groupId)meta.groupId=prefix+meta.groupId;
       nodes.push({...structuredClone(node),id:prefix+node.id,branchId:prefix+(node.branchId||'branch-1'),meta,
@@ -1240,7 +1303,7 @@ function combineProjectCopies(parts,title){
   return {version:2,projectId:`tw-combined-${Date.now()}`,projectName:title,brief,briefMode:'document',briefChunks:chunks,
     activeBriefChunkId:chunks[0]?.id||null,sourceFileName:'Combined projects',frameworkId:parts[0]?.frameworkId||'tracework',
     frameworkLocked:false,hotspots,nodes,edges,selectedHotspotId:null,activeNodeId:null,activeBranchId:'branch-1',
-    view:'workspace',history,comments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    view:'workspace',history,sourceProjects,comments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
 
 function openSavedProject(id){

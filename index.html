@@ -9,10 +9,10 @@
   <link rel="preconnect" href="https://www.archdaily.com" crossorigin>
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css?v=c1.5">
-  <link rel="stylesheet" href="css/components.css?v=c1.5">
-  <link rel="stylesheet" href="css/graph.css?v=c1.5">
-  <link rel="stylesheet" href="css/responsive.css?v=c1.5">
+  <link rel="stylesheet" href="css/layout.css?v=c2.0">
+  <link rel="stylesheet" href="css/components.css?v=c2.0">
+  <link rel="stylesheet" href="css/graph.css?v=c2.0">
+  <link rel="stylesheet" href="css/responsive.css?v=c2.0">
 </head>
 <body>
   <header class="topbar">
@@ -69,7 +69,7 @@
         </div>
       </div>
 
-      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Local for now · future accounts can use private studios or classrooms.</span></div><div class="project-grid" id="projectShelf"></div><div class="project-shelf-tools"><button type="button" class="secondary-button" id="combineProjectsButton" disabled>Combine projects (select 2+)</button><div class="test-cleanup-actions" id="testCleanupActions"></div></div></section>
+      <section class="project-shelf hidden" id="projectShelfWrap"><div class="project-shelf-head"><div><span class="product-kicker">Saved in this browser</span><h2>Your traces</h2></div><span class="project-local-note">Local for now · future accounts can use private studios or classrooms.</span></div><div class="project-grid" id="projectShelf"></div><div class="project-shelf-tools"><button type="button" class="secondary-button" id="combineProjectsButton" disabled>Combine projects (select 2+)</button><button type="button" class="secondary-button" id="importJsonHomeButton">Restore exported JSON</button><div class="test-cleanup-actions" id="testCleanupActions"></div></div></section>
 
       <div class="landing-proof" aria-label="TRACEWORK workflow">
         <span>Language</span><i></i><span>Interpretation</span><i></i><span>Grounding</span><i></i><span>Spatial consequence</span><i></i><span>Evaluation</span><i></i><span>Goal</span>
@@ -192,6 +192,7 @@
               </div>
             </div>
             <div class="toolbar-actions">
+              <button class="tool-button" id="exportMapButton" type="button" title="Export the full visible map as vector SVG, high-resolution PNG or vector PDF">⇩ Export map</button>
               <button class="tool-button" id="undoButton" type="button" disabled>↶ Undo</button>
               <button class="tool-button" id="findNodeButton" type="button" title="Find a node · Ctrl+F">⌕ Find</button>
               <button class="tool-button" id="focusPathButton" type="button" title="Isolate the upstream and downstream reasoning around the selected node" disabled>◎ Focus path</button>
@@ -253,7 +254,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original/Arrange changes propagate node moves across views · Focus path isolates one route · Ctrl+Z undo</span>
+            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original influences Arrange; Arrange never moves Original · Focus path isolates one route · Ctrl+Z undo</span>
           </div>
         </section>
 
@@ -286,6 +287,9 @@
           </div>
           <div class="trace-actions">
             <button class="secondary-button" id="exportJsonButton">Export project</button>
+            <button class="secondary-button" id="importJsonButton" type="button">Import saved JSON</button><input type="file" id="importJsonFile" accept=".json,application/json" hidden>
+            <button class="secondary-button" id="projectAuditButton" type="button">Project check</button>
+            <button class="secondary-button" id="exportMapTraceButton" type="button">Export map · SVG / PNG / PDF</button>
             <button class="secondary-button danger-subtle" id="resetLocalDataButton">Reset local data</button>
           </div>
         </div>
@@ -326,6 +330,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=c1.5"></script>
+  <script type="module" src="js/app.js?v=c2.0"></script>
 </body>
 </html>

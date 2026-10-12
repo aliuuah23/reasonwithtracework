@@ -12,7 +12,7 @@ const tutorials = {
       {selector:'.brief-mode-toggle',title:'Choose how the source enters',body:'Quick brief is for compact prompts. Long brief / document is for larger briefs that can be filed into editable chunks.'},
       {selector:'#landingBrief',title:'Start from real language',body:'Paste the wording you actually received or are working with. TRACEWORK begins from language rather than assuming the design problem is already resolved.'},
       {selector:'#startTracingButton',title:'Enter the reasoning workspace',body:'Start tracing creates the project locally in this browser. Nothing is published by opening a trace.'},
-      {selector:'#projectShelf',title:'Return to saved traces',body:'Projects saved in this browser remain available here. Opening one restores its reasoning without making it the active project forever.'}
+      {selector:'#projectShelf',title:'Return to saved traces',body:'Saved projects remain in this browser. Open an existing trace, combine projects while retaining source provenance, or restore a previously exported JSON using Restore exported JSON.'}
     ]
   },
   landing: {
@@ -34,8 +34,9 @@ const tutorials = {
       {selector:'#frameworkLockButton',title:'Lock the project lens',body:'Lock the chosen framework when a project should stay in one reading mode. The lock persists with the project and can be reopened at any time.'},
       {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port or choose “Connect to…” on a node, then select a clearly labelled destination and direction, double-click to edit, and right-click for lock, grouping or disconnection controls. Every node can open Spatial Reading Studio: select a term within its sentence or search by architectural word, then inspect annotated plan, section, any available axonometric, feature types, verified project references and research links. If no precise term matches, the studio explains what to ground rather than inventing a drawing.'},
       {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are independent wording fits, not probabilities. Hover a role to see its definition and the cues that triggered it.'},
-      {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow from it. The questions change with the active framework. Overall suggestions describe system-level moves; Detail suggestions suggest a spatial test. Both are prompts, not automated solutions.'},
-      {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together. The Original/Arrange toggle changes the layout; manual node movement stays synchronised with Focus Map.'}
+      {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow. Overall and Detail spatial suggestions are prompts, not automatic solutions. When no precise spatial drawing is available, the inspector suggests architectural keywords and clearly labelled external reading searches.'},
+      {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map joins the project’s reasoning fields. Original stores the editable network; Arrange provides an independently movable framework-based presentation layout. Reflow does not change Original.'},
+      {selector:'#exportMapButton',title:'Export your reasoning map',body:'Export all visible nodes and wires, not just what fits on-screen. Choose SVG for vector editing, PNG for a high-resolution image, or PDF as a vector print (choose Save as PDF in Chrome). Switch to Aggregate Map first for a full project overview.'}
     ]
   },
   pathways: {
@@ -49,7 +50,8 @@ const tutorials = {
     eyebrow:'MY TRACE TOUR',title:'Read the project’s reasoning memory',
     steps:[
       {selector:'#traceDashboard',title:'Keep the project history visible',body:'Active, provisional, alternative and rejected reasoning can remain visible rather than being flattened into only the final decision.'},
-      {selector:'#exportJsonButton',title:'Export when needed',body:'Export Project creates a portable project record. Reset local data is destructive, so use it only when deliberately clearing browser-stored traces.'}
+      {selector:'#exportJsonButton',title:'Backup and restore your project',body:'Export Project creates a portable JSON backup. Import saved JSON restores a copy without overwriting existing work. Project check reports missing links or open branches; it does not determine design quality. Reset local data is destructive.'},
+      {selector:'#exportMapTraceButton',title:'Take maps to a board or critique',body:'Use SVG for fully scalable vector maps, PNG for high-resolution raster images, or PDF for printable vector maps via Chrome Save as PDF.'}
     ]
   },
   discussion: {
