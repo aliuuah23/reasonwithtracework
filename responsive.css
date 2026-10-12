@@ -150,7 +150,9 @@
 @media (max-width:560px){
   .thought-reading small#thoughtReason{display:block!important}
 }
-\n\n/* Round B1.3 · preserve complete classifier reasoning at every responsive width */
+
+
+/* Round B1.3 · preserve complete classifier reasoning at every responsive width */
 @media (max-width:1280px){
   .thought-reason{display:block!important;width:auto!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
 }

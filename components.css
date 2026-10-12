@@ -537,7 +537,9 @@ html.tutorial-tour-active{overflow:hidden}
   line-height:1.5; text-align:left; white-space:normal; overflow-wrap:anywhere;
   box-shadow:0 14px 34px rgba(20,24,38,.28); pointer-events:none;
 }
-\n\n/* Round B1.3 · root fix: inline source highlights + one edge-safe help system */
+
+
+/* Round B1.3 · root fix: inline source highlights + one edge-safe help system */
 .hotspot-inline{
   display:inline!important;
   appearance:none;
@@ -613,3 +615,45 @@ html.tutorial-tour-active{overflow:hidden}
   background:#dfe0ff!important;
   color:var(--accent-dark);
 }
+
+/* Round B1.6 — stable, left-aligned document typography and segment-safe marks */
+.brief-document{
+  margin-top:16px;
+  padding:13px 12px;
+  font-size:13px;
+  line-height:1.72;
+  font-weight:400;
+  font-variant-ligatures:normal;
+  letter-spacing:normal;
+  word-spacing:normal;
+  text-align:left!important;
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+  word-break:normal;
+  hyphens:none;
+  tab-size:2;
+}
+.brief-document .hotspot-inline{
+  font:inherit;
+  font-weight:550;
+  letter-spacing:inherit;
+  word-spacing:inherit;
+  color:inherit;
+  display:inline!important;
+  padding:0!important;
+  margin:0!important;
+  border:0;
+  border-radius:2px;
+  background:#eae9ff!important;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+  cursor:pointer;
+}
+.brief-document .hotspot-inline.active,
+.brief-document .hotspot-inline:hover{
+  background:#cbc7ff!important;
+  color:#31288a;
+}
+
+.test-cleanup-actions{display:flex;align-items:center;justify-content:flex-end;padding:10px 2px 2px;gap:8px}
+.test-cleanup-actions .secondary-button{font-size:11px;padding:8px 11px}

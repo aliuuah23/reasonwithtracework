@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.5';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.6';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b1.5';
+import { renderGraph } from './graph/graph-renderer.js?v=b1.6';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.5';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.6';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -824,7 +824,7 @@ function renderSavedTraceLibrary(){
   const root=$('#traceDashboard'); if(!root)return;
   const projects=listProjects();
   if(!projects.length){ root.innerHTML='<div class="empty-state-card" style="grid-column:1/-1">No traces are saved in this browser yet. Start one in Workspace and it will appear here.</div>'; return; }
-  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
+  root.innerHTML=`<section class="saved-trace-library">${projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-library-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-library-project="${escapeHtml(p.projectId)}" title="Delete trace">×</button></div></article>`).join('')}</section>`;
   root.querySelectorAll('[data-open-library-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openLibraryProject));
   root.querySelectorAll('[data-delete-library-project]').forEach(b=>b.onclick=()=>confirmDeleteSavedProject(b.dataset.deleteLibraryProject));
 }
@@ -951,12 +951,70 @@ function stripLegacyAggregateDemo(project){
   return true;
 }
 
+// Two canonical test fixtures only. The browser may also contain older tests
+// saved under unrelated generated IDs; those are retired only with confirmation.
+const CANONICAL_TEST_IDS=new Set(['tracework-test-pavilion','tracework-test-aggregate-pavilion-v1']);
+function isNamedTestProject(p){
+  return Boolean(p && (
+    String(p.projectId||'').startsWith('tracework-test-') ||
+    /\b(?:test|testing)\b/i.test(String(p.projectName||''))
+  ));
+}
+function shelfName(p){
+  if(p?.projectId==='tracework-test-pavilion')return 'Short brief — Flexible Pavilion';
+  if(p?.projectId==='tracework-test-aggregate-pavilion-v1')return 'Long brief — Flexible Pavilion';
+  return p?.projectName||'Untitled trace';
+}
+function downloadRetiredTestBackup(projects){
+  if(!projects.length)return;
+  const content={exportedAt:new Date().toISOString(),purpose:'Retired TRACEWORK test projects',projects};
+  const blob=new Blob([JSON.stringify(content,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`tracework-retired-tests-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function confirmCleanTestProjects(){
+  const retired=listProjects().filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
+  if(!retired.length)return;
+  const descriptions=retired.map(p=>`<li>${escapeHtml(shelfName(p))}</li>`).join('');
+  openModal(`<h2 id="modalTitle">Keep only the two pavilion test briefs?</h2>
+    <p>Retire ${retired.length} older test trace${retired.length===1?'':'s'} listed below. TRACEWORK downloads a JSON backup before removal. The long and short test projects, and any other saved work, will stay.</p>
+    <ul>${descriptions}</ul>
+    <div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmCleanTests">Back up and tidy tests</button></div>`,{
+      onOpen:m=>m.querySelector('#confirmCleanTests').onclick=async()=>{
+        // Preserve the user's modifications to canonical tests. Recreate them
+        // only if missing, then retire only extra test-labelled traces.
+        try{
+          const names=['test-project.json','aggregate-test-project.json'];
+          for(const name of names){
+            const response=await fetch(`./data/${name}?v=b1.6`);
+            if(response.ok)ensureProject(await response.json());
+          }
+          localStorage.removeItem('tracework.dismissedTestProject.v1');
+          localStorage.removeItem('tracework.dismissedAggregateTestProject.v1');
+          downloadRetiredTestBackup(retired);
+          retired.forEach(p=>deleteProject(p.projectId));
+          closeModal();renderProjectShelf();toast(`Tidied ${retired.length} older test traces. Backup downloaded.`);
+        }catch(err){console.error(err);toast('Could not tidy tests. Your saved traces were not deleted.');}
+      }
+    });
+}
+
 function renderProjectShelf(){
   const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
   if(!wrap||!root)return;
-  const projects=listProjects().slice(0,8);
+  const allProjects=listProjects();
+  const projects=allProjects.slice(0,8);
   wrap.classList.toggle('hidden',!projects.length);
-  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(p.projectName||'Untitled trace')}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  const cleanup=$('#testCleanupActions');
+  if(cleanup){
+    const stale=allProjects.filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
+    cleanup.innerHTML=stale.length?`<button type="button" class="secondary-button" id="tidyTestProjectsButton">Keep 2 test briefs · retire ${stale.length} old test${stale.length===1?'':'s'}</button>`:'';
+    cleanup.querySelector('#tidyTestProjectsButton')?.addEventListener('click',confirmCleanTestProjects);
+  }
   root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
   root.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); confirmDeleteSavedProject(b.dataset.deleteProject); });
 }

@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.5';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.6';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -51,10 +51,18 @@ function resolveHotspotForText(text,h,expectedStart=Number(h.start)||0){
   // chunk, always use that exact phrase rather than trusting the old range.
   if(h.text){
     const found=nearestLocalMatch(source,h.text,start);
-    if(found){ start=found.start; end=found.end; }
+    // Never draw a highlight at a stale offset when the intended wording is
+    // absent. This matters for chunked briefs and older locally saved traces:
+    // otherwise unrelated letters/words are highlighted after selections.
+    if(!found) return null;
+    start=found.start;
+    end=found.end;
+  } else if(end<=start){
+    return null;
   }
 
   const snapped=normaliseHotspotSelection(source,start,end);
+  if(snapped.end<=snapped.start) return null;
   return {...h,start:snapped.start,end:snapped.end};
 }
 
@@ -73,7 +81,7 @@ function chunkContentStart(fullBrief,chunk){
 function relativeHotspots(hotspots,chunk,fullBrief=''){
   if(!chunk) return hotspots;
   const contentStart=chunkContentStart(fullBrief,chunk);
-  return hotspots.map(h=>resolveHotspotForText(chunk.text,h,(Number(h.start)||0)-contentStart));
+  return hotspots.map(h=>resolveHotspotForText(chunk.text,h,(Number(h.start)||0)-contentStart)).filter(Boolean);
 }
 
 function isDesignerSelected(h){
@@ -189,34 +197,35 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
 
 export function highlightBrief(text,hotspots,selectedId){
   if(!text)return '';
-  // Never trust stale character offsets blindly. Long briefs can be re-chunked or
-  // edited after hotspot detection, so re-resolve every highlight against its
-  // stored wording before drawing it. This prevents chopped highlights such as
-  // “individ” + “uals and small groups”.
-  const resolved=(hotspots||[]).map(h=>resolveHotspotForText(text,h,Number(h.start)||0));
-  const selected=resolved.find(h=>h.id===selectedId);
-  const ranked=[...resolved].sort((a,b)=>{
-    if(selected && a.id===selected.id)return -1;
-    if(selected && b.id===selected.id)return 1;
-    const ak=a.kind==='phrase'?1:0,bk=b.kind==='phrase'?1:0;
-    return bk-ak || (b.end-b.start)-(a.end-a.start) || a.start-b.start;
-  });
-  const chosen=[];
-  for(const h of ranked){
-    if(!chosen.some(x=>h.start<x.end&&h.end>x.start))chosen.push(h);
+  const resolved=(hotspots||[])
+    .map(h=>resolveHotspotForText(text,h,Number(h.start)||0))
+    .filter(h=>h && h.end>h.start);
+  if(!resolved.length)return escapeHtml(text);
+
+  // Round B1.6: treat highlights as overlapping intervals, NOT as a race where
+  // the latest selected term hides every overlapping longer phrase. Partition
+  // only at true interval boundaries; highlight the union of ALL matching text.
+  // A selected word/phrase gets an active tint inside the still-visible larger
+  // phrase, rather than destroying its surrounding highlight.
+  const cuts=[0,text.length];
+  for(const h of resolved){cuts.push(h.start,h.end);}
+  cuts.sort((a,b)=>a-b);
+  const boundaries=cuts.filter((n,i)=>i===0 || n!==cuts[i-1]);
+  let result='';
+  for(let i=0;i<boundaries.length-1;i++){
+    const a=boundaries[i],b=boundaries[i+1];
+    if(a>=b)continue;
+    const section=escapeHtml(text.slice(a,b));
+    const covering=resolved.filter(h=>h.start<=a&&h.end>=b);
+    if(!covering.length){result+=section;continue;}
+    const active=covering.find(h=>h.id===selectedId);
+    // Non-active clicks favour the most informative full phrase. Every other
+    // overlapping hotspot remains selectable in the hotspot chip list.
+    const primary=active || covering.sort((x,y)=>(y.end-y.start)-(x.end-x.start))[0];
+    const title=isDesignerSelected(primary)?'Selected by designer':primary.kind==='word'?'Word':'Phrase';
+    result+=`<span class="hotspot-inline${active?' active':''}" role="button" tabindex="0" data-hotspot="${escapeHtml(primary.id)}" title="${title} hotspot · trace this reading">${section}</span>`;
   }
-  chosen.sort((a,b)=>a.start-b.start);
-  let cursor=0,out='';
-  chosen.forEach(h=>{
-    out+=escapeHtml(text.slice(cursor,h.start));
-    // IMPORTANT: use a true inline text element, not <button>. Browsers render
-    // buttons as unbreakable inline-block/flow-root controls even when CSS asks
-    // for display:inline, so a multi-line hotspot could only paint its background
-    // on the final wrapped line. <span> fragments correctly across every line.
-    out+=`<span class="hotspot-inline ${h.id===selectedId?'active':''}" role="button" tabindex="0" data-hotspot="${h.id}" title="${isDesignerSelected(h)?'Selected by designer':h.kind==='word'?'Word':'Phrase'} hotspot · trace this reading">${escapeHtml(text.slice(h.start,h.end))}</span>`;
-    cursor=h.end;
-  });
-  return out+escapeHtml(text.slice(cursor));
+  return result;
 }
 export function renderLegend(ontology){
   document.getElementById('ontologyLegend').innerHTML=ontology.map(o=>`<span class="legend-item has-help" style="--legend-color:${o.color}" data-help="${escapeHtml(o.description||'Framework role')}"><i></i>${escapeHtml(o.label||o.id)}</span>`).join('');
