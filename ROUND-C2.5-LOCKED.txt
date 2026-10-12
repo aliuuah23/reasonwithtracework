@@ -1,0 +1,16 @@
+TRACEWORK C2.5 — LOCKED STUDIO BASELINE
+
+- C2.4 architecture and website functionality preserved unchanged.
+- Removed automatic sample seeding at boot so new browsers start with zero traces.
+- Preserved all existing browser-local traces and current device tutorial state.
+- Renamed optional sample import to 'Try long + short examples'.
+- Confirmed local data reset now also resets welcome and per-framework tutorials on THAT browser only.
+- No remote deletion of devices is technically possible with localStorage.
+- Refreshed main module URL version to load C2.5 reliably.
+
+FINAL EXPORT ADDITION (same C2.5 baseline)
+- Explicit Preview map button before SVG, PNG, or vector PDF print.
+- Hide rejected nodes, rejected wires and wires connected to removed nodes in snapshot only; defaults ON.
+- Auto-arrange diagram at export time using trace edges; defaults ON, never changes saved maps.
+- Export the exact preview to all three formats.
+- Current browser data and restored test traces unchanged.

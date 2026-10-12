@@ -1,5 +1,5 @@
 import { auditProject } from './core/project-audit.js';
-import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=c2.0';
+import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=c2.5-export-final';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
@@ -29,7 +29,7 @@ import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=c2.5-locked';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -84,8 +84,8 @@ async function init(){
       const id=[...selectedNodeIds][0]||getState().activeNodeId;
       return id?els.graphNodes?.querySelector(`[data-id="${CSS.escape(String(id))}"]`):null;
     }});
-  await seedTestProject();
-  await seedAggregateTestProject();
+  // C2.5: new devices deliberately start empty. Existing browser projects remain untouched.
+  // The two canonical examples are added only when the visitor clicks Try long + short examples.
   renderProjectShelf();
   renderEmptyInspector();
   const params=new URLSearchParams(window.location.search);
@@ -1102,9 +1102,10 @@ function confirmLeaveForAbout(){
 }
 
 function confirmResetLocalData(){
-  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. The built-in test project will be available again the next time TRACEWORK loads.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
+  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. It also resets tutorial progress on this browser. Examples are available later through Try long + short examples; nothing will be added automatically.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
     const ok=clearAllProjects();
     if(!ok){toast('Could not clear local data.');return;}
+    resetTutorialProgress();
     resetState();
     closeModal();
     els.briefLanding.value='';
@@ -1119,22 +1120,57 @@ function confirmResetLocalData(){
 function openMapExport(){
   if(!getState().nodes?.length){toast('Add a reasoning node before exporting a map.');return;}
   const label=workspaceMapMode==='aggregate'?`Aggregate ${aggregateArrangeSession?'Arrange':'Original'} Map`:'Focus Map';
-  // Snapshot lazily on button click, after layout and SVG wires have refreshed.
-  openModal(`<h2 id="modalTitle">Export reasoning map</h2><p>Export the entire <strong>${escapeHtml(label)}</strong> as displayed, not only the portion currently in view. Switch to Aggregate Map first to export all paths.</p>
-  <div class="export-map-choice-grid"><button type="button" class="secondary-button export-map-choice" data-map-format="svg"><strong>SVG · Vector</strong><small>Scalable/editable nodes, labels and wires — Illustrator or Inkscape</small></button>
-  <button type="button" class="secondary-button export-map-choice" data-map-format="png"><strong>PNG · High-resolution image</strong><small>2× raster export for boards and slides</small></button>
-  <button type="button" class="secondary-button export-map-choice" data-map-format="pdf"><strong>PDF · Vector print</strong><small>A3 landscape print layout; choose Save as PDF in Chrome</small></button></div>
-  <p class="export-map-note">The chosen map layout and its visible filters are preserved. SVG and the print-to-PDF option retain vector strokes and text. For extremely dense maps, inspect legibility at the intended print size.</p>
-  <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div>`,{onOpen:m=>m.querySelectorAll('[data-map-format]').forEach(button=>button.onclick=async()=>{
-    let snap;try{snap=createMapSnapshot({surface:els.graphSurface,edges:els.graphEdges,projectName:getState().projectName,viewLabel:label,frameworkLabel:getFramework(getState().frameworkId).label});}
-    catch(err){toast(err.message||'Could not capture map.');return;}
-    const fmt=button.dataset.mapFormat;
-    if(fmt==='pdf'){try{exportMapPDF(snap);}catch(err){toast(err.message);}return;}
-    button.disabled=true;
-    try{if(fmt==='svg')exportMapSVG(snap);else await exportMapPNG(snap);toast(`${fmt.toUpperCase()} map exported.`);}
-    catch(err){toast(`Map export failed: ${err.message}`);}
-    finally{button.disabled=false;}
-  })});
+  // Preview uses a separate SVG snapshot; it does not change saved node positions,
+  // map filters, branching history, or any existing workspace state.
+  openModal(`<h2 id="modalTitle">Export reasoning map</h2>
+    <p>Choose what the exported map includes, then preview the <strong>${escapeHtml(label)}</strong> before downloading. For all pathways, first switch to Aggregate Map → Show all.</p>
+    <div class="map-export-options">
+      <label class="map-export-toggle"><input type="checkbox" id="exportHideRejected" checked><span><strong>Hide rejected pathways</strong><small>Leave rejected reasoning in the TRACEWORK project; exclude it from this export only.</small></span></label>
+      <label class="map-export-toggle"><input type="checkbox" id="exportAutoArrange" checked><span><strong>Automatically arrange export</strong><small>Create a clean, connected presentation layout without moving your saved nodes.</small></span></label>
+    </div>
+    <div class="map-export-preview-actions"><button class="primary-button compact" id="exportPreviewButton" type="button">Preview map</button><span id="exportPreviewStatus" role="status">No preview generated yet.</span></div>
+    <div class="map-export-preview" id="exportPreviewArea" hidden><div id="exportPreviewArtwork" class="map-export-preview-artwork"></div></div>
+    <div class="export-map-choice-grid"><button type="button" class="secondary-button export-map-choice" data-map-format="svg" disabled><strong>SVG · Editable vector</strong><small>For Illustrator, Inkscape and large boards</small></button>
+    <button type="button" class="secondary-button export-map-choice" data-map-format="png" disabled><strong>PNG · High-resolution image</strong><small>For presentations and documentation</small></button>
+    <button type="button" class="secondary-button export-map-choice" data-map-format="pdf" disabled><strong>PDF · Vector print</strong><small>A3 landscape, choose Save as PDF in Chrome</small></button></div>
+    <p class="export-map-note">The preview is the version that will be exported. Hidden branches and auto-arranged positions are <strong>not</strong> deleted or saved back to the project.</p>
+    <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div>`,{onOpen:m=>{
+    const hide=m.querySelector('#exportHideRejected'),arrange=m.querySelector('#exportAutoArrange');
+    const area=m.querySelector('#exportPreviewArea'),artwork=m.querySelector('#exportPreviewArtwork');
+    const status=m.querySelector('#exportPreviewStatus'),choices=[...m.querySelectorAll('[data-map-format]')];
+    let preview=null;
+    const buildPreview=()=>{
+      try{
+        const snap=createMapSnapshot({
+          surface:els.graphSurface,edges:els.graphEdges,projectEdges:getState().edges||[],
+          projectName:getState().projectName,viewLabel:label,frameworkLabel:getFramework(getState().frameworkId).label,
+          omitRejected:hide.checked,arrange:arrange.checked
+        });
+        // SVG content is generated from escaped node labels and trusted CSS colours.
+        artwork.innerHTML=snap.svg;
+        area.hidden=false;preview=snap;
+        choices.forEach(button=>button.disabled=false);
+        status.textContent=`Preview ready: ${snap.count} nodes, ${snap.wireCount} connections${snap.hiddenCount?`, ${snap.hiddenCount} rejected nodes hidden`:''}.`;
+      }catch(err){
+        preview=null;artwork.innerHTML='';area.hidden=true;
+        choices.forEach(button=>button.disabled=true);
+        status.textContent=err.message||'Could not preview map.';
+      }
+    };
+    m.querySelector('#exportPreviewButton').onclick=buildPreview;
+    // A changed option never exports a stale preview.
+    hide.onchange=()=>{if(preview)buildPreview();};
+    arrange.onchange=()=>{if(preview)buildPreview();};
+    choices.forEach(button=>button.onclick=async()=>{
+      if(!preview)return;
+      const fmt=button.dataset.mapFormat,snap=preview;
+      if(fmt==='pdf'){try{exportMapPDF(snap);}catch(err){toast(err.message);}return;}
+      button.disabled=true;
+      try{if(fmt==='svg')exportMapSVG(snap);else await exportMapPNG(snap);toast(`${fmt.toUpperCase()} map exported.`);}
+      catch(err){toast(`Map export failed: ${err.message}`);}
+      finally{button.disabled=false;}
+    });
+  }});
 }
 function openProjectAudit(){
   const a=auditProject(getState());
@@ -1201,7 +1237,7 @@ async function restoreTestExamples(){
     if(shelf&&!shelf.classList.contains('hidden'))shelf.scrollIntoView({behavior:'smooth',block:'start'});
     toast(added?`Restored ${added} test example${added===1?'':'s'}. Open them under Your traces.`:'Both examples are already saved. Open them under Your traces.');
   }catch(error){console.error('Example restoration failed',error);toast('Could not restore example traces. Existing projects were not changed.');}
-  finally{if(button){button.disabled=false;button.textContent='Restore long + short test projects';}}
+  finally{if(button){button.disabled=false;button.textContent='Try long + short examples';}}
 }
 
 async function seedTestProject(){

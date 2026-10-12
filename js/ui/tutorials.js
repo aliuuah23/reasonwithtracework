@@ -36,7 +36,7 @@ const tutorials = {
       {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are independent wording fits, not probabilities. Hover a role to see its definition and the cues that triggered it.'},
       {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow. Overall and Detail spatial suggestions are prompts, not automatic solutions. When no precise spatial drawing is available, the inspector suggests architectural keywords and clearly labelled external reading searches.'},
       {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map joins the project’s reasoning fields. Original stores the editable network; Arrange provides an independently movable framework-based presentation layout. Reflow does not change Original.'},
-      {selector:'#exportMapButton',title:'Export your reasoning map',body:'Export all visible nodes and wires, not just what fits on-screen. Choose SVG for vector editing, PNG for a high-resolution image, or PDF as a vector print (choose Save as PDF in Chrome). Switch to Aggregate Map first for a full project overview.'}
+      {selector:'#exportMapButton',title:'Export your reasoning map',body:'Preview a clean, automatically arranged export, optionally hiding rejected pathways while preserving them in the project. Then choose SVG vector, PNG image, or PDF vector print (Chrome Save as PDF). Switch to Aggregate Map → Show all first for a full project overview.'}
     ]
   },
   pathways: {
@@ -213,3 +213,18 @@ export function maybeOpenFirstVisitTutorial(section='welcome'){
 }
 
 function escapeHtml(t=''){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+
+
+// Reset only TRACEWORK tutorial completion markers on THIS browser, after
+// an explicit confirmed local reset. Never touch other devices or project data.
+export function resetTutorialProgress(){
+  try{
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i)||'';
+      if(key.startsWith('tracework:tutorial-seen:') || key.startsWith('tracework:framework-tutorial:')) keys.push(key);
+    }
+    keys.forEach(key=>localStorage.removeItem(key));
+    return true;
+  }catch(error){console.warn('Could not reset tutorial progress on this browser.',error);return false;}
+}

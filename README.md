@@ -1,3 +1,34 @@
+
+## C2.5 locked studio — Export preview addition
+
+From **Workspace → Export map** (or **My Trace → Export map**):
+
+1. **Hide rejected pathways** is enabled by default. This removes rejected nodes and their incident/rejected wires **from the exported diagram only**, not from saved reasoning. Disable it to include all visible reasoning.
+2. **Automatically arrange export** is enabled by default. It uses the surviving nodes and connection directions to produce a left-to-right presentation layout without changing any saved Original, Focus or Arrange Map positions. Disable it to export the current arrangement.
+3. Click **Preview map** to see exactly the diagram that SVG, PNG and vector print-to-PDF will use. Adjusting either option refreshes the preview. Export buttons stay disabled until a preview succeeds.
+4. Choose **SVG (editable vector)**, **PNG (raster image)** or **PDF (vector print via Chrome Save as PDF)**. The export is independent of the viewport zoom and saves no edits to the project.
+
+The export always honours the *current displayed map scope*: for a project-wide export, switch to **Aggregate Map → Show all** first. The auto-layout is intended for presentation legibility; complex cyclic traces may still need refinement in an illustration editor.
+
+# TRACEWORK C2.5 — Locked Studio Baseline
+
+**12 October 2026 · minimal onboarding and examples change from the stable C2.4 release.**
+
+- **Existing browser projects remain untouched.** No traces are migrated, deleted, renamed or overwritten on deployment. The current author's restored short and long examples remain saved.
+- **Fresh browsers start with zero projects.** Automatic seeding of example traces has been disabled. First-time tutorials start normally on a browser with no tutorial completion marker.
+- **Try long + short examples** adds the canonical sample projects *only after a click*. Repeated clicks do not overwrite edits or create duplicate sample IDs.
+- **Previously used other devices:** local storage cannot be remotely cleared or reliably identified as belonging to a different person. To clear one, open a project and use **My Trace → Reset local data**, then explicitly confirm. This now also resets tutorials on that browser. Do not do this on a device whose existing work should be retained.
+- **Stable release lock:** the reasoning engine, existing frameworks, map rendering, spatial literacy, linked reading guides, export tools and responsive styles remain identical to C2.4.
+
+## Verification for C2.5
+
+1. Open the site on the main browser and confirm previously saved traces remain.
+2. Open in a new private browsing session: no existing traces should appear, and the first-time tour should open.
+3. Click **Try long + short examples** once: both sample traces should appear; clicking again should not duplicate them.
+4. On any *other* browser with existing local data, use the confirmed **Reset local data** only if the owner chooses to erase that browser's traces and replay tutorials.
+
+---
+
 # TRACEWORK C2.4 — Final Usability Pass
 
 **12 October 2026 · built on C2.3 critical recovery.**

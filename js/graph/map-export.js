@@ -41,14 +41,80 @@ function nodeData(root){
       selected:el.classList.contains('selected'),locked:el.classList.contains('locked')};
   });
 }
-function svgSnapshot({surface,edges,projectName,viewLabel,frameworkLabel}){
-  const nodes=nodeData(surface);if(!nodes.length)throw Error('There are no visible nodes to export.');
+// Presentation-only layout. The editor's node coordinates are NEVER modified.
+// Levels follow the actual reasoning wires rather than assuming every project
+// uses the same six-stage, forward-only grammar.
+function presentationLayout(nodes,edges){
+  const byId=new Map(nodes.map(n=>[n.id,n]));
+  const indegree=new Map(nodes.map(n=>[n.id,0]));
+  const outgoing=new Map(nodes.map(n=>[n.id,[]]));
+  const incoming=new Map(nodes.map(n=>[n.id,[]]));
+  edges.forEach(e=>{
+    if(!byId.has(e.source)||!byId.has(e.target)||e.source===e.target)return;
+    outgoing.get(e.source).push(e.target);incoming.get(e.target).push(e.source);
+    indegree.set(e.target,indegree.get(e.target)+1);
+  });
+  const typeOrder={input:0,interpretation:1,grounding:2,consequence:3,evaluation:4,goal:5,note:2};
+  const originalOrder=(a,b)=>a.y-b.y || a.x-b.x || a.id.localeCompare(b.id);
+  const queue=nodes.filter(n=>indegree.get(n.id)===0).sort(originalOrder);
+  const ranks=new Map(nodes.map(n=>[n.id,0]));
+  const consumed=new Set();
+  while(queue.length){
+    const n=queue.shift();if(consumed.has(n.id))continue;consumed.add(n.id);
+    for(const target of outgoing.get(n.id)){
+      ranks.set(target,Math.max(ranks.get(target)||0,(ranks.get(n.id)||0)+1));
+      indegree.set(target,indegree.get(target)-1);
+      if(indegree.get(target)===0){queue.push(byId.get(target));queue.sort(originalOrder);}
+    }
+  }
+  // Cycles are legitimate in a recursive design trace; place their remaining
+  // nodes by node role instead of creating an infinite rank/position loop.
+  for(const n of nodes)if(!consumed.has(n.id))ranks.set(n.id,typeOrder[n.type]??2);
+  // Extremely deep traces are legible as a bounded set of columns rather
+  // than an indefinitely long, tiny map on an A3 sheet.
+  for(const [id,r] of ranks)ranks.set(id,Math.min(9,r));
+  const columns=new Map();
+  for(const n of nodes){const rank=ranks.get(n.id)||0;if(!columns.has(rank))columns.set(rank,[]);columns.get(rank).push(n);}
+  const result=[];const located=new Map();let x=72;
+  for(const rank of [...columns.keys()].sort((a,b)=>a-b)){
+    const group=columns.get(rank);
+    group.sort((a,b)=>{
+      const avg=n=>{
+        const preds=incoming.get(n.id).filter(id=>located.has(id));
+        return preds.length?preds.reduce((sum,id)=>sum+located.get(id).y,0)/preds.length:n.y;
+      };
+      return avg(a)-avg(b)||originalOrder(a,b);
+    });
+    let y=105;const width=Math.max(240,...group.map(n=>n.w));
+    for(const n of group){
+      const placed={...n,x,y};result.push(placed);located.set(n.id,placed);
+      y+=n.h+58;
+    }
+    x+=width+115;
+  }
+  return result;
+}
+function wireCurve(a,b){
+  const x1=a.x+a.w,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2;
+  const dx=Math.max(50,Math.abs(x2-x1)*.45),direction=x2>=x1?1:-1;
+  return `M ${x1} ${y1} C ${x1+dx*direction} ${y1}, ${x2-dx*direction} ${y2}, ${x2} ${y2}`;
+}
+function svgSnapshot({surface,edges,projectEdges=[],projectName,viewLabel,frameworkLabel,omitRejected=false,arrange=true}){
+  const original=nodeData(surface);
+  const filtered=omitRejected?original.filter(n=>!n.rejected):original;
+  if(!filtered.length)throw Error('No nodes remain with these export settings. Uncheck Hide rejected pathways.');
+  const nodeIds=new Set(filtered.map(n=>n.id));
+  const pathById=new Map([...edges.querySelectorAll('path.trace-edge:not(.draft-connection)')].map(p=>[p.dataset.edgeId,p]));
+  const edgeData=projectEdges.filter(e=>nodeIds.has(e.source)&&nodeIds.has(e.target)&&(!omitRejected||e.status!=='rejected')&&pathById.has(e.id));
+  const nodes=arrange?presentationLayout(filtered,edgeData):filtered;
+  const byId=new Map(nodes.map(n=>[n.id,n]));
   const box=boundsFor(nodes),width=Math.ceil(box.width),height=Math.ceil(box.height+66);
   const title=String(projectName||'TRACEWORK reasoning map');
-  const edgePaths=[...edges.querySelectorAll('path.trace-edge')].filter(e=>e.getAttribute('d')&&!e.classList.contains('draft-connection'));
-  const wires=edgePaths.map(p=>{
-    const st=getComputedStyle(p);
-    return `<path d="${escape(p.getAttribute('d'))}" fill="none" stroke="${escape(st.stroke&&st.stroke!=='none'?st.stroke:'#798293')}" stroke-width="${p.classList.contains('selected')?'3.2':'2.1'}" opacity="${p.classList.contains('rejected')?'.4':'.85'}"${st.strokeDasharray&&st.strokeDasharray!=='none'?` stroke-dasharray="${escape(st.strokeDasharray)}"`:''}/>`;
+  const wires=edgeData.map(e=>{
+    const p=pathById.get(e.id),st=getComputedStyle(p);
+    const d=arrange?wireCurve(byId.get(e.source),byId.get(e.target)):p.getAttribute('d');
+    if(!d)return '';
+    return `<path d="${escape(d)}" fill="none" stroke="${escape(st.stroke&&st.stroke!=='none'?st.stroke:'#798293')}" stroke-width="${p.classList.contains('selected')?'3.2':'2.1'}" opacity="${e.status==='rejected'?'.4':'.85'}"${st.strokeDasharray&&st.strokeDasharray!=='none'?` stroke-dasharray="${escape(st.strokeDasharray)}"`:''}/>`;
   }).join('');
   const cards=nodes.map(n=>{
     const c=TYPES[n.type]||TYPES.note;
@@ -56,7 +122,6 @@ function svgSnapshot({surface,edges,projectName,viewLabel,frameworkLabel}){
     const role=wrapText(n.role,n.w-34,'700 11px Arial');
     const labelY=24+(role.length-1)*13+25;
     const h=n.h;
-    // Export gets additional room for multi-line labels instead of cropping them.
     const status=n.rejected?'Rejected':n.locked?'Locked':n.status;
     return `<g transform="translate(${n.x},${n.y})" opacity="${n.rejected?'.54':'1'}">
       <rect width="${n.w}" height="${h}" rx="12" fill="#ffffff" stroke="${c}" stroke-opacity="${n.selected?'.75':'.30'}" stroke-width="${n.selected?2.2:1}"/>
@@ -67,16 +132,18 @@ function svgSnapshot({surface,edges,projectName,viewLabel,frameworkLabel}){
     </g>`;
   }).join('');
   const contentH=Math.max(height,...nodes.map(n=>n.y+n.h-box.top+48));
+  const mode=arrange?'Auto-arranged export':'Current layout';
+  const rejection=omitRejected?' • Rejected pathways hidden':'';
   const markup=`<svg xmlns="${SVGNS}" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${contentH}" viewBox="0 0 ${width} ${contentH}" role="img" aria-label="${escape(title)}">
   <rect width="100%" height="100%" fill="#ffffff"/>
   <text x="32" y="29" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#24283b">${escape(title)}</text>
-  <text x="32" y="48" font-family="Arial,sans-serif" font-size="11" fill="#64748b">TRACEWORK • ${escape(viewLabel)} • ${escape(frameworkLabel)} • ${nodes.length} nodes</text>
+  <text x="32" y="48" font-family="Arial,sans-serif" font-size="11" fill="#64748b">TRACEWORK • ${escape(viewLabel)} • ${escape(frameworkLabel)} • ${mode}${rejection} • ${nodes.length} nodes</text>
   <g transform="translate(${-box.left},${-box.top+66})">${wires}${cards}</g>
   </svg>`;
-  return {svg:markup,width,height:contentH,count:nodes.length,title};
+  return {svg:markup,width,height:contentH,count:nodes.length,hiddenCount:original.length-filtered.length,wireCount:edgeData.length,title};
 }
-export function createMapSnapshot({surface,edges,projectName,viewLabel,frameworkLabel}){
-  return svgSnapshot({surface,edges,projectName,viewLabel,frameworkLabel});
+export function createMapSnapshot({surface,edges,projectEdges=[],projectName,viewLabel,frameworkLabel,omitRejected=false,arrange=true}){
+  return svgSnapshot({surface,edges,projectEdges,projectName,viewLabel,frameworkLabel,omitRejected,arrange});
 }
 export function exportMapSVG(snap){saveBlob(new Blob([snap.svg],{type:'image/svg+xml;charset=utf-8'}),safeName(snap.title)+'-map.svg');}
 export async function exportMapPNG(snap,{scale=2}={}){
