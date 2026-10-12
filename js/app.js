@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.2';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b2.3';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b2.2';
+import { renderGraph } from './graph/graph-renderer.js?v=b2.3';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.2';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b2.3';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -55,7 +55,7 @@ let aggregateChunkFilter = 'all';
 let aggregateTypeFilter = 'all';
 let aggregateStatusFilter = 'all';
 let aggregateArrangeSession = null;
-let aggregateArrangeBlend = 100;
+let aggregateArrangeBlend = 0;
 const undoStack = [];
 const MAX_UNDO = 30;
 const projectMergeSelection=new Set();
@@ -118,7 +118,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),arrangeBlendControl:$('#arrangeBlendControl'),arrangeBlendSlider:$('#arrangeBlendSlider'),arrangeBlendLabel:$('#arrangeBlendLabel'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
   });
 }
 
@@ -174,7 +174,7 @@ function bindGlobalEvents(){
   if(els.aggregateStatusFilter) els.aggregateStatusFilter.onchange=()=>{ aggregateStatusFilter=els.aggregateStatusFilter.value||'all'; focusPathRootId=null; selectedEdgeId=null; renderWorkspace(); };
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
-  if(els.arrangeBlendSlider) els.arrangeBlendSlider.oninput=()=>applyAggregateArrangeBlend(Number(els.arrangeBlendSlider.value)||0);
+  if(els.originalAggregateButton) els.originalAggregateButton.onclick=()=>setAggregateLayout('original');
   document.addEventListener('keydown',handleWorkspaceKeydown,{capture:true});
   bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
@@ -428,17 +428,45 @@ function renderGraphState(){
       checkpoint((ids||[]).length>1?'move selected reasoning nodes':'move reasoning node');
     },
     onNodeMove:(id,x,y)=>{
-      let materialised=null;
-      if(workspaceMapMode==='aggregate' && aggregateArrangeSession)materialised=currentAggregateArrangement(getState());
-      if(workspaceMapMode==='aggregate'){aggregateArrangeSession=null;aggregateArrangeBlend=100;els.arrangeBlendControl?.classList.add('hidden');}
-      updateState(s=>{
-        if(workspaceMapMode==='aggregate' && materialised){
-          s.nodes.forEach(node=>{const pos=materialised.get(node.id);if(pos)node.meta={...(node.meta||{}),aggregateOriginalPosition:{x:pos.x,y:pos.y}};});
+      // B2.3: One position change propagates by the SAME displacement to focus,
+      // original aggregate and each framework arrangement. Layouts retain their
+      // different structure, while manually moved nodes stay in sync in every view.
+      const state=getState();
+      const n=state.nodes.find(node=>node.id===id);
+      if(!n)return;
+      const shown=workspaceMapMode==='aggregate'
+        ? currentAggregateArrangement(state).get(id)||{x:Number(n.x)||0,y:Number(n.y)||0}
+        : {x:Number(n.x)||0,y:Number(n.y)||0};
+      const dx=x-shown.x,dy=y-shown.y;
+      if(!Number.isFinite(dx)||!Number.isFinite(dy)||(!dx&&!dy))return;
+      updateState(st=>{
+        const node=st.nodes.find(item=>item.id===id);if(!node)return;
+        node.x=(Number(node.x)||0)+dx;
+        node.y=(Number(node.y)||0)+dy;
+        const meta=node.meta={...(node.meta||{})};
+        const original=aggregateOriginalPositions(state).get(id)||{x:Number(n.x)||0,y:Number(n.y)||0};
+        meta.aggregateOriginalPosition={x:original.x+dx,y:original.y+dy};
+        if(meta.aggregateArrangedPositions){
+          const edited={...meta.aggregateArrangedPositions};
+          Object.entries(edited).forEach(([key,pos])=>{
+            if(pos&&Number.isFinite(Number(pos.x))&&Number.isFinite(Number(pos.y)))
+              edited[key]={x:Number(pos.x)+dx,y:Number(pos.y)+dy};
+          });
+          meta.aggregateArrangedPositions=edited;
         }
-        const n=s.nodes.find(n=>n.id===id); if(!n)return;
-        if(workspaceMapMode==='aggregate')n.meta={...(n.meta||{}),aggregateOriginalPosition:{x,y}};
-        else { n.x=x; n.y=y; }
       });
+      if(aggregateArrangeSession){
+        for(const map of [aggregateArrangeSession.before,aggregateArrangeSession.target]){
+          const pos=map.get(id);if(pos)map.set(id,{x:pos.x+dx,y:pos.y+dy});
+        }
+        // Remember manual changes to arranged locations across a page reload.
+        if(workspaceMapMode==='aggregate' && aggregateArrangeBlend===100){
+          const target=aggregateArrangeSession.target.get(id);
+          if(target)updateState(st=>{const node=st.nodes.find(item=>item.id===id);if(node){
+            node.meta={...(node.meta||{}),aggregateArrangedPositions:{...(node.meta?.aggregateArrangedPositions||{}),[aggregateArrangeSession.frameworkId]:{...target}}};
+          }});
+        }
+      }
     },
     getScale:()=>canvasZoom,
     selectedEdgeId,
@@ -2031,12 +2059,15 @@ function updateFrameworkControls(state){
     if(framework.id==='freeform') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred types':'Reveal inferred types';
     else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
   }
+  const arranged=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id && aggregateArrangeBlend===100;
   if(els.arrangeAggregateButton){
-    const arranged=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id;
-    els.arrangeAggregateButton.textContent=arranged?'Original layout':'Arrange map';
-    els.arrangeAggregateButton.title=arranged
-      ? 'Return to the user-arranged Aggregate Map without changing any reasoning.'
-      : (framework.id==='freeform'?'Preview a low-structure arrangement while preserving the original layout.':`Preview an arrangement through ${framework.label}${framework.source&&framework.source!==framework.label?` · ${framework.source}`:''} while preserving the original layout.`);
+    els.arrangeAggregateButton.classList.toggle('active',arranged);
+    els.arrangeAggregateButton.setAttribute('aria-pressed',String(arranged));
+    els.arrangeAggregateButton.title=`Arrange the aggregate through ${framework.label}. Node moves will also update Original and Focus maps.`;
+  }
+  if(els.originalAggregateButton){
+    els.originalAggregateButton.classList.toggle('active',!arranged);
+    els.originalAggregateButton.setAttribute('aria-pressed',String(!arranged));
   }
   if(els.workspaceTutorialButton){
     if(framework.id==='tracework'){
@@ -2050,12 +2081,6 @@ function updateFrameworkControls(state){
       delete els.workspaceTutorialButton.dataset.tutorial;
       els.workspaceTutorialButton.title=`Reopen the ${framework.label} framework guide`;
     }
-  }
-  if(els.arrangeBlendControl){
-    const usable=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id;
-    els.arrangeBlendControl.classList.toggle('hidden',!usable);
-    if(usable && els.arrangeBlendSlider){els.arrangeBlendSlider.value=String(aggregateArrangeBlend);}
-    if(usable && els.arrangeBlendLabel){els.arrangeBlendLabel.textContent=aggregateArrangeBlend<=0?'Original':aggregateArrangeBlend>=100?'Framework 100%':`Framework ${aggregateArrangeBlend}%`; }
   }
   renderLegend(frameworkLegend(framework.id));
 }
@@ -2077,7 +2102,7 @@ function setFrameworkMode(id='tracework'){
   showNodeTypes=framework.id!=='freeform';
   aggregateTypeFilter='all';
   selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
-  aggregateArrangeSession=null; aggregateArrangeBlend=100;
+  aggregateArrangeSession=null; aggregateArrangeBlend=0;
   renderWorkspace();
   updateThoughtSuggestion();
   maybeOpenFrameworkTutorial(framework.id);
@@ -2232,7 +2257,11 @@ function deoverlapAggregateLayout(nodes,positions){
 function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracework'){
   const nodes=state.nodes||[];
   // Generate a fresh framework layout only when Arrange Map is explicitly requested.
-  const savedPosition=()=>null;
+  const savedPosition=n=>{
+    const pos=n.meta?.aggregateArrangedPositions?.[frameworkId];
+    return pos && Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.y))
+      ? {x:Number(pos.x),y:Number(pos.y)} : null;
+  };
 
   if(frameworkId==='freeform'){
     const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
@@ -2374,35 +2403,23 @@ function workspaceTrace(state){
   return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
 }
 
-function arrangeAggregateMap({recordUndo=true,quiet=false}={}){
+// A deliberate two-position toggle, never a blend slider.
+function arrangeAggregateMap(){setAggregateLayout('arranged');}
+function setAggregateLayout(mode='original'){
   if(workspaceMapMode!=='aggregate')return;
-  const frameworkId=getState().frameworkId||'tracework';
-  if(aggregateArrangeSession?.frameworkId===frameworkId){
-    aggregateArrangeSession=null;aggregateArrangeBlend=100;
-    selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
-    renderWorkspace();
-    if(!quiet)toast('Returned to the user’s original Aggregate Map arrangement.');
-    return;
+  const arranged=mode==='arranged';
+  const state=getState(),frameworkId=state.frameworkId||'tracework';
+  if(arranged && (!aggregateArrangeSession || aggregateArrangeSession.frameworkId!==frameworkId)){
+    checkpoint(`arrange ${frameworkId} aggregate map`);
+    const before=aggregateOriginalPositions(state);
+    const target=frameworkAggregateLayout(state,frameworkId);
+    aggregateArrangeSession={frameworkId,before:new Map(before),target:new Map(target)};
   }
-  if(recordUndo)checkpoint(`preview ${frameworkId} aggregate arrangement`);
-  const state=getState();
-  const before=aggregateOriginalPositions(state);
-  const target=frameworkAggregateLayout(state,frameworkId);
-  aggregateArrangeSession={frameworkId,before:new Map(before),target:new Map(target)};
-  aggregateArrangeBlend=100;
+  aggregateArrangeBlend=arranged?100:0;
   selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
   renderWorkspace();
   setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
-  if(!quiet)toast(`${getFramework(frameworkId).label} arrangement previewed. The original user layout is preserved; use the slider or Arrange map again to return.`);
-}
-
-function applyAggregateArrangeBlend(value=100){
-  if(workspaceMapMode!=='aggregate'||!aggregateArrangeSession)return;
-  const frameworkId=getState().frameworkId||'tracework';
-  if(aggregateArrangeSession.frameworkId!==frameworkId)return;
-  aggregateArrangeBlend=Math.max(0,Math.min(100,Number(value)||0));
-  if(els.arrangeBlendLabel)els.arrangeBlendLabel.textContent=aggregateArrangeBlend<=0?'Original':aggregateArrangeBlend>=100?'Framework 100%':`Framework ${Math.round(aggregateArrangeBlend)}%`;
-  renderGraphState();
+  toast(arranged?'Arrange map · framework layout. Moving nodes also moves them in Original and Focus maps.':'Original map · user layout. Moving nodes also moves them in Arrange and Focus maps.');
 }
 
 function scopedTrace(state){

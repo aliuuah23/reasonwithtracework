@@ -9,10 +9,10 @@
   <link rel="preconnect" href="https://www.archdaily.com" crossorigin>
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css?v=b2.2">
-  <link rel="stylesheet" href="css/components.css?v=b2.2">
-  <link rel="stylesheet" href="css/graph.css?v=b2.2">
-  <link rel="stylesheet" href="css/responsive.css?v=b2.2">
+  <link rel="stylesheet" href="css/layout.css?v=b2.3">
+  <link rel="stylesheet" href="css/components.css?v=b2.3">
+  <link rel="stylesheet" href="css/graph.css?v=b2.3">
+  <link rel="stylesheet" href="css/responsive.css?v=b2.3">
 </head>
 <body>
   <header class="topbar">
@@ -158,6 +158,7 @@
                       <span>Framework</span>
                       <select id="frameworkSelect" aria-label="Reasoning framework">
                       <option value="tracework">TRACEWORK Grammar</option>
+                      <option value="freeform">Freeform / Low-Structure</option>
                       <optgroup label="Literature frameworks">
                         <option value="requirements">Requirements Elicitation</option>
                         <option value="fivewhys">Five Whys</option>
@@ -166,7 +167,6 @@
                         <option value="reflective">Reflective Practice</option>
                         <option value="semantics">Design Semantics</option>
                       </optgroup>
-                        <option value="freeform">Freeform / Low-Structure</option>
                       </select>
                     </label>
                     <button class="framework-lock-button" id="frameworkLockButton" type="button" aria-pressed="false" aria-label="Lock framework for this project" title="Lock this project's framework so it cannot be changed accidentally"><span class="framework-lock-glyph" aria-hidden="true"></span></button>
@@ -185,7 +185,10 @@
                 <select id="aggregateTypeFilter" aria-label="Filter aggregate map by node type"><option value="all">All node types</option></select>
                 <select id="aggregateStatusFilter" aria-label="Filter aggregate map by working status"><option value="all">All statuses</option><option value="active">Active</option><option value="provisional">Provisional</option><option value="rejected">Rejected</option></select>
                 <button class="aggregate-action" id="resetAggregateFiltersButton" type="button" title="Clear filters and pathway focus to restore the full project field">Show all</button>
-                <button class="aggregate-action" id="arrangeAggregateButton" type="button" title="Reflow the aggregate into a legible project-wide reasoning field without changing the individual focus maps">Arrange map</button><label class="arrange-blend hidden" id="arrangeBlendControl" title="Blend between the layout you had before Arrange map and the framework arrangement"><span>Arrangement</span><input id="arrangeBlendSlider" type="range" min="0" max="100" value="100" step="1"><output id="arrangeBlendLabel">Framework 100%</output></label>
+                <div class="aggregate-layout-toggle" role="group" aria-label="Aggregate layout">
+                  <button class="aggregate-action active" id="originalAggregateButton" type="button" aria-pressed="true">Original map</button>
+                  <button class="aggregate-action" id="arrangeAggregateButton" type="button" aria-pressed="false">Arrange map</button>
+                </div>
               </div>
             </div>
             <div class="toolbar-actions">
@@ -250,7 +253,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Focus path isolates one route · Ctrl+Z undo</span>
+            <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original/Arrange changes propagate node moves across views · Focus path isolates one route · Ctrl+Z undo</span>
           </div>
         </section>
 
@@ -323,6 +326,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=b2.2"></script>
+  <script type="module" src="js/app.js?v=b2.3"></script>
 </body>
 </html>

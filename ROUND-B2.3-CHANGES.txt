@@ -1,0 +1,10 @@
+TRACEWORK Round B2.3 — 12 October 2026
+
+1. Read-only brief: darkened/underlined hotspot highlighting on pointer hover.
+2. Aggregate Map: two-button Original map / Arrange map toggle replaces arrangement slider.
+3. Dragging a node in Focus, Original, or Arrange mode propagates its displacement to all views (while keeping their distinct overall arrangements).
+4. Arranged node offsets are saved per framework; linked reasoning is never rewritten by a layout toggle.
+5. Framework ordering: TRACEWORK Grammar, Freeform / Low-Structure, then literature frameworks.
+6. README and tutorial text updated.
+
+Existing Stage B functionality preserved. Do not upload ZIP itself: Extract All and upload the css/, data/, js/ directories plus root files to the repo root.

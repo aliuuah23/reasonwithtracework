@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.2';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b2.3';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -241,6 +241,7 @@ export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
   if(registry){
     registry.delete('tracework-brief-suggested');
     registry.delete('tracework-brief-active');
+    registry.delete('tracework-brief-hover');
   }
   const rangeFor=(start,end)=>{
     const first=at(start),last=at(end);
@@ -264,7 +265,7 @@ export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
         }
       }
       const active=rangeFor(left,right);
-      if(active)registry.set('tracework-brief-active',new Highlight(active));
+      if(active){const activeHighlight=new Highlight(active);activeHighlight.priority=5;registry.set('tracework-brief-active',activeHighlight);}
     }
   }
   // Native text selection is preserved for manual phrase extraction.
@@ -283,8 +284,35 @@ export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
   };
   // B2.2: the source brief is a read-only interactive surface. Use one clear
   // cursor across all its words, while keeping drag-to-select native behaviour.
-  doc.onmousemove=null;
-  doc.onmouseleave=null;
+  let lastHover='';
+  const clearHover=()=>{
+    lastHover='';
+    registry?.delete('tracework-brief-hover');
+  };
+  doc.onmousemove=e=>{
+    if(!registry || typeof Highlight!=='function' || !window.getSelection()?.isCollapsed){clearHover();return;}
+    const caret=document.caretPositionFromPoint?.(e.clientX,e.clientY);
+    const fallback=!caret?document.caretRangeFromPoint?.(e.clientX,e.clientY):null;
+    const target=caret?.offsetNode||fallback?.startContainer;
+    const local=caret?.offset??fallback?.startOffset;
+    const segment=nodes.find(n=>n.node===target);
+    if(!segment || !Number.isInteger(local)){clearHover();return;}
+    const offset=segment.start+local;
+    const covers=resolved.filter(h=>offset>=h.start && offset<h.end);
+    if(!covers.length){clearHover();return;}
+    const h=covers.sort((a,b)=>(b.end-b.start)-(a.end-a.start))[0];
+    // A caret can be returned for the nearest glyph even in surrounding whitespace.
+    // Only darken when the pointer is physically over the selected phrase.
+    const range=rangeFor(h.start,h.end);
+    const over=[...range.getClientRects()].some(rect=>e.clientX>=rect.left && e.clientX<=rect.right && e.clientY>=rect.top && e.clientY<=rect.bottom);
+    if(!over){clearHover();return;}
+    const identity=`${h.start}:${h.end}`;
+    if(identity===lastHover)return;
+    lastHover=identity;
+    const highlight=new Highlight(range);highlight.priority=20;
+    registry.set('tracework-brief-hover',highlight);
+  };
+  doc.onmouseleave=clearHover;
   doc.style.cursor='pointer';
 }
 

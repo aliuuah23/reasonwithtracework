@@ -35,7 +35,7 @@ const tutorials = {
       {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port, double-click to edit, and right-click for lock, grouping or disconnection controls.'},
       {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are independent wording fits, not probabilities. Hover a role to see its definition and the cues that triggered it.'},
       {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow from it. The questions change with the active framework.'},
-      {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together without changing the individual focus layouts.'}
+      {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together. The Original/Arrange toggle changes the layout; manual node movement stays synchronised with Focus Map.'}
     ]
   },
   pathways: {
@@ -177,7 +177,7 @@ export function openFrameworkTutorial(frameworkId,{firstEncounter=false}={}){
     {selector:'#ontologyLegend',title:'Read this framework’s roles',body:roleSummary||'The legend changes with the active framework.'},
     {selector:'#thoughtDock',title:'Classify without pretending certainty',body:`The command line now reads text through ${framework.shortLabel}. Match strengths can overlap; they are independent cues, not probabilities. Hover each suggested role to see what it means and why the wording matched. You can always change the role.`},
     {selector:'#inspectorPanel',title:'Probe the selected node',body:'The inspector reads the node you selected. Use “What led here?” to expose prior reasoning or “What follows?” to develop consequences, values, moves or revisions through this framework.'},
-    {selector:'#aggregateMapModeButton',title:'Use the framework without losing the original map',body:'Switching frameworks does not rearrange the Aggregate Map. Arrange Map is optional; when used, the slider lets you compare the framework layout with the user’s original arrangement.'}
+    {selector:'#aggregateMapModeButton',title:'Use the framework without losing the original map',body:'Switching frameworks does not rearrange the Aggregate Map. In Aggregate Map, switch directly between Original map and Arrange map. Dragging a node in either layout also updates its location in Focus Map, and vice versa.'}
   ];
   openSpotlightTour({eyebrow:`FRAMEWORK GUIDE · ${data.source||''}`,title:data.title,steps,skipLabel:firstEncounter?'Skip guide':'Close',onFinish:()=>markFrameworkSeen(frameworkId)});
 }

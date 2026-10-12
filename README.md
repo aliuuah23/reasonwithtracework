@@ -1,3 +1,16 @@
+## Round B2.3 — Shared map positions and layout toggle (12 Oct 2026)
+
+- The read-only brief now darkens and underlines a hotspot phrase on pointer hover without altering text or selection.
+- Aggregate Map now offers **Original map** and **Arrange map** buttons instead of a slider. Original retains its existing layout; Arrange applies the active framework.
+- Dragging a node in Focus Map, Original Aggregate Map, or Arrange Map propagates the same displacement to that node in the other views. Each view can retain its distinct overall spatial organisation.
+- Manually adjusted Arrange positions are stored per framework on the node; the project remains stored locally in the browser.
+- The framework dropdown lists **TRACEWORK Grammar**, then **Freeform / Low-Structure**, followed by the literature frameworks.
+- Existing highlighting, hotspot edits, node-movement Ctrl+Z, and other Stage B interaction fixes are preserved.
+
+**Quick check:** Open a project with nodes → Aggregate map → click Arrange map → drag a node → switch Original map → Focus map and check its corresponding movement; Ctrl+Z should undo the move. Hover a hotspot phrase to see darker highlighting.
+
+---
+
 # TRACEWORK — Give reasoning traction
 
 **Round B2.2 · Hotspot Edit Reliability + Stage B completion testing**  
