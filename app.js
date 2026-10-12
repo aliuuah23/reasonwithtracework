@@ -14,14 +14,14 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js';
+import { renderGraph } from './graph/graph-renderer.js?v=b1.3';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.3';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -169,6 +169,7 @@ function bindGlobalEvents(){
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   if(els.arrangeBlendSlider) els.arrangeBlendSlider.oninput=()=>applyAggregateArrangeBlend(Number(els.arrangeBlendSlider.value)||0);
   document.addEventListener('keydown',handleWorkspaceKeydown);
+  bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
     if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
@@ -1046,23 +1047,40 @@ function showClassificationHelp(target){
   document.body.appendChild(tip);
   const r=target.getBoundingClientRect();
   const tr=tip.getBoundingClientRect();
-  const gap=8, pad=8;
+  const gap=10,pad=12;
   let left=r.left+(r.width/2)-(tr.width/2);
   left=Math.max(pad,Math.min(left,window.innerWidth-tr.width-pad));
   let top=r.top-tr.height-gap;
-  if(top<pad) top=Math.min(window.innerHeight-tr.height-pad,r.bottom+gap);
+  if(top<pad) top=r.bottom+gap;
+  top=Math.max(pad,Math.min(top,window.innerHeight-tr.height-pad));
   tip.style.left=`${Math.round(left)}px`;
-  tip.style.top=`${Math.round(Math.max(pad,top))}px`;
+  tip.style.top=`${Math.round(top)}px`;
   classificationHelpPopover=tip;
 }
 function bindClassificationHelp(){
-  if(!els.thoughtMatches)return;
-  els.thoughtMatches.querySelectorAll('.classification-help').forEach(button=>{
-    button.addEventListener('mouseenter',()=>showClassificationHelp(button));
-    button.addEventListener('mouseleave',hideClassificationHelp);
-    button.addEventListener('focus',()=>showClassificationHelp(button));
-    button.addEventListener('blur',hideClassificationHelp);
+  // Help is delegated globally so every role/legend/classifier tooltip uses the
+  // same viewport-aware popover. This avoids pseudo-elements being clipped by
+  // half-screen panels or the command dock.
+}
+function bindGlobalHelpPopovers(){
+  if(document.documentElement.dataset.helpPopoversBound==='1')return;
+  document.documentElement.dataset.helpPopoversBound='1';
+  document.addEventListener('pointerover',e=>{
+    const target=e.target.closest?.('[data-help]');
+    if(!target)return;
+    if(e.relatedTarget && target.contains(e.relatedTarget))return;
+    showClassificationHelp(target);
   });
+  document.addEventListener('pointerout',e=>{
+    const target=e.target.closest?.('[data-help]');
+    if(!target)return;
+    if(e.relatedTarget && target.contains(e.relatedTarget))return;
+    hideClassificationHelp();
+  });
+  document.addEventListener('focusin',e=>{ const target=e.target.closest?.('[data-help]'); if(target)showClassificationHelp(target); });
+  document.addEventListener('focusout',e=>{ if(e.target.closest?.('[data-help]'))hideClassificationHelp(); });
+  window.addEventListener('resize',hideClassificationHelp,{passive:true});
+  window.addEventListener('scroll',hideClassificationHelp,{passive:true,capture:true});
 }
 
 function updateThoughtSuggestion(){

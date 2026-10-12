@@ -537,3 +537,55 @@ html.tutorial-tour-active{overflow:hidden}
   line-height:1.5; text-align:left; white-space:normal; overflow-wrap:anywhere;
   box-shadow:0 14px 34px rgba(20,24,38,.28); pointer-events:none;
 }
+\n\n/* Round B1.3 · root fix: inline source highlights + one edge-safe help system */
+.hotspot-inline{
+  display:inline!important;
+  appearance:none;
+  -webkit-appearance:none;
+  border:0;
+  padding:1px 2px;
+  margin:0;
+  border-radius:4px;
+  background:linear-gradient(transparent 64%,#dfe0ff 64%);
+  color:inherit;
+  cursor:pointer;
+  font:inherit;
+  font-weight:680;
+  line-height:inherit;
+  white-space:normal;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+}
+.hotspot-inline:hover,.hotspot-inline.active{
+  background:#e7e7ff;
+  color:var(--accent-dark);
+  outline:none;
+}
+.hotspot-inline:focus-visible{
+  outline:2px solid rgba(91,91,214,.32);
+  outline-offset:2px;
+}
+/* Old pseudo-element tooltips are disabled; JS now renders one body-level,
+   viewport-clamped black popover for every data-help element. */
+.has-help::after,.legend-item.has-help::after,.framework-role-chip.has-help::after,
+.node-type.has-help::after,.node-status.has-help::after,
+.thought-match.classification-help::after{content:none!important;display:none!important}
+.classification-help-popover{
+  position:fixed!important;
+  z-index:10000!important;
+  width:min(360px,calc(100vw - 24px));
+  max-height:min(260px,calc(100vh - 24px));
+  overflow:auto;
+  padding:10px 12px;
+  border-radius:10px;
+  background:#11151d;
+  color:#fff;
+  font-size:10px;
+  font-weight:520;
+  line-height:1.5;
+  text-align:left;
+  white-space:normal!important;
+  overflow-wrap:anywhere;
+  box-shadow:0 14px 34px rgba(20,24,38,.3);
+  pointer-events:none;
+}

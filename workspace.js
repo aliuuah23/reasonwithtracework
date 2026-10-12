@@ -167,7 +167,14 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   if(visible.length){
     doc.innerHTML=highlightBrief(displayedText,relative,selectedId);
     list.innerHTML=visible.map(h=>`<button class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${h.id}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button>`).join('');
-    [...doc.querySelectorAll('[data-hotspot]'),...list.querySelectorAll('[data-hotspot]')].forEach(el=>el.onclick=()=>handlers.onHotspot(el.dataset.hotspot));
+    [...doc.querySelectorAll('[data-hotspot]'),...list.querySelectorAll('[data-hotspot]')].forEach(el=>{
+      el.onclick=()=>handlers.onHotspot(el.dataset.hotspot);
+      if(el.classList.contains('hotspot-inline')){
+        el.onkeydown=e=>{
+          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); handlers.onHotspot(el.dataset.hotspot); }
+        };
+      }
+    });
   }else{
     doc.textContent=displayedText;
     const message=!showSuggestions && hotspotFilter!=='selected'
@@ -202,7 +209,11 @@ export function highlightBrief(text,hotspots,selectedId){
   let cursor=0,out='';
   chosen.forEach(h=>{
     out+=escapeHtml(text.slice(cursor,h.start));
-    out+=`<button class="hotspot-inline ${h.id===selectedId?'active':''}" data-hotspot="${h.id}" title="${isDesignerSelected(h)?'Selected by designer':h.kind==='word'?'Word':'Phrase'} hotspot · trace this reading">${escapeHtml(text.slice(h.start,h.end))}</button>`;
+    // IMPORTANT: use a true inline text element, not <button>. Browsers render
+    // buttons as unbreakable inline-block/flow-root controls even when CSS asks
+    // for display:inline, so a multi-line hotspot could only paint its background
+    // on the final wrapped line. <span> fragments correctly across every line.
+    out+=`<span class="hotspot-inline ${h.id===selectedId?'active':''}" role="button" tabindex="0" data-hotspot="${h.id}" title="${isDesignerSelected(h)?'Selected by designer':h.kind==='word'?'Word':'Phrase'} hotspot · trace this reading">${escapeHtml(text.slice(h.start,h.end))}</span>`;
     cursor=h.end;
   });
   return out+escapeHtml(text.slice(cursor));

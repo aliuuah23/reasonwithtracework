@@ -306,6 +306,11 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.spatial-preview'))return;
     if(locked)return;
     e.stopPropagation();
+    // A text field can remain focused after the user clicks a non-focusable graph
+    // card. Blur it here so Ctrl/Cmd+Z after a drag belongs to the canvas rather
+    // than silently undoing text in the command line.
+    const focused=document.activeElement;
+    if(focused && focused!==el && focused.matches?.('input,textarea,select,[contenteditable="true"]')) focused.blur();
     const dragIds=getDragIds?.()||[el.dataset.id];
     origins=new Map();
     dragIds.forEach(id=>{
@@ -313,7 +318,6 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
       if(target)origins.set(id,{el:target,x:parseFloat(target.style.left),y:parseFloat(target.style.top)});
     });
     if(!origins.size)return;
-    onDragStart?.([...origins.keys()]);
     start={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
     moved=false;
     el.setPointerCapture(e.pointerId);
@@ -323,8 +327,13 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     const scale=Math.max(.01,Number(getScale?.()||1));
     let dx=(e.clientX-start.x)/scale,dy=(e.clientY-start.y)/scale;
     if(Math.abs(dx)+Math.abs(dy)<=1&&!moved)return;
-    moved=true;
-    origins.forEach(({el:target})=>target.classList.add('dragging'));
+    if(!moved){
+      // Capture undo exactly once, immediately before the first visual movement.
+      // A click without movement therefore creates no fake undo step.
+      onDragStart?.([...origins.keys()]);
+      moved=true;
+      origins.forEach(({el:target})=>target.classList.add('dragging'));
+    }
     const maxX=Math.max(20,bounds.width-250),maxY=Math.max(20,bounds.height-112);
     const minOriginX=Math.min(...[...origins.values()].map(o=>o.x));
     const minOriginY=Math.min(...[...origins.values()].map(o=>o.y));

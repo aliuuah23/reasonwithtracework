@@ -186,3 +186,18 @@
   white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
   line-height:1.45; margin-top:2px;
 }
+\n\n/* Round B1.3 · classifier explanation is a dedicated full-width row, never ellipsised */
+.thought-reason{
+  display:block;
+  width:auto;
+  max-width:none;
+  margin:2px 7px 0;
+  padding:0;
+  color:var(--muted-2);
+  font-size:9px;
+  line-height:1.45;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  overflow-wrap:anywhere;
+}
