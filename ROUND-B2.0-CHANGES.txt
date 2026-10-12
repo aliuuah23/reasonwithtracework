@@ -1,0 +1,12 @@
+TRACEWORK Round B2.0 — source-panel usability and responsive controls
+
+Changes:
+- Fixed overflow of Interpretive Hotspots heading, filter, visibility toggle and count at half-screen widths by stacking the heading and wrapping the controls.
+- Reduced hotspot chip padding, height, text and label spacing, while preserving delete buttons and selected state.
+- Added a pointer cursor only when hovering actual selectable hotspot text; ordinary text and drag selection remain supported.
+- Preserved B1.9 working bold multiline highlighting, right-panel draft preservation, Ctrl+Z node movement and Combine projects without rewriting them.
+- Increased source renderer label and cache keys to B2.0.
+
+Not claimed as newly fixed: partially working Combine projects, any unrelated right-panel interaction; verify them separately only when needed.
+
+DEPLOYMENT: Extract all, drag css/ data/ js/ and root files AS FOLDERS to GitHub upload, confirm paths stay nested, and commit.
