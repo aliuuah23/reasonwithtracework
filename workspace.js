@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.5';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;

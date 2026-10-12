@@ -1,0 +1,56 @@
+{
+  "flexibility": {
+    "aliases":["flexible","adaptable","adaptability"],
+    "interpretation":{
+      "question":"When you say ‘{term}’, what kind of change are you actually asking the space to support?",
+      "choices":["Physical reconfiguration","Different uses without physical change","Change across time","User-controlled adjustment"]
+    },
+    "who":["Individual users","Small groups","Large groups","Staff / operators"],
+    "when":["Throughout the day","During peak periods","Between events","As needs change over time"]
+  },
+  "community": {
+    "aliases":["community","communal","social interaction","interaction","gathering"],
+    "interpretation":{
+      "question":"What kind of relationship should ‘{term}’ make easier?",
+      "choices":["Casual encounter","Planned gathering","Shared activity","Longer social stay"]
+    },
+    "who":["People who already know each other","Strangers","Mixed user groups","A specific community"],
+    "when":["Everyday use","Peak periods","Events","Unplanned encounters"]
+  },
+  "privacy": {
+    "aliases":["privacy","private","individual use","individual"],
+    "interpretation":{
+      "question":"What should ‘{term}’ protect or control?",
+      "choices":["Visibility","Sound","Access","Proximity / territory"]
+    },
+    "who":["One person","Pairs","Small groups","People doing focused work"],
+    "when":["Continuously","Only when occupied","During focused tasks","At selected times"]
+  },
+  "shelter": {
+    "aliases":["shelter","sheltered","covered","weather protection"],
+    "interpretation":{
+      "question":"What should ‘{term}’ protect users from or help them feel?",
+      "choices":["Rain","Sun / heat","Wind","Exposure / lack of refuge"]
+    },
+    "who":["All users","People staying for longer periods","People waiting","People moving through"],
+    "when":["All weather","Rain events","Hot periods","Evening / night"]
+  },
+  "accessibility": {
+    "aliases":["accessible","accessibility","inclusive","inclusion"],
+    "interpretation":{
+      "question":"What barrier should ‘{term}’ reduce?",
+      "choices":["Physical access","Wayfinding / legibility","Sensory access","Social or programme exclusion"]
+    },
+    "who":["Mobility-device users","Older users","Neurodiverse users","A broad mix of users"],
+    "when":["At all times","At entry","During navigation","During programme use"]
+  },
+  "openness": {
+    "aliases":["open","openness","porous","porosity","welcoming"],
+    "interpretation":{
+      "question":"What should ‘{term}’ make more available?",
+      "choices":["Visual connection","Physical access","Programme overlap","Perceived invitation"]
+    },
+    "who":["Passers-by","Primary users","Visitors","Mixed publics"],
+    "when":["At the edge","At entry","During active hours","Continuously"]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "source": {
+    "workbook": "Pilot_Experiment_01_Master_Coding_CORRECTED_ONTOLOGY.xlsx",
+    "sheets": ["12_Ontology_Nodes", "13_Ontology_Edges"],
+    "participants": "P01–P10",
+    "note": "TRACEWORK wire signals use participant coverage as the primary empirical cue so a verbose participant does not dominate the signal. Ontology classes that do not map cleanly to the current six-family interface are excluded rather than forced."
+  },
+  "pairs": {
+    "consequence->consequence": {"participantCount":10,"sampleSize":10,"edgeCount":22,"score":92,"band":"frequent","relations":{"has_consequence":22}},
+    "evaluation->consequence": {"participantCount":6,"sampleSize":10,"edgeCount":9,"score":53,"band":"observed","relations":{"evaluates":9}},
+    "evaluation->goal": {"participantCount":3,"sampleSize":10,"edgeCount":3,"score":26,"band":"limited","relations":{"motivates":3}},
+    "goal->consequence": {"participantCount":10,"sampleSize":10,"edgeCount":38,"score":100,"band":"frequent","relations":{"realised_as":38}},
+    "grounding->consequence": {"participantCount":10,"sampleSize":10,"edgeCount":26,"score":94,"band":"frequent","relations":{"informs":26}},
+    "grounding->goal": {"participantCount":7,"sampleSize":10,"edgeCount":14,"score":63,"band":"observed","relations":{"motivates":14}},
+    "input->consequence": {"participantCount":10,"sampleSize":10,"edgeCount":31,"score":96,"band":"frequent","relations":{"directly_informs":13,"constrains":18}},
+    "input->interpretation": {"participantCount":5,"sampleSize":10,"edgeCount":12,"score":46,"band":"observed","relations":{"interpreted_as":12}},
+    "interpretation->goal": {"participantCount":9,"sampleSize":10,"edgeCount":14,"score":79,"band":"frequent","relations":{"motivates":14}},
+    "interpretation->grounding": {"participantCount":6,"sampleSize":10,"edgeCount":12,"score":54,"band":"observed","relations":{"grounded_in":12}}
+  }
+}

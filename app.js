@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.5';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b1.3';
+import { renderGraph } from './graph/graph-renderer.js?v=b1.5';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.3';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.5';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -150,6 +150,12 @@ function bindGlobalEvents(){
   $('#resetLocalDataButton').onclick=confirmResetLocalData;
   $('#addDiscussionButton').onclick=addDiscussionNote;
   els.freeThoughtInput.addEventListener('input',updateThoughtSuggestion);
+  // Explicitly keep editing keys native inside the command line. The workspace
+  // has global Delete/Ctrl+Z shortcuts, so this guard prevents a focused textarea
+  // from ever deleting a node or consuming its own text undo/delete action.
+  els.freeThoughtInput.addEventListener('keydown',e=>{
+    if(['Backspace','Delete'].includes(e.key) || ((e.ctrlKey||e.metaKey) && ['z','y'].includes(e.key.toLowerCase()))) e.stopPropagation();
+  });
   els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
   if(els.thoughtProvenanceSelect) els.thoughtProvenanceSelect.addEventListener('change',updateThoughtSuggestion);
   els.addFreeThoughtButton.onclick=addFreeThought;
@@ -168,7 +174,7 @@ function bindGlobalEvents(){
   if(els.resetAggregateFiltersButton) els.resetAggregateFiltersButton.onclick=resetAggregateFilters;
   if(els.arrangeAggregateButton) els.arrangeAggregateButton.onclick=arrangeAggregateMap;
   if(els.arrangeBlendSlider) els.arrangeBlendSlider.oninput=()=>applyAggregateArrangeBlend(Number(els.arrangeBlendSlider.value)||0);
-  document.addEventListener('keydown',handleWorkspaceKeydown);
+  document.addEventListener('keydown',handleWorkspaceKeydown,{capture:true});
   bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
   els.graphViewport.addEventListener('click',e=>{
@@ -1247,27 +1253,35 @@ function connectNodes(source,target,result){
   toast('Reasoning moves connected.');
 }
 
+function isTextEditingContext(e){
+  // Keyboard shortcuts must never steal Backspace/Delete/Ctrl+Z from an active
+  // text field. Check both the event target and activeElement because rerenders
+  // or nested labels can make the event target less specific than the focused field.
+  const candidates=[e?.target,document.activeElement].filter(Boolean);
+  return candidates.some(el=>{
+    if(!(el instanceof Element))return false;
+    return Boolean(el.matches?.('input,textarea,select,[contenteditable="true"]') || el.closest?.('input,textarea,select,[contenteditable="true"]'));
+  });
+}
+
 function handleWorkspaceKeydown(e){
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     e.preventDefault(); undoLast(); return;
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
     e.preventDefault();openNodeSearch();return;
   }
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='g'){
-    const target=e.target;
-    if(target && target.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    if(isTextEditingContext(e))return;
     if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
     e.preventDefault();toggleGroupSelected(Boolean(e.shiftKey));return;
   }
   if(!['Delete','Backspace'].includes(e.key))return;
   const target=e.target;
-  if(target && (target.matches?.('input,textarea,select,[contenteditable="true"]') || target.closest?.('.modal')))return;
+  if(isTextEditingContext(e) || target?.closest?.('.modal'))return;
   if(els.app?.classList.contains('hidden') || $('#workspaceView')?.classList.contains('hidden'))return;
 
   if(selectedEdgeId){
@@ -1321,8 +1335,36 @@ function handleWorkspaceKeydown(e){
   renderWorkspace();toast('Node deleted. Downstream reasoning remains available to reconnect.');
 }
 
+function captureUndoUI(){
+  return {
+    workspaceMapMode,
+    aggregateHotspotFilter,
+    aggregateChunkFilter,
+    aggregateTypeFilter,
+    aggregateStatusFilter,
+    aggregateArrangeSession:aggregateArrangeSession?structuredClone(aggregateArrangeSession):null,
+    aggregateArrangeBlend,
+    canvasZoom,
+    focusPathRootId,
+    selectedEdgeId,
+    selectedNodeIds:[...selectedNodeIds]
+  };
+}
+function restoreUndoUI(ui={}){
+  workspaceMapMode=ui.workspaceMapMode==='aggregate'?'aggregate':'focus';
+  aggregateHotspotFilter=ui.aggregateHotspotFilter||'all';
+  aggregateChunkFilter=ui.aggregateChunkFilter||'all';
+  aggregateTypeFilter=ui.aggregateTypeFilter||'all';
+  aggregateStatusFilter=ui.aggregateStatusFilter||'all';
+  aggregateArrangeSession=ui.aggregateArrangeSession?structuredClone(ui.aggregateArrangeSession):null;
+  aggregateArrangeBlend=Number.isFinite(Number(ui.aggregateArrangeBlend))?Number(ui.aggregateArrangeBlend):100;
+  canvasZoom=Number.isFinite(Number(ui.canvasZoom))?Number(ui.canvasZoom):1;
+  focusPathRootId=ui.focusPathRootId||null;
+  selectedEdgeId=ui.selectedEdgeId||null;
+  selectedNodeIds=new Set(ui.selectedNodeIds||[]);
+}
 function checkpoint(label='change'){
-  undoStack.push({label,state:structuredClone(getState())});
+  undoStack.push({label,state:structuredClone(getState()),ui:captureUndoUI()});
   if(undoStack.length>MAX_UNDO)undoStack.shift();
   updateUndoButton();
 }
@@ -1330,9 +1372,11 @@ function undoLast(){
   const entry=undoStack.pop();
   if(!entry){toast('Nothing to undo yet.');return;}
   replaceState(entry.state);
-  selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();closeNodeContext();
+  restoreUndoUI(entry.ui||{});
+  traceIssueNodeIds.clear();closeNodeContext();
   updateUndoButton();
   renderWorkspace();
+  updateZoomLabel();
   toast(`Undid ${entry.label}.`);
 }
 function updateUndoButton(){if(els.undoButton)els.undoButton.disabled=undoStack.length===0;}

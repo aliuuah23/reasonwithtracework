@@ -1,5 +1,7 @@
 let promptData = null;
 const extraPatterns = [
+  ['different degrees of privacy','privacy'],
+  ['individuals and small groups','users'],
   ['individual and group use','mixed use'],
   ['main pedestrian route','movement'],
   ['sheltered footprint','shelter'],
@@ -66,7 +68,17 @@ export function repairHotspotRanges(text,hotspots=[]){
     const start=Math.max(0,Math.min(Number(h.start)||0,source.length));
     const end=Math.max(start,Math.min(Number(h.end)||start,source.length));
     const slice=source.slice(start,end);
-    const intended=String(h.text||'').trim();
+    let intended=String(h.text||'').trim();
+
+    // Round B1.5: migrate only the known suggested hotspot from the built-in
+    // pavilion project (including its locally saved copies). Never expand a
+    // designer-selected substring or change unrelated projects. The old seed
+    // accidentally omitted 'Different', which CSS could not restore.
+    if(h.id==='agg-hot-5' && h.source==='suggested' &&
+       comparable(intended)==='degrees of privacy' &&
+       /different\s+degrees\s+of\s+privacy/i.test(source)){
+      intended='Different degrees of privacy';
+    }
 
     // Preserve the recorded semantic wording. Older versions could rewrite h.text
     // from a stale numeric range, permanently turning a phrase into a chopped

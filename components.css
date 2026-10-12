@@ -589,3 +589,27 @@ html.tutorial-tour-active{overflow:hidden}
   box-shadow:0 14px 34px rgba(20,24,38,.3);
   pointer-events:none;
 }
+
+
+/* Round B1.4 · deterministic full-phrase hotspot highlighting.
+   Use a solid inline background. Gradient backgrounds are calculated across the
+   multi-line inline box and can paint only the final wrapped line. */
+.hotspot-inline{
+  display:inline!important;
+  background:#ececff!important;
+  color:inherit;
+  padding:1px 2px;
+  margin:0;
+  border-radius:4px;
+  font:inherit;
+  font-weight:680;
+  line-height:inherit;
+  white-space:normal;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+}
+.hotspot-inline:hover,
+.hotspot-inline.active{
+  background:#dfe0ff!important;
+  color:var(--accent-dark);
+}

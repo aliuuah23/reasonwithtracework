@@ -186,7 +186,9 @@
   white-space:normal!important; overflow:visible!important; text-overflow:clip!important;
   line-height:1.45; margin-top:2px;
 }
-\n\n/* Round B1.3 · classifier explanation is a dedicated full-width row, never ellipsised */
+
+
+/* Round B1.3 · classifier explanation is a dedicated full-width row, never ellipsised */
 .thought-reason{
   display:block;
   width:auto;
@@ -200,4 +202,12 @@
   overflow:visible;
   text-overflow:clip;
   overflow-wrap:anywhere;
+}
+
+
+/* Round B1.4 · keep the command line compact as reasoning explanations grow. */
+.thought-entry textarea,
+#freeThoughtInput{
+  font-size:11px!important;
+  line-height:1.45;
 }
