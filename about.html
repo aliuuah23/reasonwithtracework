@@ -6,8 +6,8 @@
   <title>About — TRACEWORK</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/components.css?v=C2.2">
+  <link rel="stylesheet" href="css/responsive.css?v=C2.2">
 </head>
 <body>
   <header class="topbar">
@@ -35,27 +35,30 @@
       <span class="product-kicker">Reasoning frameworks</span>
       <h2>One project, several ways to read the reasoning.</h2>
       <p>TRACEWORK Grammar is the default operational model. The six literature frameworks below are optional lenses: they reorganise, prompt and classify the same underlying reasoning without replacing it.</p>
-      <div class="framework-reference-grid" id="frameworkReferenceGrid"></div>
+      <div class="framework-reference-grid" id="frameworkReferenceGrid"></div><p class="framework-explorer-hint">Choose any framework to open a four-part guided explanation, including its architectural example and source text.</p>
     </section>
     <section class="about-research">
       <span class="product-kicker">Research foundations</span>
       <h2>A research system underneath a usable interface.</h2>
+      <p class="research-access-note">TRACEWORK’s research reading list includes the source texts behind its operational frameworks and supporting texts on language, design cognition and visual externalisation. Links lead to publisher, DOI or book records; access to full text may require a university library.</p>
       <div id="referenceList" class="reference-list"></div>
     </section>
   </main>
+  <div class="framework-explorer-backdrop" id="frameworkExplorerBackdrop" hidden>
+    <section class="framework-explorer-dialog" id="frameworkExplorerDialog" role="dialog" aria-modal="true" aria-labelledby="frameworkExplorerTitle">
+      <header class="framework-explorer-top"><div><span class="product-kicker">FRAMEWORK GUIDE · <span id="frameworkExplorerSource"></span></span><h2 id="frameworkExplorerTitle"></h2></div><button type="button" class="framework-explorer-close" id="frameworkExplorerClose" aria-label="Close framework guide">×</button></header>
+      <div class="framework-explorer-progress"><span id="frameworkExplorerSlideTitle"></span><span id="frameworkExplorerCounter">1 / 4</span></div>
+      <div class="framework-explorer-body" id="frameworkExplorerBody"></div>
+      <footer class="framework-explorer-footer"><button type="button" class="framework-explorer-control" id="frameworkExplorerPrevious">← Previous</button><div class="framework-explorer-dots" id="frameworkExplorerDots" aria-label="Framework guide slides"></div><button type="button" class="framework-explorer-control framework-explorer-primary" id="frameworkExplorerNext">Next →</button></footer>
+    </section>
+  </div>
   <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
     <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
   </div>
   <script type="module">
-    import { loadReferences } from './js/evidence/references.js';
     import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './js/ui/tutorials.js';
-    import { frameworks } from './js/core/frameworks.js';
-    const el = document.getElementById('referenceList');
-    loadReferences().then(items => {
-      el.innerHTML = items.map(r => `<article><strong>${r.author}</strong><span>${r.title}</span><p>${r.relevance}</p></article>`).join('');
-    });
-    const frameworkGrid=document.getElementById('frameworkReferenceGrid');
-    frameworkGrid.innerHTML=frameworks.filter(f=>f.id!=='freeform').map(f=>`<article class="framework-reference-card"><div class="framework-reference-head"><strong>${f.label}</strong><span>${f.source||''}</span></div><p>${f.description}</p><div class="framework-reference-roles">${(f.categories||[]).map(c=>`<span class="framework-role-chip has-help" data-help="${c.description}">${c.label}</span>`).join('')}</div></article>`).join('');
+    import { initializeFrameworkExplorer } from './js/ui/framework-explorer.js?v=C2.2';
+    initializeFrameworkExplorer();
     bindTutorialTriggers();
     maybeOpenFirstVisitTutorial('about');
   </script>

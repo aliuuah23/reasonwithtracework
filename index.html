@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://www.archdaily.com" crossorigin>
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/layout.css?v=c2.0">
+  <link rel="stylesheet" href="css/layout.css?v=c2.1">
   <link rel="stylesheet" href="css/components.css?v=c2.0">
   <link rel="stylesheet" href="css/graph.css?v=c2.0">
   <link rel="stylesheet" href="css/responsive.css?v=c2.0">
@@ -64,7 +64,7 @@
         <textarea id="landingBrief" rows="7" placeholder="Paste a brief, requirement, design statement or project intention…"></textarea>
         <div class="brief-chunk-preview hidden" id="briefChunkPreview"></div>
         <div class="start-actions">
-          <button class="text-button" id="loadDemoButton">Try an example</button>
+          <div class="example-actions"><button class="text-button" id="loadDemoButton">Try an example</button><button class="secondary-button restore-examples-button" id="restoreTestExamplesButton" type="button" title="Restore the built-in long and short projects without changing other saved work">Restore long + short test projects</button></div>
           <button class="primary-button" id="startTracingButton">Start tracing <span>→</span></button>
         </div>
       </div>
@@ -330,6 +330,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=c2.0"></script>
+  <script type="module" src="js/app.js?v=c2.1"></script>
 </body>
 </html>

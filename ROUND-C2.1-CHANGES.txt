@@ -1,0 +1,2 @@
+TRACEWORK C2.1 — Restore the short and long demonstration traces without deleting other work.
+Homepage button always visible. Fetch bundled examples; use ensureProject rather than overwrite; clear dismissal flags only after successful restoration; refresh Your traces listing. Responsive control. C2.0 functionality preserved.

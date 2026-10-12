@@ -136,6 +136,7 @@ function cacheEls(){
 
 function bindGlobalEvents(){
   $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); els.briefLanding.focus(); };
+  $('#restoreTestExamplesButton').onclick=restoreTestExamples;
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
   els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
   els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); } });
@@ -1147,6 +1148,37 @@ async function handleProjectImport(e){
 }
 function confirmNewProject(){ openModal(`<h2 id="modalTitle">Start a new trace?</h2><p>Your current trace stays saved in this browser. You can reopen it from the project shelf.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep working</button><button class="secondary-button" id="exportBeforeNew">Export first</button><button class="primary-button compact" id="confirmNew">Start new</button></div>`,{onOpen:m=>{m.querySelector('#exportBeforeNew').onclick=()=>exportProject(getState());m.querySelector('#confirmNew').onclick=()=>{saveProject(getState());resetState();closeModal();els.briefLanding.value='';if(els.projectNameLanding)els.projectNameLanding.value='';showLanding();};}}); }
 
+
+// Deliberately user-invoked restoration. A previously deleted sample remains
+// dismissed on page load, but can always be restored from the bundled fixtures.
+// Existing sample edits and all other local projects are left untouched.
+async function restoreTestExamples(){
+  const button=$('#restoreTestExamplesButton');
+  const files=['test-project.json','aggregate-test-project.json'];
+  if(button){button.disabled=true;button.textContent='Restoring examples…';}
+  try{
+    const fixtures=await Promise.all(files.map(async name=>{
+      const response=await fetch(`./data/${name}?v=c2.1`,{cache:'no-store'});
+      if(!response.ok)throw new Error(`Cannot load ${name} (${response.status})`);
+      const item=await response.json();
+      if(!item.projectId||!item.brief||!Array.isArray(item.nodes))throw new Error(`Invalid example: ${name}`);
+      return item;
+    }));
+    let added=0;
+    for(const project of fixtures){
+      if(ensureProject(project))added++;
+      else if(!listProjects().some(p=>p.projectId===project.projectId))throw new Error('The browser could not save an example.');
+    }
+    // Reset dismissal markers only after both fixtures are confirmed saved.
+    localStorage.removeItem('tracework.dismissedTestProject.v1');
+    localStorage.removeItem('tracework.dismissedAggregateTestProject.v1');
+    renderProjectShelf();
+    const shelf=$('#projectShelfWrap');
+    if(shelf&&!shelf.classList.contains('hidden'))shelf.scrollIntoView({behavior:'smooth',block:'start'});
+    toast(added?`Restored ${added} test example${added===1?'':'s'}. Open them under Your traces.`:'Both examples are already saved. Open them under Your traces.');
+  }catch(error){console.error('Example restoration failed',error);toast('Could not restore example traces. Existing projects were not changed.');}
+  finally{if(button){button.disabled=false;button.textContent='Restore long + short test projects';}}
+}
 
 async function seedTestProject(){
   try{

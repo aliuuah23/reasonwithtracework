@@ -1,3 +1,15 @@
+# TRACEWORK Stage C2.1 — Recover Long and Short Test Examples
+
+**Targeted stability fix:** The two canonical example projects are bundled in `data/test-project.json` (short, 13 nodes) and `data/aggregate-test-project.json` (long, 42 nodes). If either sample was previously deleted, a browser-local dismissal flag prevented it from reappearing on reload. The examples were not removed from the website.
+
+**How to restore:** Homepage → **Restore long + short test projects** → scroll to **Your traces** → open **Short brief — Flexible Pavilion** or **Long brief — Flexible Pavilion**. This control stays available even if no projects are currently saved, and works after examples have been deleted.
+
+**Safety:** Restoration loads both bundled fixture JSON files, validates their structure and creates *only missing* sample projects. It never overwrites an existing sample, other saved work, project JSON or source provenance. It clears the dismissal flags only once both sample IDs are saved. No browser reset, localStorage clearing, or project cleanup is required. If restoration fails, existing projects remain intact.
+
+**C2.0 retained:** All Stage C maps, spatial reads, classifier improvements, full reasoning checks, exports (SVG/PNG/vector PDF), import and merge behaviour are carried forward unchanged. This is a targeted patch to unblock final acceptance.
+
+---
+
 # TRACEWORK — Stage C2.0: Integrated Project Release (12 October 2026)
 
 **Purpose:** Freeze a coherent Stage C integration candidate for Pieter's studio demonstration: cross-hotspot reasoning maps, framework interpretations, spatial-reading support, export/recovery and project quality checks. The full application still needs live-site acceptance testing before a final release freeze. There is no claim of automatic architectural correctness.
@@ -255,3 +267,12 @@ TRACEWORK belongs to *Traction Through Translation*: tracing the interval from s
 5. Link node: source and destination clearly shown, direction preview changes before connecting.
 
 **Limit:** This offline dictionary does not understand arbitrary design statements the way a generative architectural model could; its matches and diagrams cover only the curated terms. Add new terms and verified examples before claiming broader coverage.
+
+
+## Stage C2.2 — Framework walkthroughs and source-linked research (12 October 2026)
+
+The **About** page now provides interactive, keyboard-accessible framework cards for TRACEWORK Grammar, Freeform / Low-Structure, and the six published lenses. Each opens a four-step slideshow: **Overview, Architectural Example, Roles and Method, Source Readings**. Navigation: click Previous/Next or dots, use left/right arrow keys, press Escape to close. Framework descriptions remain authored as *TRACEWORK adaptations* where they are not verbatim roles defined by the scholars. Freeform is explicitly an interface mode, not an academic framework.
+
+The **Research Foundations** section now contains the project's 12 core and associated readings with author, year, publication type, relevance, and sourced publisher/DOI/book links. The C2.2 reading library (`data/references.json`) includes the earlier eight and adds Serrat (Five Whys), Reynolds and Gutman (laddering), Ralph and Wand (formal design definitions), and Suwa and Tversky (sketch cognition). A linked publisher or DOI page is not a guarantee of free access; use institutional library access when required.
+
+Validation checklist: About page cards open the correct frameworks; slides change and read-out matches each lens; research reading cards have clickable and safely externalised links; close/Escape and narrow-screen presentation behave correctly. The reasoning engine, stored projects, map export and browser-local data remain unchanged.

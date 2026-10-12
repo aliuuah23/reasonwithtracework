@@ -26,6 +26,9 @@
 .start-card label { display: block; padding: 6px 6px 12px; font-size: 13px; font-weight: 700; }
 .start-card textarea { width: 100%; resize: vertical; min-height: 160px; border: 0; background: var(--surface-soft); border-radius: 14px; padding: 18px; outline: none; line-height: 1.65; font-size: 15px; }
 .start-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 4px 2px; }
+.example-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.restore-examples-button{font-size:12px;padding:9px 12px;white-space:normal;text-align:left;}
+@media(max-width:640px){.start-actions{align-items:stretch;flex-wrap:wrap}.example-actions{flex:1 1 100%}.restore-examples-button{max-width:100%}}
 .landing-proof { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 36px; color: var(--muted-2); font-size: 11px; font-weight: 650; }
 .landing-proof i { width: 24px; height: 1px; background: var(--border-strong); }
 

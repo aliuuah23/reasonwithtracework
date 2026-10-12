@@ -1,0 +1,7 @@
+TRACEWORK C2.2 — Interactive framework guide and linked research library
+
+- 8 clickable frameworks, including Freeform in second position
+- 4-slide explanation per framework, examples, definitions, readings, limitations
+- Full 12-item core/associated research bibliography with publisher or DOI links
+- Keyboard navigable, responsive, closeable dialog
+- No changes to storage, reasoning graph, map layout or export mechanisms
