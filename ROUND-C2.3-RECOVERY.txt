@@ -1,0 +1,1 @@
+TRACEWORK C2.3 critical fix: repaired malformed spatial-reading template literal preventing app bootstrap. Bumped cache references for app entry and spatial module. Restored main navigation, examples, and ribbon event handlers without clearing local projects. Browser smoke-test passed.

@@ -1,3 +1,36 @@
+# TRACEWORK C2.3 — Critical Site Recovery
+
+**12 October 2026 · recovery release built from C2.2.**
+
+## What broke and why
+
+`js/reasoning/spatial-literacy.js` had an unterminated HTML template string in `spatialMiniMarkup`. The browser failed to parse that imported module, stopping the entire main-app module graph before it could bind clicks. As a result, Workspace, Pathway Bank, My Trace, Discussion, Restore Examples and project opening appeared but were inert; the About page continued to work because it uses an independent module.
+
+## This repair
+
+- Closed the broken template literal without changing spatial-reading content.
+- Versioned the app entry point and both spatial module imports, so GitHub Pages and Chrome do not reuse cached broken code.
+- Retained both bundled test projects and the **Restore long + short test projects** control.
+- Preserved C2.2's framework guide slideshow, reading links, map export, project features and documentation.
+- Did **not** clear localStorage, delete, migrate, overwrite, or reset any existing user project.
+
+## Acceptance tested in Chromium (full application scripts using isolated local fixtures)
+
+1. All application ES modules imported; no page errors.
+2. The landing page displayed Short Brief (13 nodes) and Long Brief (42 nodes).
+3. Pathway Bank, My Trace and Discussion opened without requiring an active project; Workspace returned to the landing screen.
+4. After simulation of deletion and dismissal markers, Restore recreated both test projects in the saved project bank.
+5. A restored example opened; all four main ribbon tabs worked with an active project.
+6. Original saved projects were not cleared by the repair.
+
+**Please verify once on real GitHub Pages after deployment.** Browser fixture tests do not prove CDN propagation or validate other features exhaustively.
+
+## Deploy
+
+Extract All, upload **contents preserving css/, data/, js/** to the root of `aliuuah23/reasonwithtracework` and commit as **TRACEWORK C2.3 — Restore main navigation and test projects**. Wait for Pages and use Ctrl+Shift+R. On the homepage click **Restore long + short test projects**, then open a restored example and check the ribbon. Do not clear site data or use Reset local data.
+
+---
+
 # TRACEWORK Stage C2.1 — Recover Long and Short Test Examples
 
 **Targeted stability fix:** The two canonical example projects are bundled in `data/test-project.json` (short, 13 nodes) and `data/aggregate-test-project.json` (long, 42 nodes). If either sample was previously deleted, a browser-local dismissal flag prevented it from reappearing on reload. The examples were not removed from the website.
