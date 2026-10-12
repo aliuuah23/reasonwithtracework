@@ -26,7 +26,7 @@ import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } fro
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
-import { spatialReadModalMarkup, bindSpatialModal } from './reasoning/spatial-literacy.js';
+import { spatialReadModalMarkup, bindSpatialModal } from './reasoning/spatial-literacy.js?v=c1.4';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial } from './ui/tutorials.js';
 
 const $ = s => document.querySelector(s);
@@ -1869,8 +1869,8 @@ function openNodeQuickLink(id){
   }});
 }
 
-function showSpatialRead(text,type){
-  openModal(spatialReadModalMarkup(text,type,caseStudies),{onOpen:bindSpatialModal});
+function showSpatialRead(text,type,focusedText=''){
+  openModal(spatialReadModalMarkup(text,type,caseStudies,focusedText),{onOpen:modal=>bindSpatialModal(modal,{onSearch:query=>showSpatialRead(text,type,query)})});
 }
 function showSpatialReadForNode(id){
   const node=getState().nodes.find(n=>n.id===id);
@@ -1882,8 +1882,12 @@ document.addEventListener('click',event=>{
   const button=event.target.closest('.spatial-open-modal');
   if(!button)return;
   event.preventDefault();
-  const text=button.dataset.spatialText||'';
-  const role=button.dataset.spatialType||'note';
+  // Inspector may be redrawn after activation; never open the dictionary with an empty node sentence.
+  const state=getState();
+  const active=state.nodes?.find(n=>n.id===state.activeNodeId)||state.nodes?.find(n=>selectedNodeIds.has(n.id));
+  const hot=state.hotspots?.find(h=>h.id===state.activeHotspotId);
+  const text=button.dataset.spatialText||active?.label||hot?.text||'';
+  const role=button.dataset.spatialType||active?.type||(hot?'input':'note');
   showSpatialRead(text,role);
 });
 

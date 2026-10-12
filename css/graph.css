@@ -227,3 +227,13 @@
 .node-foot {flex-wrap:wrap;}
 .node-preview-toggle {font-size:9px;}
 .graph-node.preview-open {min-height:0;}
+
+/* C1.4 — spatial read and linking are primary actions, not low-contrast metadata. */
+.node-preview-toggle{min-height:29px;padding:6px 11px!important;background:#e7e5ff!important;color:#33318c!important;border:1px solid #b9b3ff!important;border-radius:999px!important;font-weight:800!important;cursor:pointer!important;white-space:normal;}
+.node-preview-toggle:hover,.node-preview-toggle:focus-visible{background:#d4d0ff!important;border-color:#6560d9!important;outline:2px solid #a8a2ff;outline-offset:1px;}
+.node-quick-link{background:#e9f0ff!important;border:1px solid #8ba9df!important;color:#24487c!important;font-size:11px!important;font-weight:800!important;padding:7px 11px!important;min-height:31px;}
+.node-quick-link:hover,.node-quick-link:focus-visible{background:#cbdcff!important;outline:2px solid #9ab4eb;outline-offset:1px;}
+.graph-node .node-port{box-shadow:0 0 0 3px rgba(99,102,241,.14);}
+.graph-node .node-port:hover{box-shadow:0 0 0 6px rgba(99,102,241,.21);transform:scale(1.18);}
+
+.node-port{width:18px!important;height:18px!important;margin-top:-9px!important;opacity:.96!important;border-width:3px!important;}

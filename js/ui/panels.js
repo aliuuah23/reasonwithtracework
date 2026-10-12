@@ -3,7 +3,7 @@ import { typeLabels } from '../core/ontology.js';
 import { findRelatedPathways } from '../evidence/pathway-bank.js';
 import { findCaseStudies } from '../evidence/case-studies.js?v=c1.3';
 import { operationalSuggestions } from '../reasoning/operational-design.js';
-import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js';
+import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c1.4';
 import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};

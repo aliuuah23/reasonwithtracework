@@ -20,7 +20,7 @@ const tutorials = {
     steps:[
       {selector:'.brief-mode-toggle',title:'Quick or long brief',body:'Use Quick brief for a short statement. Long brief / document supports uploads, detected sections and manually added chunks.'},
       {selector:'#landingProjectName',title:'Name the trace',body:'A name makes saved projects easier to recognise. It can stay blank if the brief itself is enough.'},
-      {selector:'#briefChunkPreview',title:'File long briefs before tracing',body:'Detected sections can be opened, edited or supplemented with + Chunk before entering the Workspace.'},
+      {selector:'#briefChunkPreview',fallbackSelector:'.brief-mode-toggle',title:'Organise Longer Briefs (Optional)',body:'Choose Long Brief / Document above first. Then detected sections and + Chunk controls appear below the brief. Quick Brief mode does not need filing.'},
       {selector:'#startTracingButton',title:'Start when the source is ready',body:'TRACEWORK keeps the source attached to the project so later reasoning can remain traceable back to where it began.'}
     ]
   },
@@ -32,7 +32,7 @@ const tutorials = {
       {selector:'#undoButton',title:'Undo meaningful edits',body:'Ctrl+Z or Undo reverses edits such as hotspot changes, additions, deletions and node moves. When typing inside a text field, Ctrl+Z instead uses normal text undo. Navigation and ordinary clicks are not undoable edits.'},
       {selector:'#frameworkSelect',title:'Choose a reasoning lens',body:'TRACEWORK Grammar is the default. Literature frameworks change the legend, prompts and classifications without rewriting the underlying thought.'},
       {selector:'#frameworkLockButton',title:'Lock the project lens',body:'Lock the chosen framework when a project should stay in one reading mode. The lock persists with the project and can be reopened at any time.'},
-      {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port or choose “Connect to…” on a node, then select a clearly labelled destination and direction, double-click to edit, and right-click for lock, grouping or disconnection controls. Every node can open the Spatial Reading Studio: a full-size term-sensitive plan and section, distinct feature examples, verified project references and readings. If no precise term matches, the studio explains what to ground rather than inventing a drawing.'},
+      {selector:'#graphViewport',title:'Work directly on the reasoning field',body:'Drag nodes, multi-select with Shift, connect from either port or choose “Connect to…” on a node, then select a clearly labelled destination and direction, double-click to edit, and right-click for lock, grouping or disconnection controls. Every node can open Spatial Reading Studio: select a term within its sentence or search by architectural word, then inspect annotated plan, section, any available axonometric, feature types, verified project references and research links. If no precise term matches, the studio explains what to ground rather than inventing a drawing.'},
       {selector:'#thoughtDock',title:'Write freely when a prompt is not useful',body:'The command line suggests a role inside the active framework, but the suggestion is editable. Match strengths are independent wording fits, not probabilities. Hover a role to see its definition and the cues that triggered it.'},
       {selector:'#inspectorPanel',title:'Use the inspector as a probing partner',body:'Select a node to ask what led to it or what could follow from it. The questions change with the active framework. Overall suggestions describe system-level moves; Detail suggestions suggest a spatial test. Both are prompts, not automated solutions.'},
       {selector:'.map-mode-toggle',title:'Move between focus and overview',body:'Focus Map isolates one hotspot. Aggregate Map brings the project’s reasoning fields together. The Original/Arrange toggle changes the layout; manual node movement stays synchronised with Focus Map.'}
@@ -104,8 +104,15 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
   const getTarget=step=>{
     if(!step?.selector)return null;
     const el=document.querySelector(step.selector);
-    if(!el || el.classList.contains('hidden') || el.getClientRects().length===0)return null;
-    return el;
+    const hidden=target=>!target || target.closest('.hidden') || target.getClientRects().length===0 || getComputedStyle(target).visibility==='hidden';
+    // The filing panel may be shown but have no sections yet. Spotlight the mode toggle instead.
+    if(step.selector==='#briefChunkPreview' && (!el || !el.querySelector('[data-landing-chunk]'))){
+      const toggle=document.querySelector('.brief-mode-toggle');
+      if(!hidden(toggle))return toggle;
+    }
+    if(!hidden(el))return el;
+    const fallback=step?.fallbackSelector?document.querySelector(step.fallbackSelector):null;
+    return hidden(fallback)?null:fallback;
   };
   const place=()=>{
     const step=usable[index],target=getTarget(step);

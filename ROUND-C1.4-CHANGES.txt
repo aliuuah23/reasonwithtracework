@@ -1,0 +1,13 @@
+C1.4 — Spatial Reading Studio precision and tutorial repair
+
+1. Repair empty node-text routing from inspector, causing false 'No precise term match' for 'I want a vestibule'.
+2. Add user-selectable phrase investigation inside Spatial Reading Studio, manual phrase query, term switching and readable messages.
+3. Expand curated architecture vocabulary across diverse mechanisms. Exact matching retained; unsupported phrases cannot be diagrammed reliably.
+4. Increase visibility of spatial read, connect-to bubble, and wire port hover.
+5. Repair tutorial step pointing to hidden chunk preview in Quick Brief mode.
+6. Retain all C1.3 project data, rendering, fit-map, framework logic, node undo and map reflow.
+
+QA: validate term detection and modal interactions, correct inspector text routing, brief-mode tutorial spotlight, mouse selection, and DOM at narrow width.
+7. Added concept-specific nonblank plan/section diagrams for 28 terms and selected schematic axonometrics.
+8. Added external searches clearly separated from confirmed documented references.
+9. Cache-bust spatial dictionary imports to prevent stale C1.3 behaviour.

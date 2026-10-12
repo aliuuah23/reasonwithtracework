@@ -885,3 +885,19 @@ html.tutorial-tour-active{overflow:hidden}
 /* Width accounting prevents a 96vw modal plus padding from overflowing half-screen Chrome. */
 .modal:has(.spatial-modal){box-sizing:border-box;width:min(1030px,calc(100vw - 28px));max-width:100%}
 .modal .spatial-modal,.modal .spatial-modal *{box-sizing:border-box}
+
+/* C1.4 — term-led spatial reading; precise drawings only for supported mechanisms. */
+.spatial-selectable-source{cursor:text;user-select:text;white-space:pre-wrap;overflow-wrap:anywhere;}
+.spatial-term-search{border:1px solid #dce1ed;border-radius:12px;padding:12px;background:#fff;margin:12px 0;}
+.spatial-term-search label{display:block;font-size:12px;font-weight:750;color:#293951;margin-bottom:7px;}
+.spatial-search-row{display:flex;align-items:stretch;gap:7px;flex-wrap:wrap;}
+.spatial-search-row input{flex:2 1 190px;min-width:0;border:1px solid #bfc9db;border-radius:9px;padding:9px 10px;font:inherit;font-size:13px;color:#28384e;}
+.spatial-search-row button{flex:0 1 auto;min-height:36px;white-space:normal;font-size:12px;}
+#spatialSearchStatus{font-size:11px;line-height:1.5;color:#61708a;margin:7px 0 0;}
+.spatial-modal .spatial-term-tab:hover{background:#e4e5ff;color:#242761;}
+@media(max-width:600px){.spatial-search-row input{flex-basis:100%;}.spatial-search-row button{flex:1 1 140px;}}
+
+.spatial-study-views:has(.spatial-axo-figure){grid-template-columns:repeat(3,minmax(0,1fr));}
+.spatial-axo-figure .spatial-literacy-svg{min-height:0;}
+@media(max-width:940px){.spatial-study-views:has(.spatial-axo-figure){grid-template-columns:repeat(2,minmax(0,1fr));}.spatial-axo-figure{grid-column:1/-1;}}
+@media(max-width:650px){.spatial-study-views:has(.spatial-axo-figure){grid-template-columns:minmax(0,1fr);}.spatial-axo-figure{grid-column:auto;}}

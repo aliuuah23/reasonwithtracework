@@ -1,3 +1,25 @@
+# TRACEWORK Stage C1.4 — Spatial Reading / Tutorial Repair
+
+**Main fix:** Spatial Reading Studio now passes actual selected node text from both the inspector and map, and allows searching or highlighting an architectural phrase from the node quote. The result gives precise diagrams when terms are supported, and does not invent one for unknown wording.
+
+**Controls:** Select text in the studio quote → Investigate Selection, or enter any phrase → Investigate. Detected terms have separate tabs. Results separate plan/section, architectural mechanisms, feature examples, projects and readings. The source text remains preserved during searches.
+
+**Vocabulary:** The original 13 concepts plus 15 additional architectural mechanisms (bridge, balcony, terrace, colonnade, ventilation, mezzanine, door, column, wall, orientation, accessibility, acoustics, landscape, water/drainage, programme). Every supported concept has a non-empty, concept-specific plan and section; 16 also include an axonometric mechanism sketch. Newly added diagrams remain schematic, not scaled construction details. No claim of supporting arbitrary words.
+
+**Tutorial:** Filing is optional and appears only in Long Brief mode. When Quick Brief is active the tour anchors to the mode selector instead of spotlighting a hidden filing panel.
+
+**Reference handling:** Verified readings and existing built-project examples are separated from feature configurations. Every term also provides clearly labelled external literature/project *searches*; these are not claimed as verified precedent matches.
+
+**Important caution:** These are conceptual architectural explanations, not design output, engineering proof, code compliance or verified precedent for every term. Sources appear only when linked documentation is known.
+
+## Stage C — Remaining Acceptance Requirements
+
+- Cross-branch Aggregate Map: test complex interwoven traces across all framework arrangements; protect independent Original positions and reversible Arrange reflow.
+- First-use journey: demonstrate brief → hotspot → interpretation/goal → spatial consequence → evaluation/trade-off → alternative → trace.
+- Project import/combine: preserve source provenance, merged node IDs, decision status and browser-local persistence; avoid silent overwrites.
+- Spatial knowledge library: add verified sourced project precedents, additional specific details and differentiated sketch models over time. Offline matching is intentionally finite and cannot reliably draw every arbitrary word.
+- Release acceptance: half-screen layouts, keyboard actions, tutorials, undo, local save/export, reopen, broken links and page load.
+
 ## Stage C1.1 — Aggregate visibility, refined alignment and pilot-informed role suggestions (12 October 2026)
 
 ### New in C1.1
