@@ -1,5 +1,5 @@
 import { escapeHtml } from '../input/brief-parser.js';
-import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.6';
+import { normaliseHotspotSelection } from '../input/hotspot-detector.js?v=b1.7';
 
 function activeChunk(state){
   if(!state.briefChunks?.length) return null;
@@ -172,19 +172,14 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
     };
   }
 
+  // B1.7: keep ONE plain text node for the entire brief. Native CSS Highlights
+  // paint each full, possibly wrapped phrase without fragmenting text or shifting it.
+  paintBriefHighlights(doc,displayedText,relative,selectedId,handlers);
   if(visible.length){
-    doc.innerHTML=highlightBrief(displayedText,relative,selectedId);
-    list.innerHTML=visible.map(h=>`<button class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${h.id}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button>`).join('');
-    [...doc.querySelectorAll('[data-hotspot]'),...list.querySelectorAll('[data-hotspot]')].forEach(el=>{
-      el.onclick=()=>handlers.onHotspot(el.dataset.hotspot);
-      if(el.classList.contains('hotspot-inline')){
-        el.onkeydown=e=>{
-          if(e.key==='Enter' || e.key===' '){ e.preventDefault(); handlers.onHotspot(el.dataset.hotspot); }
-        };
-      }
-    });
+    list.innerHTML=visible.map(h=>`<span class="hotspot-list-entry"><button type="button" class="hotspot-chip ${h.id===selectedId?'active':''}" data-hotspot="${escapeHtml(h.id)}">${escapeHtml(h.text)}<span class="hotspot-kind">${isDesignerSelected(h)?'selected':escapeHtml(h.kind||(/\s/.test(h.text)?'phrase':'word'))}</span></button><button type="button" class="hotspot-remove" data-delete-hotspot="${escapeHtml(h.id)}" title="Delete hotspot" aria-label="Delete hotspot ${escapeHtml(h.text)}">×</button></span>`).join('');
+    list.querySelectorAll('[data-hotspot]').forEach(el=>el.onclick=()=>handlers.onHotspot(el.dataset.hotspot));
+    list.querySelectorAll('[data-delete-hotspot]').forEach(el=>el.onclick=()=>handlers.onDeleteHotspot?.(el.dataset.deleteHotspot));
   }else{
-    doc.textContent=displayedText;
     const message=!showSuggestions && hotspotFilter!=='selected'
       ? 'Automatic suggestions are hidden. Switch to Selected by me or select text manually.'
       : hotspotFilter==='selected'
@@ -195,38 +190,44 @@ export function renderBrief(state,handlers,{showSuggestions=true,hotspotFilter='
   if(count) count.textContent=chunk?`${visible.length}/${scoped.length}`:`${visible.length}/${state.hotspots.length}`;
 }
 
-export function highlightBrief(text,hotspots,selectedId){
-  if(!text)return '';
-  const resolved=(hotspots||[])
-    .map(h=>resolveHotspotForText(text,h,Number(h.start)||0))
-    .filter(h=>h && h.end>h.start);
-  if(!resolved.length)return escapeHtml(text);
-
-  // Round B1.6: treat highlights as overlapping intervals, NOT as a race where
-  // the latest selected term hides every overlapping longer phrase. Partition
-  // only at true interval boundaries; highlight the union of ALL matching text.
-  // A selected word/phrase gets an active tint inside the still-visible larger
-  // phrase, rather than destroying its surrounding highlight.
-  const cuts=[0,text.length];
-  for(const h of resolved){cuts.push(h.start,h.end);}
-  cuts.sort((a,b)=>a-b);
-  const boundaries=cuts.filter((n,i)=>i===0 || n!==cuts[i-1]);
-  let result='';
-  for(let i=0;i<boundaries.length-1;i++){
-    const a=boundaries[i],b=boundaries[i+1];
-    if(a>=b)continue;
-    const section=escapeHtml(text.slice(a,b));
-    const covering=resolved.filter(h=>h.start<=a&&h.end>=b);
-    if(!covering.length){result+=section;continue;}
-    const active=covering.find(h=>h.id===selectedId);
-    // Non-active clicks favour the most informative full phrase. Every other
-    // overlapping hotspot remains selectable in the hotspot chip list.
-    const primary=active || covering.sort((x,y)=>(y.end-y.start)-(x.end-x.start))[0];
-    const title=isDesignerSelected(primary)?'Selected by designer':primary.kind==='word'?'Word':'Phrase';
-    result+=`<span class="hotspot-inline${active?' active':''}" role="button" tabindex="0" data-hotspot="${escapeHtml(primary.id)}" title="${title} hotspot · trace this reading">${section}</span>`;
+// Keep the original words in a single text node. An overlapping selection never
+// splits or competes with a larger phrase. The browser handles wrapping itself.
+export function paintBriefHighlights(doc,text,hotspots,selectedId,handlers={}){
+  const source=String(text||'');
+  if(doc.textContent!==source || doc.childNodes.length!==1 || doc.firstChild?.nodeType!==Node.TEXT_NODE){
+    doc.textContent=source;
   }
-  return result;
+  const resolved=(hotspots||[]).map(h=>resolveHotspotForText(source,h,Number(h.start)||0)).filter(h=>h&&h.end>h.start);
+  if(CSS.highlights && typeof Highlight==='function' && doc.firstChild){
+    const textNode=doc.firstChild;
+    const all=[],active=[];
+    for(const h of resolved){
+      const range=new Range(); range.setStart(textNode,h.start);range.setEnd(textNode,h.end);
+      all.push(range);
+      if(h.id===selectedId)active.push(range);
+    }
+    CSS.highlights.delete('tracework-brief-suggested');
+    CSS.highlights.delete('tracework-brief-active');
+    if(all.length)CSS.highlights.set('tracework-brief-suggested',new Highlight(...all));
+    if(active.length)CSS.highlights.set('tracework-brief-active',new Highlight(...active));
+  }
+  // Click the source text to select a hotspot; chip buttons also remain available.
+  // Do not intercept a manual text selection (the Select text feature needs it).
+  doc.onclick=e=>{
+    if(!resolved.length || !handlers.onHotspot || !window.getSelection()?.isCollapsed)return;
+    const caret=document.caretPositionFromPoint?.(e.clientX,e.clientY);
+    const range=!caret?document.caretRangeFromPoint?.(e.clientX,e.clientY):null;
+    const node=caret?.offsetNode||range?.startContainer;
+    const offset=caret?.offset??range?.startOffset;
+    if(node!==doc.firstChild || !Number.isInteger(offset))return;
+    const covering=resolved.filter(h=>offset>=h.start&&offset<=h.end).sort((a,b)=>(b.end-b.start)-(a.end-a.start));
+    if(covering.length)handlers.onHotspot(covering[0].id);
+  };
+  doc.style.cursor=resolved.length?'text':'';
 }
+
+// Kept for any legacy callers/tests; production uses paintBriefHighlights.
+export function highlightBrief(text){return escapeHtml(text||'');}
 export function renderLegend(ontology){
   document.getElementById('ontologyLegend').innerHTML=ontology.map(o=>`<span class="legend-item has-help" style="--legend-color:${o.color}" data-help="${escapeHtml(o.description||'Framework role')}"><i></i>${escapeHtml(o.label||o.id)}</span>`).join('');
 }

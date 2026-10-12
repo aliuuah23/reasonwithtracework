@@ -7,21 +7,21 @@ import { nodeGuidance } from './core/node-guidance.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
-import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.6';
+import { detectHotspots, normaliseHotspotSelection, repairHotspotRanges } from './input/hotspot-detector.js?v=b1.7';
 import { classifyThought } from './input/thought-classifier.js';
 import { addInterpretation } from './reasoning/interpretation.js';
 import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=b1.6';
+import { renderGraph } from './graph/graph-renderer.js?v=b1.7';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
-import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.6';
+import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=b1.7';
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
@@ -58,6 +58,7 @@ let aggregateArrangeSession = null;
 let aggregateArrangeBlend = 100;
 const undoStack = [];
 const MAX_UNDO = 30;
+const projectMergeSelection=new Set();
 
 async function init(){
   cacheEls();
@@ -362,7 +363,7 @@ function showView(view){
 
 function renderWorkspace(){
   const state=getState();
-  renderBrief(state,{onHotspot:selectHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
+  renderBrief(state,{onHotspot:selectHotspot,onDeleteHotspot:deleteHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
   updateMapModeControls(state);
   updateFrameworkControls(state);
   if(workspaceMapMode==='aggregate') updateAggregateControls(state);
@@ -547,6 +548,25 @@ async function selectHotspot(id){
   const latest=getState().nodes.find(n=>n.type==='input'&&n.meta?.hotspotId===id);
   await renderHotspotInspector(hotspot,getState(),hotspotHandlers(latest?.id));
   setTimeout(()=>focusNode(els.graphViewport,document.querySelector(`[data-id="${latest?.id}"]`),canvasZoom),80);
+}
+
+function deleteHotspot(id){
+  const state=getState(),hotspot=state.hotspots.find(h=>h.id===id);
+  if(!hotspot)return;
+  const inputs=state.nodes.filter(n=>n.type==='input'&&n.meta?.hotspotId===id);
+  const downstream=state.edges.filter(e=>inputs.some(n=>n.id===e.source||n.id===e.target)).length;
+  if(!window.confirm(`Delete hotspot “${hotspot.text}”?${inputs.length?` Its ${inputs.length} source node(s) will also be removed.`:''}${downstream?' Connected reasoning nodes will remain, but their wires to this source will be disconnected.':''} You can undo this with Ctrl+Z.`))return;
+  checkpoint('delete hotspot');
+  const removed=new Set(inputs.map(n=>n.id));
+  updateState(s=>{
+    s.hotspots=s.hotspots.filter(h=>h.id!==id);
+    s.nodes=s.nodes.filter(n=>!removed.has(n.id));
+    s.edges=s.edges.filter(e=>!removed.has(e.source)&&!removed.has(e.target));
+    if(s.selectedHotspotId===id)s.selectedHotspotId=null;
+    if(removed.has(s.activeNodeId))s.activeNodeId=null;
+  });
+  selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
+  renderWorkspace();toast('Hotspot deleted. Ctrl+Z restores it.');
 }
 
 function hotspotHandlers(inputNodeId=null){
@@ -1006,17 +1026,79 @@ function renderProjectShelf(){
   const wrap=$('#projectShelfWrap'),root=$('#projectShelf');
   if(!wrap||!root)return;
   const allProjects=listProjects();
-  const projects=allProjects.slice(0,8);
+  const projects=allProjects;
   wrap.classList.toggle('hidden',!projects.length);
-  root.innerHTML=projects.map(p=>`<article class="project-card"><div><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
+  root.innerHTML=projects.map(p=>`<article class="project-card"><label class="project-select-label"><input type="checkbox" data-merge-project="${escapeHtml(p.projectId)}" ${projectMergeSelection.has(p.projectId)?'checked':''} aria-label="Select ${escapeHtml(shelfName(p))} for combining"></label><div class="project-description"><span class="project-card-label">${String(p.projectId||'').startsWith('tracework-test-')?'TEST PROJECT':'SAVED TRACE'}</span><h3>${escapeHtml(shelfName(p))}</h3><p>${escapeHtml((p.brief||'').slice(0,105))}${(p.brief||'').length>105?'…':''}</p></div><div class="project-card-actions"><button class="secondary-button compact-project" data-open-project="${escapeHtml(p.projectId)}">Open</button><button class="project-delete-button" data-delete-project="${escapeHtml(p.projectId)}" aria-label="Delete ${escapeHtml(p.projectName||'trace')}" title="Delete trace">×</button></div></article>`).join('');
   const cleanup=$('#testCleanupActions');
   if(cleanup){
     const stale=allProjects.filter(p=>isNamedTestProject(p) && !CANONICAL_TEST_IDS.has(p.projectId));
     cleanup.innerHTML=stale.length?`<button type="button" class="secondary-button" id="tidyTestProjectsButton">Keep 2 test briefs · retire ${stale.length} old test${stale.length===1?'':'s'}</button>`:'';
     cleanup.querySelector('#tidyTestProjectsButton')?.addEventListener('click',confirmCleanTestProjects);
   }
+  const combineButton=$('#combineProjectsButton');
+  if(combineButton){
+    combineButton.disabled=projectMergeSelection.size<2;
+    combineButton.textContent=projectMergeSelection.size>=2?`Combine ${projectMergeSelection.size} projects`:'Combine projects (select 2+)';
+    combineButton.onclick=confirmCombineProjects;
+  }
+  root.querySelectorAll('[data-merge-project]').forEach(input=>input.onchange=()=>{
+    if(input.checked)projectMergeSelection.add(input.dataset.mergeProject);
+    else projectMergeSelection.delete(input.dataset.mergeProject);
+    if(combineButton){combineButton.disabled=projectMergeSelection.size<2;combineButton.textContent=projectMergeSelection.size>=2?`Combine ${projectMergeSelection.size} projects`:'Combine projects (select 2+)';}
+  });
   root.querySelectorAll('[data-open-project]').forEach(b=>b.onclick=()=>openSavedProject(b.dataset.openProject));
   root.querySelectorAll('[data-delete-project]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); confirmDeleteSavedProject(b.dataset.deleteProject); });
+}
+
+// Combines a COPY of the selected project briefs, their hotspots and their
+// reasoning graphs. Original projects remain untouched in local storage.
+function confirmCombineProjects(){
+  const parts=listProjects().filter(p=>projectMergeSelection.has(p.projectId));
+  if(parts.length<2){toast('Select at least two projects first.');return;}
+  const summary=parts.map(p=>`<li>${escapeHtml(shelfName(p))}</li>`).join('');
+  openModal(`<h2 id="modalTitle">Combine ${parts.length} projects?</h2><p>Creates a NEW project with each original brief kept as a separate source section. Hotspots, nodes and connections are copied into it. Your originals stay untouched.</p><ul>${summary}</ul><label class="combine-name-label">Name of combined project<input class="field-input" id="combinedProjectName" value="Combined trace" maxlength="80"></label><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="confirmCombineProjects">Create combined project</button></div>`,{
+    onOpen:m=>m.querySelector('#confirmCombineProjects').onclick=()=>{
+      const title=m.querySelector('#combinedProjectName').value.trim()||'Combined trace';
+      try{
+        const merged=combineProjectCopies(parts,title);
+        if(!saveProject(merged))throw new Error('Browser storage is full or unavailable');
+        projectMergeSelection.clear();closeModal();replaceState(merged);enterApp(false);
+        toast(`Combined ${parts.length} projects into “${title}”. Originals were preserved.`);
+      }catch(err){console.error(err);toast('Could not save the combined project. Originals remain unchanged.');}
+    }
+  });
+}
+function combineProjectCopies(parts,title){
+  let brief='';
+  const chunks=[],hotspots=[],nodes=[],edges=[],history=[];
+  for(const [idx,p] of parts.entries()){
+    const prefix=`merged-${idx+1}-`;
+    const source=String(p.brief||'');
+    if(!source)continue;
+    if(brief)brief+='\n\n';
+    const start=brief.length;
+    brief+=source;
+    const chunkId=`${prefix}source`;
+    chunks.push({id:chunkId,index:chunks.length,title:shelfName(p),start,end:brief.length,text:source,manual:true});
+    const sourceHotspots=repairHotspotRanges(source,p.hotspots||[]);
+    for(const h of sourceHotspots){
+      hotspots.push({...h,id:prefix+h.id,chunkId,start:start+h.start,end:start+h.end});
+    }
+    for(const node of p.nodes||[]){
+      const meta={...(node.meta||{})};
+      if(meta.hotspotId)meta.hotspotId=prefix+meta.hotspotId;
+      if(meta.groupId)meta.groupId=prefix+meta.groupId;
+      nodes.push({...structuredClone(node),id:prefix+node.id,branchId:prefix+(node.branchId||'branch-1'),meta,
+        x:Number.isFinite(Number(node.x))?Number(node.x):null,
+        y:Number.isFinite(Number(node.y))?Number(node.y)+(idx*230):null});
+    }
+    for(const edge of p.edges||[])edges.push({...structuredClone(edge),id:prefix+edge.id,source:prefix+edge.source,target:prefix+edge.target});
+    history.push({id:`${prefix}merge`,action:'Project included',detail:shelfName(p),time:new Date().toISOString()});
+  }
+  return {version:2,projectId:`tw-combined-${Date.now()}`,projectName:title,brief,briefMode:'document',briefChunks:chunks,
+    activeBriefChunkId:chunks[0]?.id||null,sourceFileName:'Combined projects',frameworkId:parts[0]?.frameworkId||'tracework',
+    frameworkLocked:false,hotspots,nodes,edges,selectedHotspotId:null,activeNodeId:null,activeBranchId:'branch-1',
+    view:'workspace',history,comments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
 
 function openSavedProject(id){

@@ -13,3 +13,7 @@ Unzip and upload the root contents to the existing GitHub Pages repository; hard
 
 ## Testing
 Open the Long brief sample, navigate to Privacy, select `Different degrees of privacy`. Then select a second overlapping hotspot such as `privacy` (from a chip or after adding it). The **full phrase should remain highlighted** with only the selected shorter term tinted more strongly. Repeat in Users for `individuals and small groups`. Resize Chrome narrow to ensure highlights wrap and the source remains left-aligned. Verify Short brief unaffected. Use the optional home page cleanup button only if you wish to retire older test-labelled traces.
+
+
+## Round B1.7
+See ROUND-B1.7-CHANGES.txt for current release notes.
