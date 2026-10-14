@@ -457,6 +457,35 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
 
 function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor}){
   nodesRoot.querySelectorAll('.node-port').forEach(port=>{
+    const host=port.closest('.graph-node');
+    const base=nodesById.get(host?.dataset.id);
+    port.title=base?`Drag to connect from “${String(base.label||'this thought').slice(0,76)}”. Compatible endpoints will glow; hover to inspect a possible relation.`:'Drag to create a reasoning connection';
+    port.addEventListener('pointerenter',()=>{
+      if(nodesRoot.classList.contains('connecting'))return;
+      if(!base)return;
+      nodesRoot.classList.add('connection-preview');
+      const startSide=port.classList.contains('port-in')?'in':'out';
+      nodesRoot.querySelectorAll('.node-port').forEach(otherPort=>{
+        const otherId=otherPort.closest('.graph-node')?.dataset.id;
+        if(!otherId||otherId===base.id)return;
+        const other=nodesById.get(otherId);
+        const pair=resolvePair(base,other,startSide);
+        const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
+        otherPort.classList.toggle('compatible',Boolean(result.ok));
+        otherPort.classList.toggle('incompatible',!result.ok);
+        otherPort.classList.toggle('provenance-review',Boolean(result.provenanceGap?.flagged));
+        otherPort.dataset.connectHint=`${result.ok?'Possible connection':'Gap in Reasoning'}: ${result.reason||'Consider the relationship.'}${result.provenanceGap?.flagged?' | Provenance Gap: '+result.provenanceGap.reason:''}`;
+        otherPort.title=otherPort.dataset.connectHint;
+      });
+    });
+    port.addEventListener('pointerleave',()=>{
+      if(nodesRoot.classList.contains('connecting'))return;
+      nodesRoot.classList.remove('connection-preview');
+      nodesRoot.querySelectorAll('.node-port').forEach(otherPort=>{
+        otherPort.classList.remove('compatible','incompatible','provenance-review');
+        delete otherPort.dataset.connectHint;
+      });
+    });
     port.addEventListener('pointerdown',e=>{
       if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
@@ -469,6 +498,7 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
       const temp=document.createElementNS('http://www.w3.org/2000/svg','path');
       temp.setAttribute('class','trace-edge draft-connection');
       svg.appendChild(temp);
+      nodesRoot.classList.remove('connection-preview');
       nodesRoot.classList.add('connecting');
 
       nodesRoot.querySelectorAll('.node-port').forEach(candidate=>{
@@ -478,6 +508,9 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         const pair=resolvePair(origin,other,startSide);
         const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
         candidate.classList.add(result.ok?'compatible':'incompatible');
+        candidate.classList.toggle('provenance-review',Boolean(result.provenanceGap?.flagged));
+        candidate.dataset.connectHint=`${result.ok?'Possible connection':'Gap in Reasoning'}: ${result.reason||'Consider the relationship.'}${result.provenanceGap?.flagged?' | Provenance Gap: '+result.provenanceGap.reason:''}`;
+        candidate.title=candidate.dataset.connectHint;
       });
 
       const pointFromEvent=evt=>{
@@ -493,7 +526,12 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         window.removeEventListener('pointermove',move,true);
         window.removeEventListener('pointerup',finish,true);
         temp.remove();nodesRoot.classList.remove('connecting');
-        nodesRoot.querySelectorAll('.node-port').forEach(p=>p.classList.remove('compatible','incompatible'));
+        nodesRoot.querySelectorAll('.node-port').forEach(p=>{
+          p.classList.remove('compatible','incompatible','provenance-review');
+          delete p.dataset.connectHint;
+          const node=nodesById.get(p.closest('.graph-node')?.dataset.id);
+          p.title=node?'Drag this handle to explore connections with other thoughts.':'Connect nodes';
+        });
         const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.node-port');
         const otherId=hit?.closest('.graph-node')?.dataset.id;
         const other=nodesById.get(otherId);

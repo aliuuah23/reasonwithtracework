@@ -1,3 +1,20 @@
+# D1.1 — Provenance Gap Extension (14 October 2026)
+
+**This build supersedes the previously prepared D1.1 ZIP and retains its entire feature set.**
+
+## Why two separate diagnostics?
+- **Gap in Reasoning:** Is the reasoning relation logically or structurally unclear?
+- **Provenance Gap:** Does the origin or declared evidence risk misattributing an idea to a participant, brief, researcher or system?
+
+A designer may connect different sources intentionally. Mixed provenance is **not automatically an error**, and the warning does **not block the connection**. The system never infers historical provenance for missing optional fields.
+
+## How to test
+1. Connect a system-suggestion node to a participant-attributed node with no independently cited participant source. Preview shows an amber provenance warning and a follow-up question. The connection remains allowed if the reasoning relation itself is valid.
+2. Select its wire. The right inspector shows a collapsible or expanded **Provenance Gap** section separate from **Gap in Reasoning**. There is no interrupting wire modal.
+3. Make a normal brief → designer interpretation link. No false provenance warning should appear.
+4. Edit the target source reference or evidence origin. The inspection result updates from current metadata on reopening the wire.
+5. Confirm the original D1.1 ribbon, wire legend, node editing, maps, export and test projects remain functional.
+
 # D1 — Reasoning Transparency (14 October 2026)
 
 **Baseline:** GitHub repository ZIP `reasonwithtracework-main(1).zip` (locked C2.5).
@@ -433,3 +450,13 @@ Two independent dimensions must not be conflated:
 | Pilot recurrence | Neutral | No comparable pilot signal available (for example a loose note). |
 
 **Frequency does not equal confidence or proof.** The P01–P10 dataset describes how often a type of transition was coded, not the reliability of this designer's specific reasoning, and not a required architectural design sequence. The **Hide pilot signals** control removes the frequency grading but continues to display active/provisional/rejected relationship patterns. The selected-wire explanation links back to the legend. Both node and wire data remain unchanged by this presentation update. SVG/PNG/PDF map exports reproduce the wire styling shown in the preview, including dash pattern and graded line weight.
+
+
+## D1.1 — Contextual Wire Guidance and Responsive Layout (14 October 2026)
+- **Wire click**: selects a connection; does not open an interrupting modal. A concise inspector now shows endpoints and an optional expandable **Explain This · Is there a reasoning gap?** section with contextual questions.
+- **Grasshopper-style link cues**: drag a node connection handle and compatible/incompatible destination handles visually respond. Hover a destination handle for a short, contextual explanation. This is advisory, not a prohibition of unconventional reasoning.
+- **Pilot signals OFF**: uniform neutral **solid** edges. The relationship's saved active/provisional/rejected status is preserved in the data; turn signals back on to see their patterns and empirical category-transition grading.
+- **Wire legend**: displayed only while a wire is selected. This avoids a permanent legend competing with the reasoning map.
+- **Evidence / provenance**: both remain optional. Origin identifies who or what introduced a statement; evidence type identifies what supports it. PROV-O is conceptual grounding, not a claim of formal RDF compliance.
+- **UI**: centered responsive primary ribbon; title-cased About section labels; provenance explanations wrap instead of overflowing narrow windows.
+- **Regression priorities**: existing project restore, node role inspector, Ctrl+Z and exports remain unchanged.

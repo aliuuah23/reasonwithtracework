@@ -255,3 +255,34 @@
 /* Selection retains context (do not make a selected rejected/provisional link look active). */
 .graph-surface .trace-edge.wire-provisional.selected {stroke-dasharray:8 6!important;}
 .graph-surface .trace-edge.wire-rejected.selected {stroke-dasharray:2 6!important;}
+
+/* D1.1 — hidden pilot layer is a clean, neutral, SOLID network. */
+.graph-surface.hide-wire-signals .trace-edge:not(.draft-connection):not(.selected):not(.wire-hover){
+  stroke:#777e8b!important;stroke-width:2.25!important;stroke-dasharray:none!important;opacity:.92!important;
+}
+.graph-surface.hide-wire-signals .trace-edge.selected{stroke-dasharray:none!important;}
+/* Drag-to-connect suggestions: candidate handles signal compatibility without modals. */
+.graph-nodes.connecting .node-port.compatible:hover::after,
+.graph-nodes.connecting .node-port.incompatible:hover::after{
+  content:attr(data-connect-hint);position:absolute;z-index:600;top:calc(100% + 11px);
+  left:50%;transform:translateX(-50%);min-width:160px;width:max-content;max-width:min(275px,65vw);
+  padding:9px 10px;border-radius:9px;background:#202533;color:#fff;
+  font-size:10px;line-height:1.4;font-weight:550;text-align:left;white-space:normal;
+  box-shadow:0 10px 22px rgba(0,0,0,.23);pointer-events:none;
+}
+.graph-nodes.connecting .node-port.incompatible:hover::after{background:#68463f;}
+
+/* D1.1: hover an outlet to preview possible target handles before dragging. */
+.graph-nodes.connection-preview .node-port.compatible{box-shadow:0 0 0 6px rgba(76,166,112,.20);opacity:1;}
+.graph-nodes.connection-preview .node-port.incompatible{opacity:.24;}
+.graph-nodes.connection-preview .node-port.compatible:hover::after,
+.graph-nodes.connection-preview .node-port.incompatible:hover::after{
+  content:attr(data-connect-hint);position:absolute;z-index:600;top:calc(100% + 11px);
+  left:50%;transform:translateX(-50%);min-width:160px;width:max-content;max-width:min(275px,65vw);
+  padding:9px 10px;border-radius:9px;background:#202533;color:#fff;font-size:10px;line-height:1.4;
+  text-align:left;white-space:normal;box-shadow:0 10px 22px rgba(0,0,0,.23);pointer-events:none;
+}
+
+/* Amber, not red: provenance warnings do not forbid designer-authored links. */
+.graph-nodes .node-port.compatible.provenance-review{box-shadow:0 0 0 6px rgba(201,139,39,.28);}
+.graph-nodes .node-port.provenance-review:hover::after{background:#856127;}

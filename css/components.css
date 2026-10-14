@@ -1058,3 +1058,25 @@ html.tutorial-tour-active{overflow:hidden}
 /* Keep the expanded wire key inside the viewport, including half-screen windows. */
 .wire-legend-content{position:fixed;bottom:72px;right:16px;left:auto;width:min(360px,calc(100vw - 32px));max-height:min(410px,calc(100dvh - 98px));}
 @media(max-width:700px){.wire-legend-content{right:10px;bottom:56px;width:min(360px,calc(100vw - 20px));max-height:calc(100dvh - 76px);}}
+
+/* D1.1 — contextual, non-modal relationship guidance */
+.wire-legend[hidden]{display:none!important;}
+.connection-inspector-head h3{font-size:17px;overflow-wrap:anywhere;}
+.connection-ends{display:grid;gap:5px;}
+.connection-ends p{margin:3px 0 7px;line-height:1.5;font-size:12px;overflow-wrap:anywhere;}
+.connection-arrow{font-size:11px;color:var(--muted);padding:5px 0;}
+.connection-inspector-guidance{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface-soft);}
+.connection-inspector-guidance summary{cursor:pointer;font-size:12px;font-weight:780;line-height:1.5;}
+.connection-inspector-guidance p{font-size:11.5px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere;}
+.connection-inspector-guidance strong{color:var(--text);}
+.connection-inspector-guidance small{color:var(--muted-2);}
+#clearSelectedConnection,#deleteSelectedConnection{margin:8px 5px 0 0;max-width:100%;}
+
+/* D1.1 provenance review is independent of structural wire validity. */
+.provenance-gap-guidance{border:1px solid #e4b877;background:#fff9ed;border-radius:10px;padding:12px;}
+.provenance-gap-guidance summary{cursor:pointer;color:#805420;font-size:12px;font-weight:750;line-height:1.5;}
+.provenance-gap-guidance p{font-size:11.5px;line-height:1.55;overflow-wrap:anywhere;}
+.provenance-gap-guidance small{color:#806b4b;font-size:10px;line-height:1.5;}
+.provenance-gap-guidance:not([open]){background:var(--surface-soft);border-color:var(--border);}
+.provenance-gap-guidance:not([open]) summary{color:var(--text);}
+.guided-validation.provenance-review{color:#805420;}

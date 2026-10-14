@@ -49,3 +49,45 @@ export function provenanceModel(node,origin){
     caveat:'Conceptual correspondence to prov:Entity, prov:wasAttributedTo, prov:wasDerivedFrom and prov:wasGeneratedBy. Not a complete or validated PROV-O export.'
   };
 }
+
+
+/**
+ * D1.1: Provenance consistency is independent of framework/ontology validity.
+ * A cross-origin reasoning relationship can be perfectly legitimate. Warnings
+ * identify *possible attribution or evidence errors*, without inventing evidence
+ * or preventing a designer from recording an intentional relationship.
+ * Historical nodes with no explicit evidence metadata are never flagged solely
+ * for lacking optional metadata.
+ */
+export function provenanceConnectionCheck(source,target){
+  if(!source||!target)return {flagged:false};
+  const a=source.meta||{}, b=target.meta||{};
+  const from=a.provenance||((source.type==='input'&&a.source==='brief')?'brief':'designer');
+  const to=b.provenance||((target.type==='input'&&b.source==='brief')?'brief':'designer');
+  const ea=a.evidenceKind||null, eb=b.evidenceKind||null;
+  const explicitBrief=p=>['brief','brief_requirement','brief_description'].includes(p);
+  const empirical=new Set(['participant','observation','performance','brief','drawing']);
+  const warnings=[];
+  const add=(reason,next)=>warnings.push({reason,next});
+  // Within-node contradictions must not be mistaken for verified source claims.
+  for(const [origin,evidence,name] of [[from,ea,'starting'],[to,eb,'destination']]){
+    if(origin==='system'&&evidence&&empirical.has(evidence))
+      add(`The ${name} thought is identified as a system suggestion but its evidence is labelled ${evidence}. A TRACEWORK prompt is not itself an observed or participant-produced fact.`,
+          'Separate the suggested idea from the independent evidence that supports it; cite that evidence on its own node.');
+    if(origin==='participant'&&evidence==='inference')
+      add(`The ${name} thought is attributed to a participant but labelled a researcher inference.`,
+          'Distinguish the participant’s exact statement from the researcher’s interpretation in two attributed nodes.');
+    if(explicitBrief(origin)&&['inference','suggestion'].includes(evidence||''))
+      add(`The ${name} thought is attributed to the given brief but labelled as an inference or suggestion.`,
+          'Keep quoted brief requirements separate from later interpretations and suggestions.');
+  }
+  // Source-to-target attribution review, not a ban on different origins.
+  if(from==='system'&&(to==='participant'||to==='researcher')&&(!b.sourceReference||eb==='suggestion'))
+    add('A system-generated suggestion leads into a thought attributed to a participant or researcher, without a recorded independent source. This may misrepresent who actually proposed the idea.',
+        'Confirm who stated the destination thought. If adopted independently, record that action and its source; otherwise retain its system origin.');
+  if(from==='researcher'&&to==='participant'&&!b.sourceReference)
+    add('Researcher coding is connected to an unattributed participant claim. The arrow alone does not establish that the participant said or reasoned this.',
+        'Add a participant transcript/event citation or label the destination as a researcher reconstruction.');
+  if(!warnings.length)return {flagged:false,level:'none',reason:'No specific provenance inconsistency detected. Different origins may still be linked.',next:'Document the source of any consequential claim where possible.'};
+  return {flagged:true,level:'review',reason:warnings.map(w=>w.reason).join(' '),next:[...new Set(warnings.map(w=>w.next))].join(' ')};
+}

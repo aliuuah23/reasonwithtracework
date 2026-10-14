@@ -1,0 +1,1 @@
+D1.1 — Centred responsive ribbon; non-modal contextual wire selection; optional Gap in Reasoning inspector; connection-port hover hints; hidden-pilot solid wire style; legend on selection only; optional provenance explained; About title case and overflow fix.

@@ -10,9 +10,9 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d1-wire-semantics">
-  <link rel="stylesheet" href="css/graph.css?v=d1-wire-semantics">
-  <link rel="stylesheet" href="css/responsive.css?v=c2.4-final">
+  <link rel="stylesheet" href="css/components.css?v=d1-1-context">
+  <link rel="stylesheet" href="css/graph.css?v=d1-1-context">
+  <link rel="stylesheet" href="css/responsive.css?v=d1-1-centred">
 </head>
 <body>
   <header class="topbar">
@@ -174,7 +174,7 @@
                   <div class="canvas-state-actions">
                     <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                     <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
-                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Hide or show graduated P01–P10 category-transition recurrence; active/provisional/rejected wire patterns remain visible.">Hide pilot signals</button>
+                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Show pilot recurrence as graded wire strengths and status patterns, or hide it to display uniform solid wires. Saved relationship status is not changed.">Hide pilot signals</button>
                   </div>
                 </div>
               </div>
@@ -259,7 +259,7 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
-            <details class="wire-legend" id="wireLegend">
+            <details class="wire-legend" id="wireLegend" hidden>
               <summary aria-label="Wire legend: line patterns and pilot evidence strength">Wire legend <span class="wire-legend-teaser" aria-hidden="true"><i class="wire-key-line"></i><i class="wire-key-line provisional"></i><i class="wire-key-line rejected"></i></span> <span class="wire-legend-chevron" aria-hidden="true">⌄</span></summary>
               <div class="wire-legend-content">
                 <div class="wire-legend-group"><strong>Relationship status · line pattern</strong>
@@ -274,7 +274,7 @@
                   <span><i class="wire-key-line grade-unseen"></i><b>Not observed</b> — absent from the mapped pilot transitions</span>
                   <span><i class="wire-key-line grade-neutral"></i><b>Neutral</b> — no comparable pilot signal, such as a note</span>
                 </div>
-                <p>Two different readings: <b>pattern = your relationship status</b>; <b>weight/darkness = pilot recurrence</b>. These are not confidence scores, probabilities or a judgment of design quality. Click a wire for its reasoning explanation. “Hide wire signals” removes only the pilot styling, not the saved connection status.</p>
+                <p>Two different readings: <b>pattern = your relationship status</b>; <b>weight/darkness = pilot recurrence</b>. These are not confidence scores, probabilities or a judgment of design quality. Select a wire to optionally expand contextual reasoning guidance in the inspector. “Hide pilot signals” displays a neutral, solid wire without changing its saved relationship status.</p>
               </div>
             </details>
             <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original influences Arrange; Arrange never moves Original · Focus path isolates one route · Ctrl+Z undo</span>
@@ -353,6 +353,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-wire-semantics"></script>
+  <script type="module" src="js/app.js?v=d1-1-provenance"></script>
 </body>
 </html>

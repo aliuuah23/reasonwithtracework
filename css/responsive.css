@@ -189,3 +189,24 @@
 @media(max-width:820px) and (min-width:561px){
   .inspector-panel{top:calc(var(--topbar) + 8px);}
 }
+
+/* D1.1 — visually centred navigation, including half-screen Chrome. */
+@media(max-width:1200px){
+  :root{--topbar:102px;}
+  .topbar{height:var(--topbar);min-height:var(--topbar);
+    grid-template-columns:minmax(0,1fr) auto;grid-template-rows:36px 38px;
+    column-gap:10px;row-gap:7px;padding:8px 12px 7px;align-items:center;}
+  .brand{grid-column:1;grid-row:1;min-width:0;}
+  .topbar-actions{grid-column:2;grid-row:1;}
+  .topnav{display:flex;grid-column:1/-1;grid-row:2;justify-self:center;
+    width:max-content;max-width:100%;min-width:0;justify-content:center;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;white-space:nowrap;}
+  .topnav .nav-link{flex:none;white-space:nowrap;padding:7px 11px;}
+}
+@media(max-width:560px){.topbar{padding:8px 10px 7px;}.topnav{justify-content:flex-start;}}
+/* About: keep titles and long provenance references within the viewport. */
+.about-page{min-width:0;max-width:1120px;width:100%;overflow-wrap:anywhere;}
+.about-page>section,.about-research,.about-research p{min-width:0;max-width:100%;}
+.about-research h2{font-size:clamp(23px,4vw,36px);line-height:1.14;overflow-wrap:anywhere;}
+.about-research p{line-height:1.6;overflow-wrap:anywhere;}
+@media(max-width:700px){.about-page{padding:36px 18px 70px;}.about-hero h1{font-size:clamp(32px,7vw,50px);}}

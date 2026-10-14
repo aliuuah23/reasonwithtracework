@@ -1,0 +1,1 @@
+D1.1 provenance warning amendment: advisory source/evidence attribution checks; visible in port preview, quick-link validation, selected-wire inspector, and post-connection coach. Mixed origins are not considered invalid by default. Existing D1.1 preserved.
