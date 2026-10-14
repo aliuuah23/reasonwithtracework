@@ -1,0 +1,1 @@
+D1.4 — One-row responsive navigation, retractable brief/guidance panels, generic PROV-O Entity/Agent/Activity metadata, legacy safe handling, edit-triggered warnings, independent notice dismissal, and robustness pass.

@@ -130,19 +130,26 @@ export const frameworks = [
   }
 ];
 
+// User-facing provenance vocabulary: reusable beyond any particular study.
+// Internal legacy IDs remain readable for imported work but are not offered
+// when authoring a new attribution. A document is an Entity, not an Agent.
 export const provenanceOptions = [
-  { id:'brief', label:'Brief / source document' },
-  { id:'brief_requirement', label:'Brief requirement' },
-  { id:'brief_description', label:'Brief description / background' },
-  { id:'participant', label:'Participant statement' },
-  { id:'researcher', label:'Researcher interpretation / coding' },
-  { id:'system', label:'System suggestion' },
-  { id:'tutor', label:'Tutor comment' },
-  { id:'designer', label:'Designer thought' },
-  { id:'observation', label:'Observation / site condition' },
-  { id:'precedent', label:'Precedent / case study' },
-  { id:'other', label:'Other source' }
+  {id:'designer',label:'Designer · Person (Agent)'},
+  {id:'collaborator',label:'Collaborator · Person (Agent)'},
+  {id:'tutor',label:'Reviewer · Person (Agent)'},
+  {id:'organisation',label:'Organisation (Agent)'},
+  {id:'system',label:'Software Tool (Agent)'},
+  {id:'other',label:'Other / Unspecified Agent'}
 ];
+export const legacyProvenanceLabels = {
+  participant:'Legacy Attribution · Review Agent',
+  researcher:'Legacy Attribution · Review Agent',
+  brief:'Source Document (Entity · Agent Not Recorded)',
+  brief_requirement:'Source Document (Entity · Agent Not Recorded)',
+  brief_description:'Source Document (Entity · Agent Not Recorded)',
+  observation:'Recorded Observation (Entity · Agent Not Recorded)',
+  precedent:'Published Reference (Entity · Agent Not Recorded)'
+};
 
 export function getFramework(id='tracework'){
   return frameworks.find(f=>f.id===id) || frameworks[0];
@@ -454,7 +461,7 @@ export function frameworkRoleDescription(frameworkId,roleId){
 }
 
 export function provenanceLabel(id='designer'){
-  return provenanceOptions.find(p=>p.id===id)?.label || 'Designer thought';
+  return provenanceOptions.find(p=>p.id===id)?.label||legacyProvenanceLabels[id] || 'Designer thought';
 }
 
 export function inferLegacyProvenance(node){

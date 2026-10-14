@@ -1,16 +1,25 @@
 // D1: interpretable reasoning metadata, not an inference of what a designer actually thought.
 // PROV-O is an informative conceptual model; TRACEWORK exports are not asserted to be PROV-O RDF.
 export const evidenceKinds = [
-  {id:'unspecified',label:'Not specified',description:'The evidential basis has not yet been recorded.'},
-  {id:'brief',label:'Brief / quoted requirement',description:'Direct wording or a condition in a provided brief.'},
-  {id:'observation',label:'Observed condition',description:'Recorded behaviour, site or environmental observation.'},
-  {id:'transcript',label:'Transcript / Recorded Interview',description:'A traceable transcript or recording supporting a claim; attribution to the participant is recorded separately under Origin / Provenance.'},
-  {id:'drawing',label:'Drawing / model evidence',description:'Documented sketch, model, spatial test or artefact.'},
-  {id:'precedent',label:'Published precedent',description:'Documented architectural example or scholarly source.'},
-  {id:'performance',label:'Performance / measured outcome',description:'A measured test, simulation or observed outcome; record its method and limits.'},
-  {id:'designer',label:'Designer reasoning / intention',description:'The designer’s stated interpretation, proposal, preference or hypothesis.'},
-  {id:'inference',label:'Researcher inference',description:'An analytical reading that has not been explicitly stated by the original designer.'},
-  {id:'suggestion',label:'System suggestion',description:'A TRACEWORK prompt; not evidence that the designer accepted or implemented it.'}
+  {id:'unspecified',label:'Not Specified',description:'No supporting entity has yet been identified.'},
+  {id:'brief',label:'Source Document',description:'A retrievable document, specification, or supplied requirement.'},
+  {id:'observation',label:'Recorded Observation',description:'A record of the site, environment, use, or behaviour.'},
+  {id:'drawing',label:'Drawing or Model',description:'A drawing, diagram, model, or recorded design test.'},
+  {id:'precedent',label:'Published Reference',description:'An external documented reference or architectural case.'},
+  {id:'performance',label:'Measurement or Simulation',description:'A recorded measured or simulated result, with method where available.'},
+  {id:'designer',label:'Design Note',description:'A recorded design intention or assumption; not independently verified.'},
+  {id:'inference',label:'Analytical Note',description:'An inference or interpretation marked as such.'},
+  {id:'suggestion',label:'Software-Generated Note',description:'A tool suggestion; not independent evidence of adoption.'},
+  {id:'other',label:'Other Supporting Record',description:'A distinct, identifiable entity not covered above.'}
+];
+export const generationActivities=[
+  {id:'unspecified',label:'Not Specified'},
+  {id:'authored',label:'Authored / Recorded'},
+  {id:'interpreted',label:'Interpreted / Analysed'},
+  {id:'observed',label:'Observed / Documented'},
+  {id:'revised',label:'Revised / Edited'},
+  {id:'generated',label:'Software Generated'},
+  {id:'imported',label:'Imported from Source'}
 ];
 export const roleClarifications={
   input:{example:'“Provide a place for individual and group study.”',boundary:'An Input records supplied or observed language, not an inferred design intention.'},
@@ -21,9 +30,9 @@ export const roleClarifications={
   goal:{example:'“The project aims to support both retreat and social exchange.”',boundary:'An aim or value is not itself a physical intervention.'},
   note:{example:'“What if the pavilion changes with occupancy?”',boundary:'A deliberately unclassified thought; no framework role is asserted.'}
 };
-export function evidenceLabel(id='unspecified'){if(id==='participant')return 'Not Specified (Legacy: Review Evidence Basis)';return evidenceKinds.find(x=>x.id===id)?.label||'Not Specified';}
+export function evidenceLabel(id='unspecified'){if(id==='participant'||id==='transcript')return 'Not Specified (Legacy: Review Supporting Record)';return evidenceKinds.find(x=>x.id===id)?.label||'Not Specified';}
 export function inferredEvidenceKind(node){
-  const explicit=node?.meta?.evidenceKind; if(explicit)return explicit;
+  const explicit=node?.meta?.evidenceKind; if(explicit)return ['participant','transcript'].includes(explicit)?'unspecified':explicit;
   if(node?.type==='input' || ['brief','brief_requirement','brief_description'].includes(node?.meta?.provenance))return 'brief';
   if(node?.meta?.provenance==='observation')return 'observation';
   if(node?.meta?.provenance==='precedent')return 'precedent';
@@ -43,9 +52,9 @@ export function provenanceModel(node,origin){
   const source=node?.meta?.sourceReference||'';
   return {
     entity:node?.label||'',
-    attributedTo:origin,
+    attributedTo:['brief','brief_requirement','brief_description','observation','precedent'].includes(origin)?null:origin,
     derivedFrom:source||((node?.type==='input')?'Source brief (see project)':null),
-    generatedBy:node?.meta?.generatedBy||'Trace entry or edit (activity details not captured)',
+    generatedBy:node?.meta?.generationActivity||'unspecified',
     caveat:'Conceptual correspondence to prov:Entity, prov:wasAttributedTo, prov:wasDerivedFrom and prov:wasGeneratedBy. Not a complete or validated PROV-O export.'
   };
 }
@@ -61,33 +70,40 @@ export function provenanceModel(node,origin){
  */
 export function provenanceConnectionCheck(source,target){
   if(!source||!target)return {flagged:false};
-  const a=source.meta||{}, b=target.meta||{};
+  const a=source.meta||{},b=target.meta||{};
   const from=a.provenance||((source.type==='input'&&a.source==='brief')?'brief':'designer');
   const to=b.provenance||((target.type==='input'&&b.source==='brief')?'brief':'designer');
-  const ea=a.evidenceKind==='participant'?'unspecified':(a.evidenceKind||null), eb=b.evidenceKind==='participant'?'unspecified':(b.evidenceKind||null);
-  const explicitBrief=p=>['brief','brief_requirement','brief_description'].includes(p);
-  const empirical=new Set(['participant','observation','performance','brief','drawing']);
-  const warnings=[];
-  const add=(reason,next)=>warnings.push({reason,next});
-  // Within-node contradictions must not be mistaken for verified source claims.
-  for(const [origin,evidence,name] of [[from,ea,'starting'],[to,eb,'destination']]){
-    if(origin==='system'&&evidence&&empirical.has(evidence))
-      add(`The ${name} thought is identified as a system suggestion but its evidence is labelled ${evidence}. A TRACEWORK prompt is not itself an observed or participant-produced fact.`,
-          'Separate the suggested idea from the independent evidence that supports it; cite that evidence on its own node.');
-    if(origin==='participant'&&evidence==='inference')
-      add(`The ${name} thought is attributed to a participant but labelled a researcher inference.`,
-          'Distinguish the participant’s exact statement from the researcher’s interpretation in two attributed nodes.');
-    if(explicitBrief(origin)&&['inference','suggestion'].includes(evidence||''))
-      add(`The ${name} thought is attributed to the given brief but labelled as an inference or suggestion.`,
-          'Keep quoted brief requirements separate from later interpretations and suggestions.');
+  const evidenceA=['participant','transcript'].includes(a.evidenceKind)?'unspecified':(a.evidenceKind||'unspecified');
+  const evidenceB=['participant','transcript'].includes(b.evidenceKind)?'unspecified':(b.evidenceKind||'unspecified');
+  const humanAgents=new Set(['designer','collaborator','tutor','organisation','other','participant','researcher']);
+  const sourceEntities=new Set(['brief','brief_requirement','brief_description','observation','precedent']);
+  const findings=[];
+  const warn=(reason,next)=>findings.push({reason,next});
+  const nodes=[[source,from,evidenceA,'starting'],[target,to,evidenceB,'destination']];
+  for(const [node,origin,evidence,label] of nodes){
+    if(origin==='system'&&evidence!== 'unspecified'&&evidence!=='suggestion'&&!node.meta?.sourceReference){
+      warn(`The ${label} thought is attributed to software, but a supporting record has not been identified. A generated suggestion is not itself independent evidence.`,
+        'Record an identifiable supporting Entity, or leave the evidence unspecified.');
+    }
+    if(sourceEntities.has(origin)&&['designer','inference','suggestion'].includes(evidence)){
+      warn(`The ${label} thought is treated as source material, while the supporting record is labelled as an authored or inferred note.`,
+        'Separate the source Entity from the new reasoning Entity, then link them if derived.');
+    }
   }
-  // Source-to-target attribution review, not a ban on different origins.
-  if(from==='system'&&(to==='participant'||to==='researcher')&&(!b.sourceReference||eb==='suggestion'))
-    add('A system-generated suggestion leads into a thought attributed to a participant or researcher, without a recorded independent source. This may misrepresent who actually proposed the idea.',
-        'Confirm who stated the destination thought. If adopted independently, record that action and its source; otherwise retain its system origin.');
-  if(from==='researcher'&&to==='participant'&&!b.sourceReference)
-    add('Researcher coding is connected to an unattributed participant claim. The arrow alone does not establish that the participant said or reasoned this.',
-        'Add a participant transcript/event citation or label the destination as a researcher reconstruction.');
-  if(!warnings.length)return {flagged:false,level:'none',reason:'No specific provenance inconsistency detected. Different origins may still be linked.',next:'Document the source of any consequential claim where possible.'};
-  return {flagged:true,level:'review',reason:warnings.map(w=>w.reason).join(' '),next:[...new Set(warnings.map(w=>w.next))].join(' ')};
+  if(from==='system'&&humanAgents.has(to)&&!b.sourceReference&&(!b.generationActivity||b.generationActivity==='unspecified'||b.generationActivity==='generated')){
+    warn('A software-generated thought leads into one attributed to a person or organisation without a separate source or recorded adoption activity. The link alone does not establish who authored the new thought.',
+      'Record how the responsible Agent adopted, modified, or independently authored the idea, and cite a source if one exists.');
+  }
+  if(sourceEntities.has(from)&&to==='system'&&b.generationActivity==='authored'){
+    warn('This thought is attributed to software but marked as manually authored.',
+      'Check the Agent and generation Activity; keep any human revision as a separate, attributable event.');
+  }
+  // Text-sensitive cue detection is advisory only: it never reattributes a node.
+  const destination=String(target.label||'').toLowerCase();
+  if(to==='system'&&/\b(i (decided|propose|intend|believe)|we (decided|propose|intend))\b/.test(destination)){
+    warn('The destination text uses first-person authorship language, but its Agent is marked as a software tool.',
+      'Clarify whether this is a quoted statement, a tool output, or a human-authored decision.');
+  }
+  if(!findings.length)return {flagged:false,level:'none',reason:'No specific attribution inconsistency detected.',next:'Different sources may legitimately contribute to the same reasoning.'};
+  return {flagged:true,level:'review',reason:findings.map(x=>x.reason).join(' '),next:[...new Set(findings.map(x=>x.next))].join(' ')};
 }

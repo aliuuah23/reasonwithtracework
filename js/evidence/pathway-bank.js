@@ -1,5 +1,5 @@
 let cache=null;
-export async function loadPathways(){ if(cache)return cache; cache=await (await fetch('./data/pathways.json')).json(); return cache; }
+export async function loadPathways(){if(cache)return cache;try{const r=await fetch('./data/pathways.json');if(!r.ok)throw new Error(`HTTP ${r.status}`);const data=await r.json();cache=Array.isArray(data)?data:[];}catch(e){console.warn('Reference pathways unavailable; workspace remains usable.',e);cache=[];}return cache;}
 export async function searchPathways(query=''){
   const all=await loadPathways(); const q=query.trim().toLowerCase();
   if(!q)return all;

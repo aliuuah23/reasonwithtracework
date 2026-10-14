@@ -1,7 +1,8 @@
 let cache=null;
 export async function loadCaseStudies(){
   if(cache)return cache;
-  cache=await (await fetch('./data/case-studies.json?v=c1.3')).json();
+  try{const res=await fetch('./data/case-studies.json?v=c1.3');if(!res.ok)throw new Error(`HTTP ${res.status}`);const data=await res.json();cache=Array.isArray(data)?data:[];}
+  catch(error){console.warn('Case-study library unavailable; other reasoning tools remain usable.',error);cache=[];}
   return cache;
 }
 

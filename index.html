@@ -10,9 +10,9 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d1-3-type">
+  <link rel="stylesheet" href="css/components.css?v=d1-4-provenance">
   <link rel="stylesheet" href="css/graph.css?v=d1-2">
-  <link rel="stylesheet" href="css/responsive.css?v=d1-3-compact">
+  <link rel="stylesheet" href="css/responsive.css?v=d1-4-panels">
 </head>
 <body>
   <header class="topbar">
@@ -78,7 +78,7 @@
 
     <section class="app-view hidden" id="appView">
       <div class="workspace" id="workspaceView">
-        <aside class="source-panel panel">
+        <aside class="source-panel panel" id="sourcePanel">
           <div class="panel-header">
             <div>
               <span class="panel-kicker">01 · Source</span>
@@ -141,6 +141,14 @@
 
         <section class="canvas-panel panel">
           <div class="canvas-toolbar">
+            <div class="panel-visibility-controls" role="group" aria-label="Show or hide side panels">
+              <button type="button" class="panel-visibility-toggle" id="toggleSourcePanel" aria-controls="sourcePanel" aria-expanded="true" title="Hide the brief panel">
+                <span aria-hidden="true">◧</span> <span class="panel-toggle-label">Brief</span>
+              </button>
+              <button type="button" class="panel-visibility-toggle" id="toggleInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" title="Hide the guidance panel">
+                <span aria-hidden="true">◨</span> <span class="panel-toggle-label">Guidance</span>
+              </button>
+            </div>
             <div>
               <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" id="workspaceTutorialButton" data-tutorial="workspace">? Tutorial</button></div>
               <div class="canvas-title-row">
@@ -353,6 +361,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-3-combined"></script>
+  <script type="module" src="js/app.js?v=d1-4-combined"></script>
 </body>
 </html>

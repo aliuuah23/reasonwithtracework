@@ -3,10 +3,10 @@ import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './g
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
-import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js';
+import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d1-4-origin';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
-import { evidenceKinds, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-3-evidence';
+import { evidenceKinds, generationActivities, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-4-prov-model';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
@@ -29,7 +29,7 @@ import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-reasoning-transparency';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
-import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-3-dual-warnings';
+import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-4-closable';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-2';
 
@@ -64,18 +64,42 @@ let aggregateArrangeBlend = 0;
 const undoStack = [];
 const MAX_UNDO = 30;
 const projectMergeSelection=new Set();
+// Independent UI-only panel state. Never deletes or modifies a saved trace.
+const PANEL_PREF_KEY='tracework-panel-visibility-v1';
+const panelVisibility={source:true,inspector:true};
+function applyPanelVisibility(){
+  const w=els.workspace;if(!w)return;
+  w.classList.toggle('panel-source-closed',!panelVisibility.source);
+  w.classList.toggle('panel-inspector-closed',!panelVisibility.inspector);
+  for(const [side,id,label] of [['source','toggleSourcePanel','Brief'],['inspector','toggleInspectorPanel','Guidance']]){
+    const btn=document.getElementById(id);if(!btn)continue;
+    btn.setAttribute('aria-expanded',String(panelVisibility[side]));
+    btn.setAttribute('aria-label',(panelVisibility[side]?'Hide ':'Show ')+label+' panel');
+    btn.title=(panelVisibility[side]?'Hide ':'Show ')+label+' panel';
+    btn.classList.toggle('is-collapsed',!panelVisibility[side]);
+  }
+}
+function togglePanelVisibility(side){
+  if(!(side in panelVisibility))return;
+  panelVisibility[side]=!panelVisibility[side];
+  try{localStorage.setItem(PANEL_PREF_KEY,JSON.stringify(panelVisibility));}catch(_){}
+  applyPanelVisibility();
+}
+
 
 async function init(){
   cacheEls();
-  ontology = await loadOntology();
-  pathways = await loadPathways();
-  caseStudies = await loadCaseStudies();
-  pilotEvidence = await loadPilotEvidence();
+  // Optional libraries are nonfatal: a missing reference file must never disable navigation.
+  [ontology,pathways,caseStudies,pilotEvidence] = await Promise.all([
+    loadOntology(),loadPathways(),loadCaseStudies(),loadPilotEvidence()
+  ]);
   // C1.1: local, transparently coded P01–P10 node examples inform role matches.
   try{
     const examplesResponse=await fetch('./data/pilot-role-examples.json?v=C1.1');
     if(examplesResponse.ok)setPilotRoleExamples(await examplesResponse.json());
   }catch(error){ console.warn('Pilot role examples unavailable: rule-only classification remains active.',error); }
+  try{const saved=JSON.parse(localStorage.getItem(PANEL_PREF_KEY)||'{}');for(const k of ['source','inspector'])if(typeof saved[k]==='boolean')panelVisibility[k]=saved[k];}catch(_){}
+  applyPanelVisibility();
   renderLegend(frameworkLegend('tracework'));
   bindGlobalEvents();
   bindTutorialTriggers();
@@ -137,6 +161,8 @@ function cacheEls(){
 }
 
 function bindGlobalEvents(){
+  $('#toggleSourcePanel')?.addEventListener('click',()=>togglePanelVisibility('source'));
+  $('#toggleInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
   $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); els.briefLanding.focus(); };
   $('#restoreTestExamplesButton').onclick=restoreTestExamples;
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
@@ -336,6 +362,7 @@ function enterApp(autoSelect=true){
   showNodeTypes=getState().frameworkId!=='freeform';
   els.graphViewport.dataset.needsInitialPosition='1';
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
+  applyPanelVisibility();
   showView('workspace');
   renderWorkspace();
   if(autoSelect && getState().hotspots.length) selectHotspot(getState().hotspots[0].id);
@@ -926,19 +953,25 @@ function editNode(node){
   const editableTypes=['input','interpretation','grounding','consequence','evaluation','goal','note'];
   const typeOptions=editableTypes.map(t=>`<option value="${t}" ${node.type===t?'selected':''}>${escapeHtml(typeLabels[t]||t)}</option>`).join('');
   const currentProvenance=sourceInput?'brief':inferLegacyProvenance(node);
-  const provenanceOptionsMarkup=provenanceOptions.map(p=>`<option value="${p.id}" ${currentProvenance===p.id?'selected':''}>${escapeHtml(p.label)}</option>`).join('');
-  const legacyEvidence=node.meta?.evidenceKind==='participant';
-  // Participant is an origin, not an evidence type; legacy selections need review.
+  const provenanceChoices=provenanceOptions.some(p=>p.id===currentProvenance)?provenanceOptions:[...provenanceOptions,{id:currentProvenance,label:'Imported Attribution (Review Required)'}];
+  const provenanceOptionsMarkup=provenanceChoices.map(p=>`<option value="${p.id}" ${currentProvenance===p.id?'selected':''}>${escapeHtml(p.label)}</option>`).join('');
+  const legacyEvidence=['participant','transcript'].includes(node.meta?.evidenceKind);
+  // Unsupported legacy evidence names remain unmodified in storage and require review.
   const selectedEvidence=legacyEvidence?'unspecified':inferredEvidenceKind(node);
   const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${selectedEvidence===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
-  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or origin of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought / Statement</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input remains linked to the brief; its node role and provenance are fixed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Origin / Provenance</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editEvidenceKind">Evidence Basis <span class="field-label-aside">(Independent of Origin)</span></label><select id="editEvidenceKind">${evidenceMarkup}</select></div>${legacyEvidence?'<p class="metadata-review-note">Previous “Participant Statement” evidence type requires review. Participant authorship belongs under Origin / Provenance; choose a documented evidence basis.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation <span class="field-label-aside">(Optional)</span></label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Brief section, participant event ID, URL or drawing…"><p class="trace-provenance-note">Origin identifies who introduced the thought; evidence identifies what supports it. System suggestions are not empirical evidence.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{
+  const currentActivity=node.meta?.generationActivity||'unspecified';
+  const activityMarkup=generationActivities.map(a=>`<option value="${a.id}" ${currentActivity===a.id?'selected':''}>${escapeHtml(a.label)}</option>`).join('');
+  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or origin of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought / Statement</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input remains linked to the document Entity; its node role and source anchor remain fixed. An authoring Agent is not assumed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Attribution / Agent <span class="field-label-aside">(PROV-O · Agent)</span></label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editGenerationActivity">Generation Activity <span class="field-label-aside">(PROV-O · Activity)</span></label><select id="editGenerationActivity">${activityMarkup}</select></div><div class="node-type-edit-row"><label for="editEvidenceKind">Supporting Record <span class="field-label-aside">(PROV-O · Entity)</span></label><select id="editEvidenceKind">${evidenceMarkup}</select></div>${legacyEvidence?'<p class="metadata-review-note">An older evidence category needs review. Select the supporting record, if one exists.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation <span class="field-label-aside">(Optional)</span></label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Source title, document location, URL, or drawing reference…"><p class="trace-provenance-note">PROV-O: a thought is an Entity; attribution refers to an Agent; generation refers to an Activity. Supporting sources are separate Entities. No source is presumed verified.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{
     onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{
       const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
       const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
       const nextProvenance=sourceInput?'brief':(m.querySelector('#editNodeProvenance')?.value||currentProvenance);
       const changedType=nextType!==node.type;
       const evidenceKind=m.querySelector('#editEvidenceKind')?.value||'unspecified';
+      const generationActivity=m.querySelector('#editGenerationActivity')?.value||'unspecified';
       const sourceReference=m.querySelector('#editSourceReference')?.value.trim()||'';
+      const previousNode={...node,meta:{...(node.meta||{})}};
+      const oldEdges=getState().edges.filter(e=>e.source===node.id||e.target===node.id);
       checkpoint('edit reasoning and provenance');
       updateState(s=>{
         const n=s.nodes.find(x=>x.id===node.id); if(!n)return;
@@ -950,13 +983,30 @@ function editNode(node){
           n.meta={...n.meta,typeEdited:changedType||n.meta?.typeEdited,provenance:nextProvenance};
           delete n.meta.suggestedType;
         }
-        n.meta={...(n.meta||{}),evidenceKind,sourceReference};
+        n.meta={...(n.meta||{}),evidenceKind,sourceReference,generationActivity};
         if(changedType){
           s.edges.filter(e=>e.source===n.id||e.target===n.id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
         }
       });
       logEvent(changedType?'Reasoning type revised':'Reasoning revised',changedType?`${typeLabels[node.type]||node.type} → ${typeLabels[nextType]||nextType} · ${val}`:val);
       closeModal(); renderWorkspace();
+      // Recheck connected relationships when wording, type or attribution changes.
+      // Notify only on newly introduced concerns; do not claim every cross-source link is invalid.
+      const current=getState();
+      const updated=current.nodes.find(n=>n.id===node.id);
+      let provenanceConcern=null,reasoningConcern=null;
+      for(const edge of oldEdges){
+        const other=current.nodes.find(n=>n.id===(edge.source===node.id?edge.target:edge.source));
+        if(!other||!updated)continue;
+        const start=edge.source===node.id?updated:other,end=edge.target===node.id?updated:other;
+        const beforeStart=edge.source===node.id?previousNode:other,beforeEnd=edge.target===node.id?previousNode:other;
+        const nowProv=provenanceConnectionCheck(start,end),beforeProv=provenanceConnectionCheck(beforeStart,beforeEnd);
+        if(nowProv.flagged&&(!beforeProv.flagged||nowProv.reason!==beforeProv.reason))provenanceConcern=nowProv;
+        const nowLink=connectionCheck(start,end),oldLink=connectionCheck(beforeStart,beforeEnd);
+        if(nowLink.gap&&(!oldLink.gap||nowLink.gap.reason!==oldLink.gap.reason))reasoningConcern=nowLink.gap;
+      }
+      if(reasoningConcern)coach('Gap in Reasoning',`${reasoningConcern.reason} ${reasoningConcern.next||''}`,{pinnable:true,duration:9500});
+      if(provenanceConcern)coach('Provenance Gap',`${provenanceConcern.reason} ${provenanceConcern.next||''}`,{pinnable:true,duration:9500});
       if(changedType)toast(`Changed to ${typeLabels[nextType]||nextType}. Existing wires were kept for review.`);
     }
   });

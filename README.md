@@ -481,3 +481,13 @@ Two independent dimensions must not be conflated:
 - Examples draw on the text of the two actual nodes, including spatial concerns such as seating, circulation, privacy and daylight. Explanations are conditional, not automatic evidence of causation.
 - **Provenance Gap** remains separate, flags possible misattribution and does not silently block cross-origin design reasoning.
 - Existing projects, undo, map arrangements and exports remain unchanged.
+
+
+## D1.4 — Responsive UI and Provenance Refinement (14 October 2026)
+
+- At reduced width, TRACEWORK navigation is kept on a single horizontally-scrollable row with logo and New Project.
+- The Brief and Guidance panels can be independently retracted through visible controls above the reasoning field. Visibility is a browser-local preference, not an edit to project data.
+- Warnings have independent close buttons and an optional Keep Open control. Existing reasoning and attribution are re-evaluated after consequential node edits.
+- Metadata uses PROV-O's **Entity / Agent / Activity** distinctions and separates an evidence/source record from authorship. No generic-user dropdown assumes a pilot participant, transcript or empirical performance context. Saved legacy metadata is preserved and explicitly marked for review; no old author is reassigned automatically.
+- These are PROV-O-aligned interface fields, **not** a validated RDF/OWL PROV-O export. See https://www.w3.org/TR/prov-o/.
+- Tests should include large/small widths, complete project save/reopen, both sidebars toggled independently, node edits with and without connections, simultaneous reasoning/provenance notices, and map export.
