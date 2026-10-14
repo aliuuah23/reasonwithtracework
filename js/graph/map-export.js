@@ -114,7 +114,10 @@ function svgSnapshot({surface,edges,projectEdges=[],projectName,viewLabel,framew
     const p=pathById.get(e.id),st=getComputedStyle(p);
     const d=arrange?wireCurve(byId.get(e.source),byId.get(e.target)):p.getAttribute('d');
     if(!d)return '';
-    return `<path d="${escape(d)}" fill="none" stroke="${escape(st.stroke&&st.stroke!=='none'?st.stroke:'#798293')}" stroke-width="${p.classList.contains('selected')?'3.2':'2.1'}" opacity="${e.status==='rejected'?'.4':'.85'}"${st.strokeDasharray&&st.strokeDasharray!=='none'?` stroke-dasharray="${escape(st.strokeDasharray)}"`:''}/>`;
+    // Export the visual status texture and pilot recurrence grade actually shown on the canvas.
+    const width=Math.max(1,Math.min(5,parseFloat(st.strokeWidth)||2.1));
+    const opacity=Math.max(.2,Math.min(1,parseFloat(st.opacity)||.85));
+    return `<path d="${escape(d)}" fill="none" stroke="${escape(st.stroke&&st.stroke!=='none'?st.stroke:'#798293')}" stroke-width="${width}" opacity="${opacity}"${st.strokeDasharray&&st.strokeDasharray!=='none'?` stroke-dasharray="${escape(st.strokeDasharray)}"`:''}/>`;
   }).join('');
   const cards=nodes.map(n=>{
     const c=TYPES[n.type]||TYPES.note;

@@ -1018,3 +1018,43 @@ html.tutorial-tour-active{overflow:hidden}
 .map-export-preview-artwork{background:white;min-width:0;display:flex;justify-content:center}
 .map-export-preview-artwork svg{display:block;width:100%;height:auto;max-height:360px;object-fit:contain;}
 .export-map-choice:disabled{opacity:.45;cursor:not-allowed}
+
+/* D1 · reasoning transparency */
+.trace-explain { padding:14px 0; }
+.trace-explain > summary { cursor:pointer; list-style-position:inside; font-size:12px; font-weight:750; color:var(--text); }
+.trace-explain > summary:hover { color:var(--accent-dark); }
+.trace-explain-body { padding:10px 0 0 12px; font-size:11.5px; line-height:1.55; color:var(--muted); }
+.trace-explain-body p { margin:5px 0 9px; overflow-wrap:anywhere; }
+.trace-explain-body strong { color:var(--text); }
+.trace-evidence-summary { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.trace-evidence-summary span { border:1px solid var(--border); background:var(--surface-soft); padding:5px 8px; border-radius:8px; color:var(--text); font-size:10px; }
+.trace-provenance-note { font-size:10.5px; color:var(--muted); line-height:1.55; }
+.trace-connection-explanation { margin:12px 0; padding:12px; border:1px solid var(--border); background:var(--surface-soft); border-radius:10px; font-size:12px; line-height:1.6; }
+.trace-connection-explanation p { margin:5px 0 8px; overflow-wrap:anywhere; }
+
+/* D1: compact, discoverable wire legend lives independently of node-role legend. */
+.canvas-footer .wire-legend{position:relative;flex:0 0 auto;max-width:min(400px,100%);font-size:10px;color:var(--muted-2);}
+.wire-legend>summary{cursor:pointer;display:inline-flex;align-items:center;gap:8px;list-style:none;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-weight:750;color:var(--text);user-select:none;white-space:nowrap;}
+.wire-legend>summary::-webkit-details-marker{display:none;}
+.wire-legend>summary:hover,.wire-legend>summary:focus-visible{background:var(--surface-soft);border-color:var(--accent);outline-offset:2px;}
+.wire-legend-teaser{display:inline-flex;align-items:center;gap:5px;}
+.wire-legend-chevron{font-size:12px;font-weight:700;}
+.wire-legend-content{display:grid;gap:10px;position:absolute;left:0;bottom:calc(100% + 10px);z-index:310;width:min(360px,calc(100vw - 32px));max-height:min(410px,66vh);overflow:auto;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:0 12px 36px rgba(32,39,63,.18);}
+.wire-legend-group{display:grid;gap:8px;}
+.wire-legend-group>strong{font-size:10px;color:var(--text);}
+.wire-legend-group>span{display:flex;align-items:center;flex-wrap:wrap;gap:5px;line-height:1.4;}
+.wire-legend-group>span b{color:var(--text);font-weight:750;}
+.wire-legend-content p{margin:0;padding-top:8px;border-top:1px solid var(--border);font-size:10px;line-height:1.5;}
+.wire-key-line{display:inline-block;vertical-align:middle;flex:0 0 38px;width:38px;height:0;border-top:3px solid #707886;}
+.wire-legend-teaser .wire-key-line{flex-basis:22px;width:22px;}
+.wire-key-line.provisional{border-top-style:dashed;}
+.wire-key-line.rejected{border-top:3px dotted #a0a6b0;opacity:.5;}
+.wire-key-line.grade-frequent{border-top:4px solid #585f6d;}
+.wire-key-line.grade-observed{border-top:3px solid #717887;}
+.wire-key-line.grade-limited{border-top:2px solid #89919f;}
+.wire-key-line.grade-unseen{border-top:2px solid #aeb4bf;opacity:.75;}
+.wire-key-line.grade-neutral{border-top:2px solid #777e8b;}
+@media(max-width:900px){.canvas-footer .wire-legend{max-width:100%;}.wire-legend-content{left:0;bottom:calc(100% + 7px);}}
+/* Keep the expanded wire key inside the viewport, including half-screen windows. */
+.wire-legend-content{position:fixed;bottom:72px;right:16px;left:auto;width:min(360px,calc(100vw - 32px));max-height:min(410px,calc(100dvh - 98px));}
+@media(max-width:700px){.wire-legend-content{right:10px;bottom:56px;width:min(360px,calc(100vw - 20px));max-height:calc(100dvh - 76px);}}

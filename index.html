@@ -10,8 +10,8 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=c2.5-export-final">
-  <link rel="stylesheet" href="css/graph.css?v=c2.0">
+  <link rel="stylesheet" href="css/components.css?v=d1-wire-semantics">
+  <link rel="stylesheet" href="css/graph.css?v=d1-wire-semantics">
   <link rel="stylesheet" href="css/responsive.css?v=c2.4-final">
 </head>
 <body>
@@ -174,7 +174,7 @@
                   <div class="canvas-state-actions">
                     <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                     <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
-                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Wire style reflects how often this category transition appears across P01–P10. Hide it whenever you want a neutral canvas.">Hide wire signals</button>
+                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Hide or show graduated P01–P10 category-transition recurrence; active/provisional/rejected wire patterns remain visible.">Hide pilot signals</button>
                   </div>
                 </div>
               </div>
@@ -234,6 +234,11 @@
                   <span>Origin</span>
                   <select id="thoughtProvenanceSelect" aria-label="Thought provenance">
                     <option value="designer">Designer thought</option>
+                    <option value="brief_requirement">Brief requirement</option>
+                    <option value="brief_description">Brief description / background</option>
+                    <option value="participant">Participant statement</option>
+                    <option value="researcher">Researcher interpretation / coding</option>
+                    <option value="system">System suggestion</option>
                     <option value="observation">Observation / site condition</option>
                     <option value="tutor">Tutor comment</option>
                     <option value="precedent">Precedent / case study</option>
@@ -254,6 +259,24 @@
 
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
+            <details class="wire-legend" id="wireLegend">
+              <summary aria-label="Wire legend: line patterns and pilot evidence strength">Wire legend <span class="wire-legend-teaser" aria-hidden="true"><i class="wire-key-line"></i><i class="wire-key-line provisional"></i><i class="wire-key-line rejected"></i></span> <span class="wire-legend-chevron" aria-hidden="true">⌄</span></summary>
+              <div class="wire-legend-content">
+                <div class="wire-legend-group"><strong>Relationship status · line pattern</strong>
+                  <span><i class="wire-key-line"></i><b>Solid</b> — active, designer-recorded connection</span>
+                  <span><i class="wire-key-line provisional"></i><b>Dashed</b> — provisional connection, still being investigated</span>
+                  <span><i class="wire-key-line rejected"></i><b>Dotted + faint</b> — rejected connection retained for comparison</span>
+                </div>
+                <div class="wire-legend-group"><strong>Pilot signal · graduated line weight</strong>
+                  <span><i class="wire-key-line grade-frequent"></i><b>Common</b> — this *category transition* appears across many P01–P10 participants</span>
+                  <span><i class="wire-key-line grade-observed"></i><b>Observed</b> — appears across several participants</span>
+                  <span><i class="wire-key-line grade-limited"></i><b>Limited</b> — appears across few participants</span>
+                  <span><i class="wire-key-line grade-unseen"></i><b>Not observed</b> — absent from the mapped pilot transitions</span>
+                  <span><i class="wire-key-line grade-neutral"></i><b>Neutral</b> — no comparable pilot signal, such as a note</span>
+                </div>
+                <p>Two different readings: <b>pattern = your relationship status</b>; <b>weight/darkness = pilot recurrence</b>. These are not confidence scores, probabilities or a judgment of design quality. Click a wire for its reasoning explanation. “Hide wire signals” removes only the pilot styling, not the saved connection status.</p>
+              </div>
+            </details>
             <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original influences Arrange; Arrange never moves Original · Focus path isolates one route · Ctrl+Z undo</span>
           </div>
         </section>
@@ -330,6 +353,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=c2.5-export-final"></script>
+  <script type="module" src="js/app.js?v=d1-wire-semantics"></script>
 </body>
 </html>

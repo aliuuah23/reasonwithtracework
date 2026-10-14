@@ -132,6 +132,11 @@ export const frameworks = [
 
 export const provenanceOptions = [
   { id:'brief', label:'Brief / source document' },
+  { id:'brief_requirement', label:'Brief requirement' },
+  { id:'brief_description', label:'Brief description / background' },
+  { id:'participant', label:'Participant statement' },
+  { id:'researcher', label:'Researcher interpretation / coding' },
+  { id:'system', label:'System suggestion' },
   { id:'tutor', label:'Tutor comment' },
   { id:'designer', label:'Designer thought' },
   { id:'observation', label:'Observation / site condition' },

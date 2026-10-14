@@ -1,0 +1,1 @@
+D1 amendment before deployment: distinct status patterns (solid/dashed/dotted); graduated pilot recurrence by weight/darkness; persistent wire legend + Workspace tutorial + selected-wire explanation; non-destructive and reversible Hide pilot signals.

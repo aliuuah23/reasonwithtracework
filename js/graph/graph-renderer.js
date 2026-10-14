@@ -332,9 +332,14 @@ function edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignal
   const source=nodesById.get(e.source),target=nodesById.get(e.target);
   const signal=connectionSignal(source,target,pilotEvidence);
   const signalClass=showWireSignals?`evidence-${signal.band||'neutral'}`:'';
+  // Orthogonal wire meanings: pattern = author status, line weight = pilot recurrence.
+  // Do not infer whether an individual reasoning decision is valid from pilot frequency.
+  const authorStatus=(e.status==='rejected'||source?.status==='rejected'||target?.status==='rejected')?'rejected':
+    ((e.status==='provisional'||source?.meta?.provisional||target?.meta?.provisional)?'provisional':'active');
+  const statusClass=`wire-${authorStatus}`;
   const isSelected=e.id===selectedEdgeId;
   const halo=isSelected?`<path data-edge-id="${e.id}" class="trace-edge-selection" vector-effect="non-scaling-stroke" d=""/>`:'';
-  const visible=`<path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${isSelected?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${e.status==='rejected'?'rejected':''}" vector-effect="non-scaling-stroke" d=""/>`;
+  const visible=`<path data-edge-id="${e.id}" class="trace-edge ${active&&!selectedEdgeId?'active':''} ${isSelected?'selected':''} ${muted?'edge-muted':''} ${signalClass} ${statusClass}" vector-effect="non-scaling-stroke" d=""/>`;
   const hit=`<path data-edge-id="${e.id}" class="trace-edge-hit" vector-effect="non-scaling-stroke" d=""/>`;
   return halo+visible+hit;
 }

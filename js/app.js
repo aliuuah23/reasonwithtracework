@@ -1,11 +1,12 @@
 import { auditProject } from './core/project-audit.js';
-import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=c2.5-export-final';
+import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d1-wire-semantics';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
+import { evidenceKinds, inferredEvidenceKind, bridgePrompt } from './core/reasoning-transparency.js';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
@@ -16,7 +17,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=c1.3';
+import { renderGraph } from './graph/graph-renderer.js?v=d1-wire-semantics';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
@@ -24,12 +25,12 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=c2.0';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-reasoning-transparency';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=c2.5-locked';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-wire-semantics';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -153,7 +154,7 @@ function bindGlobalEvents(){
   if(els.hotspotViewSelect) els.hotspotViewSelect.onchange=()=>{ hotspotViewMode=els.hotspotViewSelect.value||'all'; renderWorkspace(); };
   els.traceCheckButton.onclick=openTraceCheck;
   els.toggleNodeTypesButton.onclick=()=>{ showNodeTypes=!showNodeTypes; updateFrameworkControls(getState()); renderGraphState(); };
-  if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderGraphState(); };
+  if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide pilot signals':'Show pilot signals'; renderGraphState(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
@@ -826,7 +827,23 @@ function selectEdge(id){
   const source=edge&&state.nodes.find(n=>n.id===edge.source);
   const target=edge&&state.nodes.find(n=>n.id===edge.target);
   const empirical=source&&target?transitionSummary(source.type,target.type,pilotEvidence):null;
-  toast(empirical?`${empirical} · Delete/Backspace disconnects only this wire.`:'Only this connection is selected · press Delete/Backspace, or Shift-click it, to disconnect.');
+  if(source && target){
+    const explanation=connectionCheck(source,target,state.edges.filter(e=>e.id!==id),pilotEvidence,{frameworkId:state.frameworkId||'tracework'});
+    openModal(`<h2 id="modalTitle">Explain this connection</h2><p>This arrow is a designer-recorded reasoning relationship, not proof of causation.</p>
+      <div class="link-endpoint"><span>FROM · ${escapeHtml(typeLabels[source.type]||source.type)}</span><strong>${escapeHtml(source.label)}</strong></div>
+      <div class="link-direction-symbol">↓ informs / develops ↓</div>
+      <div class="link-endpoint"><span>TO · ${escapeHtml(typeLabels[target.type]||target.type)}</span><strong>${escapeHtml(target.label)}</strong></div>
+      <p class="trace-provenance-note"><strong>Wire key:</strong> ${edge.status==='rejected'||source.status==='rejected'||target.status==='rejected'?'Rejected · dotted and faint':edge.status==='provisional'||source.meta?.provisional||target.meta?.provisional?'Provisional · dashed':'Active · solid'}. Pilot line strength reflects how often this <em>category transition</em> was observed, not certainty about this link. <a href="#wireLegend" id="explainWireLegend">See wire legend</a>.</p>
+      <div class="trace-connection-explanation"><strong>${explanation.ok?'Why this connection may be useful':'Gap in Reasoning'}</strong><p>${escapeHtml(explanation.reason)}</p><p>${escapeHtml(explanation.detail||'')}</p><p>${escapeHtml(bridgePrompt(source,target))}</p>${empirical?`<p>Empirical transition context: ${escapeHtml(empirical)}. This does not establish the meaning of this particular arrow.</p>`:''}</div>
+      <div class="modal-actions"><button class="secondary-button" data-close-modal>Keep connection</button><button class="danger-button" id="removeExplainedEdge">Delete this wire</button></div>`,{onOpen:m=>{
+        m.querySelector('#removeExplainedEdge').onclick=()=>{closeModal();disconnectEdge(id);};
+        m.querySelector('#explainWireLegend')?.addEventListener('click',event=>{
+          event.preventDefault();closeModal();document.getElementById('wireLegend').open=true;
+          document.getElementById('wireLegend').scrollIntoView({block:'nearest',behavior:'smooth'});
+        });
+      }});
+  }
+  else toast('Selected connection is missing its source or target; review the project trace.');
 }
 
 
@@ -901,12 +918,16 @@ function editNode(node){
   const typeOptions=editableTypes.map(t=>`<option value="${t}" ${node.type===t?'selected':''}>${escapeHtml(typeLabels[t]||t)}</option>`).join('');
   const currentProvenance=sourceInput?'brief':inferLegacyProvenance(node);
   const provenanceOptionsMarkup=provenanceOptions.map(p=>`<option value="${p.id}" ${currentProvenance===p.id?'selected':''}>${escapeHtml(p.label)}</option>`).join('');
-  openModal(`<h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'note':typeLabels[node.type]||node.type)}.</h2><p>Revise the wording${sourceInput?' while keeping this source node anchored to the brief.':', reasoning role, or where this thought entered the project.'}</p><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input is locked as Input with Brief provenance so its link back to the source document remains intact.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Origin / provenance</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save change</button></div>`,{
+  const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${inferredEvidenceKind(node)===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
+  openModal(`<h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'note':typeLabels[node.type]||node.type)}.</h2><p>Revise the wording${sourceInput?' while keeping this source node anchored to the brief.':', reasoning role, or where this thought entered the project.'}</p><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input is locked as Input with Brief provenance so its link back to the source document remains intact.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Origin / provenance</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editEvidenceKind">Evidence basis · distinct from origin</label><select id="editEvidenceKind">${evidenceMarkup}</select></div><label class="field-label" for="editSourceReference">Source or citation (optional)</label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Brief section, participant event, URL, drawing or record…"><p class="trace-provenance-note">A system suggestion is not empirical evidence. Record whether this thought was observed, stated, inferred or proposed.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save change</button></div>`,{
     onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{
       const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
       const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
       const nextProvenance=sourceInput?'brief':(m.querySelector('#editNodeProvenance')?.value||currentProvenance);
       const changedType=nextType!==node.type;
+      const evidenceKind=m.querySelector('#editEvidenceKind')?.value||'unspecified';
+      const sourceReference=m.querySelector('#editSourceReference')?.value.trim()||'';
+      checkpoint('edit reasoning and provenance');
       updateState(s=>{
         const n=s.nodes.find(x=>x.id===node.id); if(!n)return;
         n.label=val; n.type=nextType; n.updatedAt=new Date().toISOString();
@@ -917,6 +938,7 @@ function editNode(node){
           n.meta={...n.meta,typeEdited:changedType||n.meta?.typeEdited,provenance:nextProvenance};
           delete n.meta.suggestedType;
         }
+        n.meta={...(n.meta||{}),evidenceKind,sourceReference};
         if(changedType){
           s.edges.filter(e=>e.source===n.id||e.target===n.id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
         }
@@ -1658,11 +1680,11 @@ function convertNote(node,type){
 
 function connectNodes(source,target,result){
   if(!source || !target){
-    coach('Connection paused — here’s why','The wire needs to land on another node. A TRACEWORK connection states an explicit reasoning dependency, so leave the thought floating if the relationship is not clear yet.',{duration:6500,pinnable:true});
+    coach('Gap in Reasoning','The wire needs to land on another node. A TRACEWORK connection states an explicit reasoning dependency, so leave the thought floating if the relationship is not clear yet.',{duration:6500,pinnable:true});
     return;
   }
   if(!result?.ok){
-    coach('Connection paused — here’s why',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''}` ,{duration:7500,pinnable:true});
+    coach('Gap in Reasoning',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''} ${bridgePrompt(source,target)}` ,{duration:7500,pinnable:true});
     return;
   }
   checkpoint('connect reasoning');
@@ -2002,7 +2024,7 @@ function openNodeQuickLink(id){
       const from=direction.value==='out'?source:target;
       const to=direction.value==='out'?target:source;
       const result=connectionCheck(from,to,getState().edges,pilotEvidence,{frameworkId:getState().frameworkId||'tracework'});
-      modal.querySelector('#quickLinkValidation').textContent=result.ok?`Preview: “${from.label.slice(0,42)}” → “${to.label.slice(0,42)}”`:result.reason;
+      modal.querySelector('#quickLinkValidation').textContent=result.ok?`Why this connects: ${result.reason} ${result.detail||''}`:`Gap in Reasoning: ${result.reason} ${result.detail||''} ${bridgePrompt(from,to)}`;
       modal.querySelector('#confirmQuickLink').disabled=!result.ok;
     };
     picker.onchange=updatePreview;direction.onchange=updatePreview;updatePreview();

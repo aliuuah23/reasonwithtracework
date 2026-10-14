@@ -6,6 +6,8 @@ import { operationalSuggestions } from '../reasoning/operational-design.js';
 import { spatialMiniMarkup } from '../reasoning/spatial-literacy.js?v=c2.3-recovery';
 import { researchMarkup } from '../reasoning/reading-suggestions.js?v=c2.0';
 import { provenanceLabel, inferLegacyProvenance, getFramework, frameworkRoleForNode, frameworkCategories, frameworkGuidance, categoryColor } from '../core/frameworks.js';
+import { nodeGuidance } from '../core/node-guidance.js';
+import { roleClarifications, evidenceLabel, inferredEvidenceKind } from '../core/reasoning-transparency.js';
 
 const colors={input:'var(--input)',interpretation:'var(--interpretation)',grounding:'var(--grounding)',consequence:'var(--consequence)',evaluation:'var(--evaluation)',goal:'var(--goal)',note:'var(--note)'};
 
@@ -60,7 +62,8 @@ export async function renderHotspotInspector(hotspot,state,handlers){
       <div class="inspector-head" style="--node-color:${role?.color||colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(role?.label||framework.shortLabel)}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason||'Selected source language')}</p><button class="secondary-button compact hotspot-inspector-edit" data-edit-hotspot-selection="${esc(hotspot.id)}">✎ Edit source selection</button></div>
       <div class="framework-lens-note"><strong>${esc(framework.label)}</strong><span>${esc(framework.source||'')}</span><p>${esc(framework.description)}</p></div>
       ${frameworkNextForm({status:'active',label:hotspot.text},framework,role,guide)}
-      ${spatialMiniMarkup(hotspot.text,'input')}
+      ${roleExplanationMarkup({type:'input',label:hotspot.text,meta:{provenance:'brief',evidenceKind:'brief'}},framework,role)}
+    ${spatialMiniMarkup(hotspot.text,'input')}
       ${operationalMarkup(hotspot.text,'input',framework.label)}
       ${caseStudyMarkup(cases)}
     ${researchMarkup(hotspot.text,{compact:true})}
@@ -82,6 +85,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     <div class="guided-help-note">Choose a cue if useful. It will move into the same writing field so it can be extended, qualified or rewritten before it becomes a node.</div>
     <label class="field-label">Write / extend the interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
+    ${roleExplanationMarkup({type:'input',label:hotspot.text,meta:{provenance:'brief',evidenceKind:'brief'}},framework,null)}
     ${spatialMiniMarkup(hotspot.text,'input')}
       ${operationalMarkup(hotspot.text,'input',framework.label)}
       ${caseStudyMarkup(cases)}
@@ -128,6 +132,7 @@ export async function renderNodeInspector(node,state,handlers){
     root.innerHTML=`
       <div class="inspector-head" style="--node-color:${colors.note}"><span class="inspector-type"><i></i>Loose note</span><h3>${esc(node.label)}</h3><p>Unclassified on purpose. Keep it loose, or convert it when its role becomes clearer.</p></div>
       <div class="inspector-section"><h4>TRACEWORK suggestion</h4><span class="classification-chip" style="--node-color:${colors[suggestion]||colors.note}"><i></i>${esc(typeLabels[suggestion]||suggestion)}</span><p style="color:var(--muted);font-size:11px;line-height:1.5;margin:9px 0 0">${esc(node.meta?.classificationReason||'The wording resembles this reasoning role.')}</p><div class="inspector-actions"><button class="primary-button compact" id="convertNote">Convert to ${esc(typeLabels[suggestion]||suggestion)}</button></div></div>
+      ${roleExplanationMarkup(node,null,null)}
       ${spatialMiniMarkup(node.label,'note')}
       ${operationalMarkup(node.label,'note','Freeform')}
       ${caseStudyMarkup(cases)}
@@ -163,6 +168,7 @@ export async function renderNodeInspector(node,state,handlers){
   root.innerHTML=`
     <div class="inspector-head" style="--node-color:${roleColor}"><span class="inspector-type"><i></i>${esc(roleLabel)}</span><h3>${esc(node.label)}</h3><p>${statusText(node)}</p><div class="stage-progress">${progress}</div></div>
     ${metaMarkup(node,framework,frameworkRole)}
+    ${roleExplanationMarkup(node,framework,frameworkRole)}
     ${next}
     ${spatialMiniMarkup(node.label,node.type)}
     ${operationalMarkup(node.label,node.type,framework.label)}
@@ -316,9 +322,28 @@ function bindNext(root,node,handlers){
   });
   root.querySelector('#addNext')?.addEventListener('click',()=>{ const area=root.querySelector('#nextText'); const text=area?.value.trim(); const validation=root.querySelector('#nextValidation'); if(!text){ if(validation)validation.textContent='Write the reasoning you want to turn into a node.'; area?.focus(); return; } if(validation)validation.textContent=''; handlers.onNext(node,text,{sourceKind,tags}); });
 }
+function roleExplanationMarkup(node,framework=null,frameworkRole=null){
+  const role=nodeGuidance[node.type]||nodeGuidance.note;
+  const detail=roleClarifications[node.type]||roleClarifications.note;
+  const origin=provenanceLabel(inferLegacyProvenance(node));
+  const evidence=evidenceLabel(inferredEvidenceKind(node));
+  const lens=framework && !['tracework','freeform'].includes(framework.id)
+    ? `<p><strong>Framework lens:</strong> ${esc(frameworkRole?.label||'Unmapped')} — ${esc(frameworkRole?.description||'This is an analytical lens; it does not prove the designer used this framework.')}</p>` : '';
+  return `<details class="inspector-section trace-explain" open><summary>Explain this · ${esc(role.title)}</summary>
+    <div class="trace-explain-body"><p><strong>Role:</strong> ${esc(role.use)}</p>
+    <p><strong>When useful:</strong> ${esc(role.when)}</p>
+    <p><strong>For example:</strong> ${esc(detail.example)}</p>
+    <p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>
+    ${lens}<div class="trace-evidence-summary"><span>Origin · ${esc(origin)}</span><span>Evidence · ${esc(evidence)}</span></div>
+    ${node.meta?.sourceReference?`<p><strong>Source reference:</strong> ${esc(node.meta.sourceReference)}</p>`:''}
+    <p class="trace-provenance-note">Provenance describes where this assertion entered the trace, not whether it is true. If the basis is missing, edit the node to record it.</p></div>
+  </details>`;
+}
 function metaMarkup(node,framework=null,frameworkRole=null){
   const rows=[];
   rows.push(['Provenance',provenanceLabel(inferLegacyProvenance(node))]);
+  rows.push(['Evidence basis', evidenceLabel(inferredEvidenceKind(node))]);
+  if(node.meta?.sourceReference) rows.push(['Source / reference', node.meta.sourceReference]);
   if(framework && framework.id!=='tracework' && framework.id!=='freeform') rows.push(['Framework lens',`${frameworkRole?.label||'Unresolved'} · ${framework.source||framework.label}`]);
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);
   if(node.meta?.sourceLabel)rows.push(['Pathway source',node.meta.sourceLabel]);

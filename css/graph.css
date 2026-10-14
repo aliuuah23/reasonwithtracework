@@ -237,3 +237,21 @@
 .graph-node .node-port:hover{box-shadow:0 0 0 6px rgba(99,102,241,.21);transform:scale(1.18);}
 
 .node-port{width:18px!important;height:18px!important;margin-top:-9px!important;opacity:.96!important;border-width:3px!important;}
+
+/* D1 · Wire semantics: texture represents designer relationship status;
+   graded weight/darkness represents pilot category-transition recurrence.
+   Empirical frequency is NOT confidence about the particular thought. */
+.graph-surface .trace-edge.evidence-frequent:not(.selected):not(.wire-hover) {stroke:#585f6d;stroke-width:3.4;opacity:1;}
+.graph-surface .trace-edge.evidence-observed:not(.selected):not(.wire-hover) {stroke:#717887;stroke-width:2.8;opacity:.94;}
+.graph-surface .trace-edge.evidence-limited:not(.selected):not(.wire-hover) {stroke:#89919f;stroke-width:2.2;opacity:.86;}
+.graph-surface .trace-edge.evidence-unseen:not(.selected):not(.wire-hover) {stroke:#aeb4bf;stroke-width:1.8;opacity:.76;}
+.graph-surface .trace-edge.evidence-neutral:not(.selected):not(.wire-hover) {stroke:#777e8b;stroke-width:2.25;opacity:.92;}
+/* 'Hide pilot signals' suppresses *only* the frequency grade. */
+.graph-surface.hide-wire-signals .trace-edge:not(.selected):not(.wire-hover) {stroke:#777e8b!important;stroke-width:2.25!important;opacity:.92!important;}
+/* Status texture remains visible at all times, even when pilot signals are hidden. */
+.graph-surface .trace-edge.wire-active:not(.selected):not(.wire-hover) {stroke-dasharray:none!important;}
+.graph-surface .trace-edge.wire-provisional:not(.selected):not(.wire-hover) {stroke-dasharray:8 6!important;}
+.graph-surface .trace-edge.wire-rejected:not(.selected):not(.wire-hover) {stroke-dasharray:2 6!important;opacity:.40!important;}
+/* Selection retains context (do not make a selected rejected/provisional link look active). */
+.graph-surface .trace-edge.wire-provisional.selected {stroke-dasharray:8 6!important;}
+.graph-surface .trace-edge.wire-rejected.selected {stroke-dasharray:2 6!important;}

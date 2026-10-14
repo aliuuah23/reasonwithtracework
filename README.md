@@ -1,3 +1,32 @@
+# D1 — Reasoning Transparency (14 October 2026)
+
+**Baseline:** GitHub repository ZIP `reasonwithtracework-main(1).zip` (locked C2.5).
+
+This release preserves the existing source highlights, maps, framework arrangement, onboarding, spatial reading, project data and map export.
+
+### What changed
+
+- **Explain this:** each node inspector includes an openable explanation of what the role means, when to use it, a pavilion-relevant example, and distinctions from adjacent roles. The active framework lens is labelled as analysis, not historical evidence.
+- **Explain connections:** click any existing wire to see its two endpoints, reasoning plausibility, optional pilot category transition context and the question that may reveal a gap. Delete wire remains available from the explanation.
+- **Gap in Reasoning:** replaces the older “Connection paused” message when a link fails and offers a targeted bridge prompt. This does *not* force intermediate nodes to be fabricated.
+- **Origin vs evidence basis:** node Edit now keeps the provenance selector and adds an independent evidence category and optional source citation. Saved as `node.meta.evidenceKind` and `node.meta.sourceReference` in the existing project JSON. Existing nodes are left unmodified unless edited.
+- **PROV-O grounding:** About page explains how TRACEWORK's trace metadata relates conceptually to provenance, and links the W3C recommendation. The site does not assert formal PROV-O/RDF compliance.
+- **Undo:** node edits now record a checkpoint before changing labels, roles or provenance fields.
+
+### D1 focussed regression checks
+
+1. Open a saved project. Select an Interpretation and Goal: both Explain this panels should show different roles, examples and evidence states.
+2. Edit an existing node, set *Evidence basis* to Participant statement and enter an event/reference. Save and reopen the project. Both fields should persist in Trace context.
+3. Click an existing wire: confirm from/to wording, contextual explanation, and Keep/Delete controls. Retain the wire, then test Undo after an independent node edit.
+4. Try a prohibited/misaligned connection: message title should read **Gap in Reasoning** with a bridging question. Existing valid links should still work.
+5. Switch framework and open the node explanation; the framework interpretation must be identified as a lens, not attributed to the participant.
+6. About → Provenance & evidence: verify the W3C source link and distinctions between provenance and evidence.
+7. Regression: Edit hotspot, move node and Ctrl+Z, Aggregate Original/Arrange, Restore test examples, Spatial Read, export preview.
+
+**Safety:** Do not clear browser storage; projects are browser-local. The new metadata fields are additive and optional. New devices retain the C2.5 first-use behaviour.
+
+---
+
 
 ## C2.5 locked studio — Export preview addition
 
@@ -385,3 +414,22 @@ The **About** page now provides interactive, keyboard-accessible framework cards
 The **Research Foundations** section now contains the project's 12 core and associated readings with author, year, publication type, relevance, and sourced publisher/DOI/book links. The C2.2 reading library (`data/references.json`) includes the earlier eight and adds Serrat (Five Whys), Reynolds and Gutman (laddering), Ralph and Wand (formal design definitions), and Suwa and Tversky (sketch cognition). A linked publisher or DOI page is not a guarantee of free access; use institutional library access when required.
 
 Validation checklist: About page cards open the correct frameworks; slides change and read-out matches each lens; research reading cards have clickable and safely externalised links; close/Escape and narrow-screen presentation behave correctly. The reasoning engine, stored projects, map export and browser-local data remain unchanged.
+
+
+## D1 · Wire patterns, pilot gradients and user legend (14 October 2026)
+
+The canvas now provides an expandable **Wire legend** beneath the map, and the Workspace tutorial explicitly introduces line semantics.
+
+Two independent dimensions must not be conflated:
+
+| Dimension | Visual | Meaning |
+| --- | --- | --- |
+| Relationship status | Solid | Designer-recorded active reasoning connection. |
+| Relationship status | Dashed | Provisional connection to examine further. |
+| Relationship status | Faint dotted | Rejected connection retained for traceability/comparison. |
+| Pilot recurrence | Darker/thicker | Category transition observed across many P01–P10 participants. |
+| Pilot recurrence | Medium | Transition observed across several participants. |
+| Pilot recurrence | Lighter/thinner | Transition observed in fewer participants, or not observed in the mapped sample. |
+| Pilot recurrence | Neutral | No comparable pilot signal available (for example a loose note). |
+
+**Frequency does not equal confidence or proof.** The P01–P10 dataset describes how often a type of transition was coded, not the reliability of this designer's specific reasoning, and not a required architectural design sequence. The **Hide pilot signals** control removes the frequency grading but continues to display active/provisional/rejected relationship patterns. The selected-wire explanation links back to the legend. Both node and wire data remain unchanged by this presentation update. SVG/PNG/PDF map exports reproduce the wire styling shown in the preview, including dash pattern and graded line weight.
