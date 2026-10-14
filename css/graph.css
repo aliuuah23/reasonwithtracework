@@ -286,3 +286,16 @@
 /* Amber, not red: provenance warnings do not forbid designer-authored links. */
 .graph-nodes .node-port.compatible.provenance-review{box-shadow:0 0 0 6px rgba(201,139,39,.28);}
 .graph-nodes .node-port.provenance-review:hover::after{background:#856127;}
+
+/* D1.2: uniform dark guidance even for unconventional or provenance-review endpoints. */
+.graph-nodes.connecting .node-port.incompatible:hover::after,
+.graph-nodes.connection-preview .node-port.incompatible:hover::after,
+.graph-nodes .node-port.provenance-review:hover::after{background:#202533!important;color:#fff!important;}
+.graph-nodes .node-port[data-connect-hint]:hover::after{background:#202533!important;color:#fff!important;}
+
+.graph-nodes.connection-preview .node-port.origin-hover:hover::after{
+ content:attr(data-connect-hint);position:absolute;z-index:600;top:calc(100% + 11px);left:50%;
+ transform:translateX(-50%);width:max-content;max-width:min(250px,65vw);padding:9px 10px;
+ border-radius:9px;background:#202533;color:#fff;font-size:10px;line-height:1.4;font-weight:550;
+ text-align:left;white-space:normal;box-shadow:0 10px 22px rgba(0,0,0,.23);pointer-events:none;
+}

@@ -1,0 +1,1 @@
+D1.2: direct wire labels; contextual two-node explanation; preview-only Gap in Reasoning with advisory toast; consistent dark hover; provenance warnings preserved.

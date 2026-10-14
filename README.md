@@ -449,7 +449,7 @@ Two independent dimensions must not be conflated:
 | Pilot recurrence | Lighter/thinner | Transition observed in fewer participants, or not observed in the mapped sample. |
 | Pilot recurrence | Neutral | No comparable pilot signal available (for example a loose note). |
 
-**Frequency does not equal confidence or proof.** The P01–P10 dataset describes how often a type of transition was coded, not the reliability of this designer's specific reasoning, and not a required architectural design sequence. The **Hide pilot signals** control removes the frequency grading but continues to display active/provisional/rejected relationship patterns. The selected-wire explanation links back to the legend. Both node and wire data remain unchanged by this presentation update. SVG/PNG/PDF map exports reproduce the wire styling shown in the preview, including dash pattern and graded line weight.
+**Frequency does not equal confidence or proof.** The P01–P10 dataset describes how often a type of transition was coded, not the reliability of this designer's specific reasoning, and not a required architectural design sequence. The **Hide wire signals** control removes the frequency grading but continues to display active/provisional/rejected relationship patterns. The selected-wire explanation links back to the legend. Both node and wire data remain unchanged by this presentation update. SVG/PNG/PDF map exports reproduce the wire styling shown in the preview, including dash pattern and graded line weight.
 
 
 ## D1.1 — Contextual Wire Guidance and Responsive Layout (14 October 2026)
@@ -460,3 +460,12 @@ Two independent dimensions must not be conflated:
 - **Evidence / provenance**: both remain optional. Origin identifies who or what introduced a statement; evidence type identifies what supports it. PROV-O is conceptual grounding, not a claim of formal RDF compliance.
 - **UI**: centered responsive primary ribbon; title-cased About section labels; provenance explanations wrap instead of overflowing narrow windows.
 - **Regression priorities**: existing project restore, node role inspector, Ctrl+Z and exports remain unchanged.
+
+
+## D1.2 — Contextual connection guidance (14 October)
+- Restored the plain control labels **Show wire signals / Hide wire signals**. Empirical transition patterns are explained separately in the optional legend and never used to claim a particular connection is logically correct.
+- Connection handles show a consistent black tooltip. A proposed nonstandard reasoning jump is allowed and marked **Gap in Reasoning** before/during linking; if saved, a bottom-right advisory explains what remains unstated.
+- An already accepted wire no longer shows the contradictory standing label “Gap in Reasoning.” Its inspector instead offers an optional, pair-sensitive explanation and a test to consider.
+- Examples draw on the text of the two actual nodes, including spatial concerns such as seating, circulation, privacy and daylight. Explanations are conditional, not automatic evidence of causation.
+- **Provenance Gap** remains separate, flags possible misattribution and does not silently block cross-origin design reasoning.
+- Existing projects, undo, map arrangements and exports remain unchanged.

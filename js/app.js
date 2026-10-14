@@ -17,9 +17,10 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d1-1-provenance';
+import { renderGraph } from './graph/graph-renderer.js?v=d1-2';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
-import { connectionCheck } from './graph/connection-rules.js';
+import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
+import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
 import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
@@ -30,7 +31,7 @@ import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { toast, coach, setSaveStatus } from './ui/notifications.js';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-1-context';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-2';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -154,7 +155,7 @@ function bindGlobalEvents(){
   if(els.hotspotViewSelect) els.hotspotViewSelect.onchange=()=>{ hotspotViewMode=els.hotspotViewSelect.value||'all'; renderWorkspace(); };
   els.traceCheckButton.onclick=openTraceCheck;
   els.toggleNodeTypesButton.onclick=()=>{ showNodeTypes=!showNodeTypes; updateFrameworkControls(getState()); renderGraphState(); };
-  if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide pilot signals':'Show pilot signals'; renderWorkspace(); };
+  if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderWorkspace(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
@@ -834,7 +835,7 @@ function renderConnectionInspector(id){
   if(!edge||!source||!target){selectedEdgeId=null;renderEmptyInspector();return;}
   // Cancel outstanding async node/precedent renders before replacing the inspector.
   renderEmptyInspector();
-  const check=connectionCheck(source,target,state.edges.filter(e=>e.id!==id),pilotEvidence,{frameworkId:state.frameworkId||'tracework'});
+  const explanation=explainConnectionPair(source,target);
   const provenanceGap=provenanceConnectionCheck(source,target);
   const provenanceMarkup=provenanceGap.flagged
     ? `<details class="inspector-section provenance-gap-guidance" open><summary>⚠ Provenance Gap · Verify the source</summary><p>${escapeHtml(provenanceGap.reason)}</p><p><strong>What to check:</strong> ${escapeHtml(provenanceGap.next)}</p><small>This is an attribution warning, not a rejection of the reasoning connection. Review node provenance, evidence type and source citations using Edit.</small></details>`
@@ -845,9 +846,9 @@ function renderConnectionInspector(id){
   root.dataset.inspectorKey=`wire:${id}`;
   root.innerHTML=`<div class="inspector-head connection-inspector-head"><span class="inspector-type">Selected Connection · ${escapeHtml(status)}</span><h3>Reasoning Relationship</h3><p>Click another node or wire to continue tracing. No pop-up interrupts the map.</p></div>
     <div class="inspector-section connection-ends"><span class="field-label">FROM · ${escapeHtml(typeLabels[source.type]||source.type)}</span><p>${escapeHtml(source.label)}</p><span class="connection-arrow" aria-hidden="true">↓ develops / informs ↓</span><span class="field-label">TO · ${escapeHtml(typeLabels[target.type]||target.type)}</span><p>${escapeHtml(target.label)}</p></div>
-    <details class="inspector-section connection-inspector-guidance"><summary>Explain This · Is there a reasoning gap?</summary><p><strong>${check.ok?'Possible relationship':'Gap in Reasoning'}</strong></p><p>${escapeHtml(check.reason)}</p><p>${escapeHtml(check.detail||'')}</p><p><strong>What might come next?</strong> ${escapeHtml(bridgePrompt(source,target))}</p><small>Suggested questions, not evidence that this reasoning occurred.</small></details>
+    <details class="inspector-section connection-inspector-guidance"><summary>Explain This · Why might these thoughts connect?</summary><p>${escapeHtml(explanation.reason)}</p><p><strong>What could be tested next?</strong> ${escapeHtml(explanation.next)}</p><small>This is a context-sensitive question about the actual node text, not proof that the connection is correct or that any omitted reasoning occurred.</small></details>
     ${provenanceMarkup}
-    <div class="inspector-section"><p class="trace-provenance-note">${escapeHtml(status)} relationship. ${showWireSignals?'Pilot line weight indicates category-transition recurrence, not confidence in this particular wire.':'Pilot grading is hidden; the map uses neutral solid connections.'}</p><button type="button" class="secondary-button compact" id="clearSelectedConnection">Deselect Connection</button><button type="button" class="secondary-button compact danger-subtle" id="deleteSelectedConnection">Disconnect Wire</button></div>`;
+    <div class="inspector-section"><p class="trace-provenance-note">${escapeHtml(status)} relationship. ${showWireSignals?'Wire strength is a visual summary of prior category patterns, not evidence this particular link is correct.':'Wire styling is hidden; the map uses neutral solid connections.'}</p><button type="button" class="secondary-button compact" id="clearSelectedConnection">Deselect Connection</button><button type="button" class="secondary-button compact danger-subtle" id="deleteSelectedConnection">Disconnect Wire</button></div>`;
   root.querySelector('#clearSelectedConnection').onclick=()=>{selectedEdgeId=null;renderWorkspace();};
   root.querySelector('#deleteSelectedConnection').onclick=()=>{
     if(window.confirm('Disconnect this reasoning relationship? The nodes remain in your project, and Ctrl+Z can restore the wire.'))disconnectEdge(id);
@@ -1714,6 +1715,8 @@ function connectNodes(source,target,result){
   renderWorkspace();
   if(provenanceGap.flagged){
     coach('Provenance Gap',`${provenanceGap.reason} ${provenanceGap.next} Connection saved as a reviewable claim, not confirmed evidence.`,{duration:8500,pinnable:true});
+  }else if(result?.gap){
+    coach('Gap in Reasoning',`${result.gap.reason} ${result.gap.next} Connection was saved; the warning is advisory.`,{duration:8000,pinnable:true});
   }else toast('Reasoning moves connected.');
 }
 
@@ -2036,7 +2039,7 @@ function openNodeQuickLink(id){
       const to=direction.value==='out'?target:source;
       const result=connectionCheck(from,to,getState().edges,pilotEvidence,{frameworkId:getState().frameworkId||'tracework'});
       const provenanceGap=provenanceConnectionCheck(from,to);
-      modal.querySelector('#quickLinkValidation').textContent=(result.ok?`Why this connects: ${result.reason} ${result.detail||''}`:`Gap in Reasoning: ${result.reason} ${result.detail||''} ${bridgePrompt(from,to)}`)+(provenanceGap.flagged?` | Provenance Gap: ${provenanceGap.reason} ${provenanceGap.next}`:'');
+      modal.querySelector('#quickLinkValidation').textContent=(result.ok?`${result.gap?'Gap in Reasoning: '+result.gap.reason+' '+result.gap.next+' | ':''}Possible connection: ${result.reason} ${result.detail||''}`:`Cannot connect: ${result.reason} ${result.detail||''}`)+(provenanceGap.flagged?` | Provenance Gap: ${provenanceGap.reason} ${provenanceGap.next}`:'');
       modal.querySelector('#quickLinkValidation').classList.toggle('provenance-review',provenanceGap.flagged);
       modal.querySelector('#confirmQuickLink').disabled=!result.ok;
     };

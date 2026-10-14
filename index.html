@@ -10,8 +10,8 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d1-1-context">
-  <link rel="stylesheet" href="css/graph.css?v=d1-1-context">
+  <link rel="stylesheet" href="css/components.css?v=d1-2">
+  <link rel="stylesheet" href="css/graph.css?v=d1-2">
   <link rel="stylesheet" href="css/responsive.css?v=d1-1-centred">
 </head>
 <body>
@@ -174,7 +174,7 @@
                   <div class="canvas-state-actions">
                     <button class="trace-check-button" id="traceCheckButton" type="button">Trace check</button>
                     <button class="trace-check-button" id="toggleNodeTypesButton" type="button">Hide node types</button>
-                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Show pilot recurrence as graded wire strengths and status patterns, or hide it to display uniform solid wires. Saved relationship status is not changed.">Hide pilot signals</button>
+                    <button class="trace-check-button" id="toggleWireSignalsButton" type="button" title="Show observed recurrence as graded wire strengths and status patterns, or hide it to display uniform solid wires. Saved relationship status is not changed.">Hide wire signals</button>
                   </div>
                 </div>
               </div>
@@ -260,21 +260,21 @@
           <div class="canvas-footer">
             <div class="legend" id="ontologyLegend"></div>
             <details class="wire-legend" id="wireLegend" hidden>
-              <summary aria-label="Wire legend: line patterns and pilot evidence strength">Wire legend <span class="wire-legend-teaser" aria-hidden="true"><i class="wire-key-line"></i><i class="wire-key-line provisional"></i><i class="wire-key-line rejected"></i></span> <span class="wire-legend-chevron" aria-hidden="true">⌄</span></summary>
+              <summary aria-label="Wire legend: line patterns and wire strength">Wire legend <span class="wire-legend-teaser" aria-hidden="true"><i class="wire-key-line"></i><i class="wire-key-line provisional"></i><i class="wire-key-line rejected"></i></span> <span class="wire-legend-chevron" aria-hidden="true">⌄</span></summary>
               <div class="wire-legend-content">
                 <div class="wire-legend-group"><strong>Relationship status · line pattern</strong>
                   <span><i class="wire-key-line"></i><b>Solid</b> — active, designer-recorded connection</span>
                   <span><i class="wire-key-line provisional"></i><b>Dashed</b> — provisional connection, still being investigated</span>
                   <span><i class="wire-key-line rejected"></i><b>Dotted + faint</b> — rejected connection retained for comparison</span>
                 </div>
-                <div class="wire-legend-group"><strong>Pilot signal · graduated line weight</strong>
+                <div class="wire-legend-group"><strong>Observed transition patterns · graduated line weight</strong>
                   <span><i class="wire-key-line grade-frequent"></i><b>Common</b> — this *category transition* appears across many P01–P10 participants</span>
                   <span><i class="wire-key-line grade-observed"></i><b>Observed</b> — appears across several participants</span>
                   <span><i class="wire-key-line grade-limited"></i><b>Limited</b> — appears across few participants</span>
                   <span><i class="wire-key-line grade-unseen"></i><b>Not observed</b> — absent from the mapped pilot transitions</span>
                   <span><i class="wire-key-line grade-neutral"></i><b>Neutral</b> — no comparable pilot signal, such as a note</span>
                 </div>
-                <p>Two different readings: <b>pattern = your relationship status</b>; <b>weight/darkness = pilot recurrence</b>. These are not confidence scores, probabilities or a judgment of design quality. Select a wire to optionally expand contextual reasoning guidance in the inspector. “Hide pilot signals” displays a neutral, solid wire without changing its saved relationship status.</p>
+                <p>Two different readings: <b>pattern = your relationship status</b>; <b>weight/darkness = observed recurrence</b>. These are not confidence scores, probabilities or a judgment of design quality. Select a wire to optionally expand contextual reasoning guidance in the inspector. “Hide wire signals” displays a neutral, solid wire without changing its saved relationship status.</p>
               </div>
             </details>
             <span class="canvas-hint">Drag canvas to pan · Shift-click nodes to multi-select · Either port can start a wire · Shift-click wire to disconnect · Right-click node for lock/group · Ctrl+G group · Ctrl+F find · Focus map isolates one hotspot · Aggregate map merges the project · Original influences Arrange; Arrange never moves Original · Focus path isolates one route · Ctrl+Z undo</span>
@@ -353,6 +353,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-1-provenance"></script>
+  <script type="module" src="js/app.js?v=d1-2"></script>
 </body>
 </html>
