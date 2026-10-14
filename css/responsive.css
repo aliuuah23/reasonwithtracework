@@ -210,3 +210,32 @@
 .about-research h2{font-size:clamp(23px,4vw,36px);line-height:1.14;overflow-wrap:anywhere;}
 .about-research p{line-height:1.6;overflow-wrap:anywhere;}
 @media(max-width:700px){.about-page{padding:36px 18px 70px;}.about-hero h1{font-size:clamp(32px,7vw,50px);}}
+
+/* D1.3 — Compact two-row navigation at half-screen width.
+   Keeps all tabs available without the oversized 102px header. */
+@media(max-width:1200px){
+  :root{--topbar:76px;}
+  .topbar{
+    height:var(--topbar);min-height:var(--topbar);
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:29px 31px;
+    row-gap:3px;column-gap:8px;
+    padding:5px 12px 6px;
+    align-items:center;
+  }
+  .brand{grid-column:1;grid-row:1;align-self:center;}
+  .topbar-actions{grid-column:2;grid-row:1;align-self:center;}
+  .topnav{
+    display:flex;grid-column:1/-1;grid-row:2;
+    justify-self:center;align-self:center;
+    width:max-content;max-width:100%;min-width:0;
+    justify-content:center;gap:2px;padding:2px;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;white-space:nowrap;
+  }
+  .topnav .nav-link{flex:none;white-space:nowrap;font-size:12px;padding:5px 9px;line-height:18px;}
+}
+@media(max-width:560px){
+  :root{--topbar:76px;}
+  .topbar{padding:5px 8px 6px;}
+  .topnav{justify-self:stretch;justify-content:flex-start;width:100%;}
+}

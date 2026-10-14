@@ -1,3 +1,15 @@
+## D1.3 — Interface + Evidence Clarification (14 October 2026)
+
+This release amends D1.2 without changing existing graph layout, saved traces, or map exports.
+
+- A reasoning connection may have *both* a Gap in Reasoning and a Provenance Gap. Two independent, stackable bottom-right advisories appear; each has its own **Keep open** action. Neither warning alone blocks an otherwise allowed connection.
+- **Participant Statement** belongs under Origin / Provenance and is no longer a selectable Evidence Basis. Evidence options include **Transcript / Recorded Interview**, observations, drawings/models and documented precedents. Older stored `evidenceKind: participant` metadata is displayed as requiring review, and existing project files are not automatically rewritten.
+- Reasoning node edit forms now have consistent Inter typography, readable 12–14px labels/inputs, title-cased field labels and clearer origin-versus-evidence guidance. Designer/participant text is never automatically recased.
+- The navigation header is compact (76px total) at browser widths up to 1200px, including half-screen and mobile, and remains horizontally scrollable.
+- Existing validated connection selection, undo, maps, tutorials, wire signals and export functions are preserved.
+
+**QA:** Browser-check simultaneous advisories, their separate Keep open buttons, node editing, ribbon compactness, and existing-project access after deployment.
+
 # D1.1 — Provenance Gap Extension (14 October 2026)
 
 **This build supersedes the previously prepared D1.1 ZIP and retains its entire feature set.**

@@ -1,0 +1,1 @@
+D1.3: compact half-screen ribbon, independently pinnable reasoning/provenance warnings, remove participant statement evidence basis, and consistent edit-dialog typography.

@@ -4,7 +4,7 @@ export const evidenceKinds = [
   {id:'unspecified',label:'Not specified',description:'The evidential basis has not yet been recorded.'},
   {id:'brief',label:'Brief / quoted requirement',description:'Direct wording or a condition in a provided brief.'},
   {id:'observation',label:'Observed condition',description:'Recorded behaviour, site or environmental observation.'},
-  {id:'participant',label:'Participant statement',description:'What a participant explicitly said or recorded.'},
+  {id:'transcript',label:'Transcript / Recorded Interview',description:'A traceable transcript or recording supporting a claim; attribution to the participant is recorded separately under Origin / Provenance.'},
   {id:'drawing',label:'Drawing / model evidence',description:'Documented sketch, model, spatial test or artefact.'},
   {id:'precedent',label:'Published precedent',description:'Documented architectural example or scholarly source.'},
   {id:'performance',label:'Performance / measured outcome',description:'A measured test, simulation or observed outcome; record its method and limits.'},
@@ -21,7 +21,7 @@ export const roleClarifications={
   goal:{example:'“The project aims to support both retreat and social exchange.”',boundary:'An aim or value is not itself a physical intervention.'},
   note:{example:'“What if the pavilion changes with occupancy?”',boundary:'A deliberately unclassified thought; no framework role is asserted.'}
 };
-export function evidenceLabel(id='unspecified'){return evidenceKinds.find(x=>x.id===id)?.label||'Not specified';}
+export function evidenceLabel(id='unspecified'){if(id==='participant')return 'Not Specified (Legacy: Review Evidence Basis)';return evidenceKinds.find(x=>x.id===id)?.label||'Not Specified';}
 export function inferredEvidenceKind(node){
   const explicit=node?.meta?.evidenceKind; if(explicit)return explicit;
   if(node?.type==='input' || ['brief','brief_requirement','brief_description'].includes(node?.meta?.provenance))return 'brief';
@@ -64,7 +64,7 @@ export function provenanceConnectionCheck(source,target){
   const a=source.meta||{}, b=target.meta||{};
   const from=a.provenance||((source.type==='input'&&a.source==='brief')?'brief':'designer');
   const to=b.provenance||((target.type==='input'&&b.source==='brief')?'brief':'designer');
-  const ea=a.evidenceKind||null, eb=b.evidenceKind||null;
+  const ea=a.evidenceKind==='participant'?'unspecified':(a.evidenceKind||null), eb=b.evidenceKind==='participant'?'unspecified':(b.evidenceKind||null);
   const explicitBrief=p=>['brief','brief_requirement','brief_description'].includes(p);
   const empirical=new Set(['participant','observation','performance','brief','drawing']);
   const warnings=[];

@@ -6,7 +6,7 @@ import { loadOntology, typeLabels } from './core/ontology.js';
 import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
-import { evidenceKinds, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-1-prov';
+import { evidenceKinds, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-3-evidence';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
@@ -29,7 +29,7 @@ import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?
 import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-reasoning-transparency';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
-import { toast, coach, setSaveStatus } from './ui/notifications.js';
+import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-3-dual-warnings';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
 import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-2';
 
@@ -927,8 +927,11 @@ function editNode(node){
   const typeOptions=editableTypes.map(t=>`<option value="${t}" ${node.type===t?'selected':''}>${escapeHtml(typeLabels[t]||t)}</option>`).join('');
   const currentProvenance=sourceInput?'brief':inferLegacyProvenance(node);
   const provenanceOptionsMarkup=provenanceOptions.map(p=>`<option value="${p.id}" ${currentProvenance===p.id?'selected':''}>${escapeHtml(p.label)}</option>`).join('');
-  const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${inferredEvidenceKind(node)===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
-  openModal(`<h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'note':typeLabels[node.type]||node.type)}.</h2><p>Revise the wording${sourceInput?' while keeping this source node anchored to the brief.':', reasoning role, or where this thought entered the project.'}</p><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input is locked as Input with Brief provenance so its link back to the source document remains intact.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Origin / provenance</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editEvidenceKind">Evidence basis · distinct from origin</label><select id="editEvidenceKind">${evidenceMarkup}</select></div><label class="field-label" for="editSourceReference">Source or citation (optional)</label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Brief section, participant event, URL, drawing or record…"><p class="trace-provenance-note">A system suggestion is not empirical evidence. Record whether this thought was observed, stated, inferred or proposed.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save change</button></div>`,{
+  const legacyEvidence=node.meta?.evidenceKind==='participant';
+  // Participant is an origin, not an evidence type; legacy selections need review.
+  const selectedEvidence=legacyEvidence?'unspecified':inferredEvidenceKind(node);
+  const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${selectedEvidence===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
+  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or origin of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought / Statement</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input remains linked to the brief; its node role and provenance are fixed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Origin / Provenance</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editEvidenceKind">Evidence Basis <span class="field-label-aside">(Independent of Origin)</span></label><select id="editEvidenceKind">${evidenceMarkup}</select></div>${legacyEvidence?'<p class="metadata-review-note">Previous “Participant Statement” evidence type requires review. Participant authorship belongs under Origin / Provenance; choose a documented evidence basis.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation <span class="field-label-aside">(Optional)</span></label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Brief section, participant event ID, URL or drawing…"><p class="trace-provenance-note">Origin identifies who introduced the thought; evidence identifies what supports it. System suggestions are not empirical evidence.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{
     onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{
       const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
       const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
@@ -1694,7 +1697,9 @@ function connectNodes(source,target,result){
   }
   const provenanceGap=provenanceConnectionCheck(source,target);
   if(!result?.ok){
-    coach('Gap in Reasoning',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''} ${bridgePrompt(source,target)}${provenanceGap.flagged?' Provenance Gap: '+provenanceGap.reason:''}` ,{duration:7500,pinnable:true});
+    coach('Gap in Reasoning',`${result?.reason||'Those reasoning moves cannot be connected yet.'}${result?.detail?' '+result.detail:''} ${bridgePrompt(source,target)}`,{duration:8500,pinnable:true});
+    // Reasoning structure and authorship are independent checks. Never suppress either.
+    if(provenanceGap.flagged)coach('Provenance Gap',`${provenanceGap.reason} ${provenanceGap.next}`,{duration:9500,pinnable:true});
     return;
   }
   checkpoint('connect reasoning');
@@ -1713,11 +1718,10 @@ function connectNodes(source,target,result){
   clearNewNodeHalo();
   logEvent('Reasoning connected',`${typeLabels[source.type]||source.type} → ${typeLabels[target.type]||target.type}`);
   renderWorkspace();
-  if(provenanceGap.flagged){
-    coach('Provenance Gap',`${provenanceGap.reason} ${provenanceGap.next} Connection saved as a reviewable claim, not confirmed evidence.`,{duration:8500,pinnable:true});
-  }else if(result?.gap){
-    coach('Gap in Reasoning',`${result.gap.reason} ${result.gap.next} Connection was saved; the warning is advisory.`,{duration:8000,pinnable:true});
-  }else toast('Reasoning moves connected.');
+  // Both advisories can apply to the same link; each remains pinnable independently.
+  if(result?.gap)coach('Gap in Reasoning',`${result.gap.reason} ${result.gap.next} Connection was saved; the warning is advisory.`,{duration:8500,pinnable:true});
+  if(provenanceGap.flagged)coach('Provenance Gap',`${provenanceGap.reason} ${provenanceGap.next} Connection saved for review, not confirmed evidence.`,{duration:9500,pinnable:true});
+  if(!result?.gap&&!provenanceGap.flagged)toast('Reasoning moves connected.');
 }
 
 function isTextEditingContext(e){
