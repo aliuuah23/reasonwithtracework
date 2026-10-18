@@ -314,3 +314,25 @@
 .graph-nodes.connecting .graph-node.connection-drop-target{
   outline:3px solid rgba(81,150,115,.65);outline-offset:3px;
   background:#fafffb;box-shadow:0 0 0 7px rgba(81,150,115,.12);}
+
+
+/* D1.7: connection affordance takes the DESTINATION NODE's actual role colour,
+   including alternate framework lenses. The graph never imposes green. */
+.graph-nodes.connecting .graph-node.connection-drop-target{
+  outline:3px solid var(--node-color)!important;
+  outline-offset:3px;
+  background:color-mix(in srgb,var(--node-color) 6%,white)!important;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--node-color) 17%,transparent)!important;
+}
+.graph-nodes.connecting .node-port.compatible,
+.graph-nodes.connection-preview .node-port.compatible{
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--node-color) 25%,transparent)!important;
+}
+.graph-nodes.connecting .node-port.compatible.provenance-review{
+  box-shadow:0 0 0 5px rgba(201,139,39,.27)!important;
+}
+/* The preview path responds to each pointer frame, never a delayed transition. */
+.graph-surface .trace-edge.draft-connection {
+  transition:none!important;animation:none!important;filter:none!important;
+  stroke-width:2.7!important;stroke-dasharray:5 4!important;
+}

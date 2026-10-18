@@ -1,12 +1,13 @@
 # TRACEWORK — Changelog
 
-This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.6; acceptance testing remains open.**
+This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.7; acceptance testing remains open.**
 
 ## D releases — reasoning transparency and usability (14–18 October 2026)
 
 | Release | Consolidated change |
 |---|---|
-| **D1.6 (current development release)** | Full-width docked command line, panel-edge controls clear of headings, consistent dropdown scale and clickable help, non-accidental modal dismissal, forgiving link targets, faster tutorial spotlight tracking and clarified interface labels. |
+| **D1.7 (current development release)** | Fixed-height bottom dock across classification updates; top-aligned panel controls; intentional backdrop-click edit dismissal; node-colour connection targeting and frame-synchronised wire preview; removed decorative tutorial top stripe. |
+| **D1.6** | Full-width docked command line, panel-edge controls clear of headings, consistent dropdown scale and clickable help, non-accidental modal dismissal, forgiving link targets, faster tutorial spotlight tracking and clarified interface labels. |
 | **D1.5** | Compact command line and panel-edge toggles; aligned provenance fields and per-field help in command input and edit dialog; named attribution/activity/record metadata, node and inspector visibility; live text-match feedback; saved viewport; focus/path Arrange maps with separate coordinates; tutorial dismissal/positioning improvements. |
 | **D1.4** | One-row responsive ribbon; independently retractable Brief/Guidance panels; generalised provenance fields informed by PROV-O Entity/Agent/Activity; edit-triggered provenance/reasoning review; separate dismissal/pinning of warnings; loading resilience. |
 | **D1.3** | Independent, simultaneous Gap in Reasoning and Provenance Gap notices; evidence-basis clarification; node-edit typography; compact ribbon. |
@@ -43,7 +44,7 @@ This is the short release record. Detailed original notes, including past troubl
 | **B1.8–B1.7** | Text-node/CSS highlighting and correct nested repository deployment. |
 | **Round 2B.1** | Quick/Long Brief filing, naming and source-section handling. |
 
-The archive includes every original TXT note, including versions not individually summarized here. Older test instructions and feature labels sometimes differ from current D1.4 behaviour; use the [current user guide](docs/user-guide.md) for day-to-day usage.
+The archive includes every original TXT note, including versions not individually summarized here. Older test instructions and feature labels sometimes differ from current D1.7 behaviour; use the [current user guide](docs/user-guide.md) for day-to-day usage.
 
 ## Following the current baseline
 

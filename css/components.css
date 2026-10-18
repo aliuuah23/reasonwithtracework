@@ -1118,3 +1118,8 @@ html.tutorial-tour-active{overflow:hidden}
 /* Never animate tutorial spotlight behind its current target. */
 .tutorial-spotlight-ring{transition:none!important;}
 .tutorial-popover{transition:none!important;}
+
+
+/* D1.7: remove unlabelled purple stripe above tutorial dialogue. The
+   labelled step-progress indicator below its heading remains. */
+.tutorial-popover::before{content:none!important;display:none!important;}

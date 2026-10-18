@@ -512,28 +512,39 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
       nodesRoot.classList.remove('connection-preview');
       nodesRoot.classList.add('connecting');
 
+      const connectionHints=new Map();
       nodesRoot.querySelectorAll('.node-port').forEach(candidate=>{
         const otherId=candidate.closest('.graph-node')?.dataset.id;
         if(!otherId||otherId===originId)return;
         const other=nodesById.get(otherId);
-        const pair=resolvePair(origin,other,startSide);
-        const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
+        let result=connectionHints.get(otherId);
+        if(!result){
+          const pair=resolvePair(origin,other,startSide);
+          result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
+          connectionHints.set(otherId,result);
+        }
         candidate.classList.add(result.ok?'compatible':'incompatible');
         candidate.classList.toggle('provenance-review',Boolean(result.provenanceGap?.flagged));
         candidate.dataset.connectHint=`${result.gap?'Gap in Reasoning: '+result.gap.reason:result.ok?'Possible connection: '+(result.reason||'Consider the relationship.'):'Cannot connect: '+(result.reason||'Check these nodes.')}${result.provenanceGap?.flagged?' | Provenance Gap: '+result.provenanceGap.reason:''}`;
         candidate.removeAttribute('title');
       });
 
-      const pointFromEvent=evt=>{
-        const rect=surface.getBoundingClientRect();
-        const scale=Math.max(.01,Number(getScale?.()||1));
-        return{x:(evt.clientX-rect.left)/scale,y:(evt.clientY-rect.top)/scale};
-      };
+      // Reading the canvas rectangle once prevents forced layout during each
+      // wire-drag frame (particularly noticeable with many node cards).
+      const dragRect=surface.getBoundingClientRect();
+      const dragScale=Math.max(.01,Number(getScale?.()||1));
+      const pointFromEvent=evt=>({
+        x:(evt.clientX-dragRect.left)/dragScale,
+        y:(evt.clientY-dragRect.top)/dragScale
+      });
       let previousDropTarget=null;
-      const move=evt=>{
-        const p=pointFromEvent(evt);
+      let cursorFrame=0, latestPointer=null;
+      const paintPointer=()=>{
+        cursorFrame=0;
+        if(!latestPointer)return;
+        const p=pointFromEvent(latestPointer);
         temp.setAttribute('d',curvePath(start.x,start.y,p.x,p.y));
-        const element=document.elementFromPoint(evt.clientX,evt.clientY);
+        const element=document.elementFromPoint(latestPointer.clientX,latestPointer.clientY);
         const node=element?.closest?.('.graph-node');
         const next=node && node.dataset.id!==originId?node:null;
         if(previousDropTarget!==next){
@@ -542,10 +553,18 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
           previousDropTarget=next;
         }
       };
+      const move=evt=>{
+        // A single paint per display frame avoids expensive DOM hit-tests on
+        // every high-frequency pointer event. Never use smooth transitions here.
+        latestPointer={clientX:evt.clientX,clientY:evt.clientY};
+        if(!cursorFrame)cursorFrame=requestAnimationFrame(paintPointer);
+      };
+      const stopPointer=()=>{if(cursorFrame){cancelAnimationFrame(cursorFrame);cursorFrame=0;}latestPointer=null;};
       const finish=evt=>{
         window.removeEventListener('pointermove',move,true);
         window.removeEventListener('pointerup',finish,true);
         window.removeEventListener('pointercancel',cancel,true);
+        stopPointer();
         temp.remove();nodesRoot.classList.remove('connecting');previousDropTarget?.classList.remove('connection-drop-target');
         nodesRoot.querySelectorAll('.node-port').forEach(p=>{
           p.classList.remove('compatible','incompatible','provenance-review');
@@ -569,6 +588,7 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         window.removeEventListener('pointermove',move,true);
         window.removeEventListener('pointerup',finish,true);
         window.removeEventListener('pointercancel',cancel,true);
+        stopPointer();
         temp.remove();previousDropTarget?.classList.remove('connection-drop-target');
         nodesRoot.classList.remove('connecting');
         nodesRoot.querySelectorAll('.node-port').forEach(p=>{

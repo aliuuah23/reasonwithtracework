@@ -8,9 +8,19 @@ export function openModal(html,{onOpen,allowBackdropDismiss=true}={}){
   backdropPointerStart=null;
   // Only an intentional press AND release on the backdrop dismisses a dialog.
   // Dragging selection out of a textarea or past the screen must never dismiss it.
-  layer.onpointerdown=e=>{backdropPointerStart=allowBackdropDismiss && e.target===layer && e.button===0?e.pointerId:null;};
+  layer.onpointerdown=e=>{
+    backdropPointerStart=allowBackdropDismiss && e.target===layer && e.button===0
+      ? {id:e.pointerId,x:e.clientX,y:e.clientY,moved:false}:null;
+  };
+  layer.onpointermove=e=>{
+    if(backdropPointerStart?.id===e.pointerId && Math.hypot(e.clientX-backdropPointerStart.x,e.clientY-backdropPointerStart.y)>7){
+      backdropPointerStart.moved=true;
+    }
+  };
   layer.onpointerup=e=>{
-    const dismiss=backdropPointerStart!==null && e.pointerId===backdropPointerStart && e.target===layer;
+    // A genuine click on empty backdrop closes; dragging either direction does not.
+    const start=backdropPointerStart;
+    const dismiss=Boolean(start && !start.moved && e.pointerId===start.id && e.target===layer && Math.hypot(e.clientX-start.x,e.clientY-start.y)<=7);
     backdropPointerStart=null;
     if(dismiss)closeModal();
   };
@@ -21,6 +31,6 @@ export function openModal(html,{onOpen,allowBackdropDismiss=true}={}){
 }
 export function closeModal(){
   backdropPointerStart=null;
-  const layer=backdrop();if(layer){layer.classList.add('hidden');layer.onpointerdown=null;layer.onpointerup=null;layer.onpointercancel=null;}
+  const layer=backdrop();if(layer){layer.classList.add('hidden');layer.onpointerdown=null;layer.onpointermove=null;layer.onpointerup=null;layer.onpointercancel=null;}
   if(modal())modal().innerHTML='';
 }
