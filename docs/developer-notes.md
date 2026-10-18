@@ -41,3 +41,12 @@ Source syntax/data integrity checks are valuable but cannot certify full-browser
 - Add brief version lines to **CHANGELOG.md**; link full technical notes within `docs/` if genuinely required.
 - Preserve existing `docs/archive/` contents; do not create another release-note TXT at the repository root.
 - Do not present legacy release-specific test instructions as current product documentation.
+
+
+## D1.5 focused acceptance checks (18 October 2026)
+
+D1.5 adds compact workspace controls, expandable command-line Attribution / Generation Activity / Supporting Record fields, node/editor/inspector metadata consistency, named contributors and sources, and independent focus/path arrangements. It preserves existing `data/` JSON unchanged. No formal PROV-O/RDF compliance is claimed.
+
+After deploying, smoke-test (1) both Brief/Guidance edge tabs at full/half screen, (2) command-line metadata creation → edit → inspector → JSON backup → reopening, (3) per-project canvas scroll and zoom restoration, (4) Original → Arrange in Focus Map, Focus Path and Aggregate Map, with node dragging and undo, (5) export preview with "Automatically arrange export" unchecked to verify the visible arrangement, and (6) tutorial click-outside dismissal, repositioning, and Close-button scale.
+
+Source syntax/JSON/HTML and import checks do not replace real browser interaction. No new root-level deployment-note TXT files are needed; update `CHANGELOG.md` and this guide instead.

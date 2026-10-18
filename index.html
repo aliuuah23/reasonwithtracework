@@ -10,9 +10,9 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d1-4-provenance">
-  <link rel="stylesheet" href="css/graph.css?v=d1-2">
-  <link rel="stylesheet" href="css/responsive.css?v=d1-4-panels">
+  <link rel="stylesheet" href="css/components.css?v=d1-5-provenance">
+  <link rel="stylesheet" href="css/graph.css?v=d1-5-node-metadata">
+  <link rel="stylesheet" href="css/responsive.css?v=d1-5-panels">
 </head>
 <body>
   <header class="topbar">
@@ -139,16 +139,10 @@
           </div>
         </aside>
 
+        <button type="button" class="panel-edge-control panel-edge-left" id="toggleSourcePanel" aria-controls="sourcePanel" aria-expanded="true" aria-label="Hide Brief panel" title="Hide Brief panel"><span aria-hidden="true">◧</span><span class="panel-edge-label">Brief</span></button>
+        <button type="button" class="panel-edge-control panel-edge-right" id="toggleInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" aria-label="Hide Guidance panel" title="Hide Guidance panel"><span class="panel-edge-label">Guidance</span><span aria-hidden="true">◨</span></button>
         <section class="canvas-panel panel">
           <div class="canvas-toolbar">
-            <div class="panel-visibility-controls" role="group" aria-label="Show or hide side panels">
-              <button type="button" class="panel-visibility-toggle" id="toggleSourcePanel" aria-controls="sourcePanel" aria-expanded="true" title="Hide the brief panel">
-                <span aria-hidden="true">◧</span> <span class="panel-toggle-label">Brief</span>
-              </button>
-              <button type="button" class="panel-visibility-toggle" id="toggleInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" title="Hide the guidance panel">
-                <span aria-hidden="true">◨</span> <span class="panel-toggle-label">Guidance</span>
-              </button>
-            </div>
             <div>
               <div class="tutorial-kicker-row"><span class="panel-kicker">02 · Reasoning field</span><button type="button" class="tutorial-link" id="workspaceTutorialButton" data-tutorial="workspace">? Tutorial</button></div>
               <div class="canvas-title-row">
@@ -193,13 +187,15 @@
                 <select id="aggregateTypeFilter" aria-label="Filter aggregate map by node type"><option value="all">All node types</option></select>
                 <select id="aggregateStatusFilter" aria-label="Filter aggregate map by working status"><option value="all">All statuses</option><option value="active">Active</option><option value="provisional">Provisional</option><option value="rejected">Rejected</option></select>
                 <button class="aggregate-action" id="resetAggregateFiltersButton" type="button" title="Clear filters and pathway focus to restore the full project field">Show all</button>
-                <div class="aggregate-layout-toggle" role="group" aria-label="Aggregate layout">
-                  <button class="aggregate-action active" id="originalAggregateButton" type="button" aria-pressed="true">Original map</button>
-                  <button class="aggregate-action" id="arrangeAggregateButton" type="button" aria-pressed="false">Arrange map</button>
-                </div><button class="aggregate-action hidden" id="reflowArrangeButton" type="button" title="Regenerate the framework layout without changing Original positions. Undo is available.">↺ Reflow Arrange</button><span class="aggregate-layout-explainer" title="Original stores design working positions; Arrange is a separate framework-informed presentation layout. Changes in Arrange do not move Original nodes.">Original network → framework Arrange</span>
+
               </div>
             </div>
             <div class="toolbar-actions">
+              <div class="aggregate-layout-toggle" role="group" aria-label="Reasoning map layout">
+                <button class="aggregate-action active" id="originalAggregateButton" type="button" aria-pressed="true">Original</button>
+                <button class="aggregate-action" id="arrangeAggregateButton" type="button" aria-pressed="false">Arrange</button>
+              </div>
+              <button class="aggregate-action hidden" id="reflowArrangeButton" type="button" title="Reflow the visible map in the selected framework without changing Original positions">↺ Reflow</button>
               <button class="tool-button" id="exportMapButton" type="button" title="Export the full visible map as vector SVG, high-resolution PNG or vector PDF">⇩ Export map</button>
               <button class="tool-button" id="undoButton" type="button" disabled>↶ Undo</button>
               <button class="tool-button" id="findNodeButton" type="button" title="Find a node · Ctrl+F">⌕ Find</button>
@@ -238,23 +234,42 @@
                   <option value="goal">Goal</option>
                   <option value="input">Input / given condition</option>
                 </select>
-                <label class="thought-provenance" title="Record where this thought entered the project.">
-                  <span>Origin</span>
-                  <select id="thoughtProvenanceSelect" aria-label="Thought provenance">
-                    <option value="designer">Designer thought</option>
-                    <option value="brief_requirement">Brief requirement</option>
-                    <option value="brief_description">Brief description / background</option>
-                    <option value="participant">Participant statement</option>
-                    <option value="researcher">Researcher interpretation / coding</option>
-                    <option value="system">System suggestion</option>
-                    <option value="observation">Observation / site condition</option>
-                    <option value="tutor">Tutor comment</option>
-                    <option value="precedent">Precedent / case study</option>
-                    <option value="brief">Brief / source document</option>
-                    <option value="other">Other source</option>
+              </div>
+              <details class="thought-advanced-metadata"><summary>Attribution · Activity · Supporting Record (Optional)</summary>
+              <div class="thought-metadata-grid">
+                <label class="thought-provenance" title="Who or what is responsible for this thought?">
+                  <span>Attribution <abbr title="Who or what contributed this thought, such as you, a colleague or software?" aria-label="Attribution help">?</abbr></span>
+                  <select id="thoughtProvenanceSelect" aria-label="Thought attribution">
+                    <option value="designer">Designer</option><option value="collaborator">Collaborator</option>
+                    <option value="tutor">Reviewer</option><option value="organisation">Organisation</option>
+                    <option value="system">Software Tool</option><option value="other">Other / Unspecified</option>
+                  </select>
+                </label>
+                <label class="thought-provenance" title="How did this thought come about?">
+                  <span>Activity <abbr title="How the thought was produced: written, observed, analysed, revised, imported or generated." aria-label="Activity help">?</abbr></span>
+                  <select id="thoughtGenerationActivity" aria-label="Generation Activity">
+                    <option value="unspecified">Not Specified</option>
+                    <option value="authored">Authored / Recorded</option><option value="interpreted">Interpreted / Analysed</option>
+                    <option value="observed">Observed / Documented</option><option value="revised">Revised / Edited</option>
+                    <option value="generated">Software Generated</option><option value="imported">Imported from Source</option>
+                  </select>
+                </label>
+                <label class="thought-provenance" title="Is there a record supporting this thought?">
+                  <span>Record <abbr title="Optional supporting document, observation, drawing, measurement, reference or note. A recorded source is not automatically verified." aria-label="Supporting Record help">?</abbr></span>
+                  <select id="thoughtEvidenceKind" aria-label="Supporting Record">
+                    <option value="unspecified">Not Specified</option><option value="brief">Source Document</option>
+                    <option value="observation">Recorded Observation</option><option value="drawing">Drawing or Model</option>
+                    <option value="precedent">Published Reference</option><option value="performance">Measurement or Simulation</option>
+                    <option value="designer">Design Note</option><option value="inference">Analytical Note</option>
+                    <option value="suggestion">Software-Generated Note</option><option value="other">Other Supporting Record</option>
                   </select>
                 </label>
               </div>
+              <input id="thoughtAttributionName" class="thought-optional-field" type="text" maxlength="120" placeholder="Optional: contributor, reviewer, software or organisation name" aria-label="Optional contributor or software name" title="Name the source or contributor when known; leave blank otherwise">
+              <input id="thoughtActivityDetails" class="thought-optional-field" type="text" maxlength="180" placeholder="Optional: activity details or method" aria-label="Optional generation activity details">
+              <input id="thoughtRecordTitle" class="thought-optional-field" type="text" maxlength="180" placeholder="Optional: supporting record name or drawing title" aria-label="Optional supporting record title">
+              <input id="thoughtSourceReference" class="thought-optional-field" type="text" maxlength="500" placeholder="Optional: source reference, URL or document location" aria-label="Optional source citation">
+              </details>
               <div class="thought-reason" id="thoughtReason">Start typing to see a suggestion.</div>
               <div class="thought-matches" id="thoughtMatches"></div>
               <div class="thought-clarifier">Hover any match to see what the role means and which wording cues triggered it. Match strengths are independent fits, not probabilities.</div>
@@ -361,6 +376,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-4-combined"></script>
+  <script type="module" src="js/app.js?v=d1-5-combined"></script>
 </body>
 </html>

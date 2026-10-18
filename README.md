@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current code baseline:** D1.4 (14 October 2026). **Status:** under live-site acceptance testing, not a final frozen release.
+**Current code baseline:** D1.5 (18 October 2026). **Status:** consolidated UI/provenance development release; deployed-browser acceptance testing required before freeze.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -15,17 +15,17 @@ TRACEWORK is a browser-based research prototype for making architectural design 
 
 Projects are currently stored **in this browser on this device**. Before clearing browser data or changing computers, **export a JSON backup**. Opening the site on another device does not transfer projects automatically.
 
-## Capabilities in the D1.4 codebase
+## Capabilities in the D1.5 codebase
 
 - Editable brief hotspots; linked thought nodes; optional branches, rejections, connections and undo.
 - TRACEWORK Grammar, Freeform / Low-Structure and six adapted research-framework lenses.
-- Original/Arrange graph views, alignment, fit/zoom and guided connection explanations.
-- **Gap in Reasoning** and **Provenance Gap** advisories; optional provenance and supporting-record fields (conceptually informed by PROV-O).
-- Independently retractable Brief and Guidance panels, with responsive navigation.
+- Original/Arrange map views including focus and focused pathways; arrangement coordinates are separate from authored originals; alignment, fit/zoom and guided connection explanations.
+- **Gap in Reasoning** and **Provenance Gap** advisories; consistent Attribution, Generation Activity and Supporting Record fields in command input, node editor and inspector (conceptually informed by PROV-O).
+- Independently retractable Brief and Guidance edge tabs, a compact command line, a shorter toolbar, and per-project saved map viewport.
 - Spatial Reading Studio, curated feature examples, built-project references and linked reading/search resources.
 - Project export/import, combined-project copies, project checks and map export previews.
 
-**Important:** A feature existing in the code does not mean its end-to-end browser behaviour has been green-lighted. The D1.4 testing cycle is ongoing.
+**Important:** Source-level checks do not establish a green-lit deployed experience. D1.5 browser testing remains necessary, particularly focused arrangements, viewport restore and provenance edits.
 
 ## Guides and research
 
@@ -39,13 +39,13 @@ Projects are currently stored **in this browser on this device**. Before clearin
 
 This is a static GitHub Pages website. Keep `index.html`, `about.html`, `css/`, `js/` and `data/` at the repository root. Upload the **contents** of the deployment ZIP with these directory paths intact; do not flatten them into a single folder. Running from `file://` can block browser module and JSON fetching; GitHub Pages or a local HTTP server is required.
 
-This documentation-only consolidation does **not change** JavaScript, CSS, HTML or data. See [Developer notes](docs/developer-notes.md) for the precise repository cleanup method, including removal of outdated root-level TXT files when using GitHub Desktop.
+D1.5 updates the actual website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
 
 ## Current limitations and planned work
 
 - Browser-local storage, no cloud accounts or cross-device sync; large image uploads are not supported by the current node system.
 - Spatial Read is curated and bounded; generic research-search links are not verified source citations.
 - Framework comparison, contextual prompts, Decision Digest, image/reference nodes and resizable nodes remain under development or verification.
-- Full deployed-browser regression (responsive UI, provenance edits, map/export recovery) is required before a freeze.
+- Full deployed-browser regression (responsive UI, provenance edits, focus/aggregate arrangements, viewport restoration, map/export recovery) is required before a freeze.
 
 For historic details or older release-specific tests, consult the [archive](docs/archive/INDEX.md); those notes may describe **superseded** controls and must not be used as the current user instructions.

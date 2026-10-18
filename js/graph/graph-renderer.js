@@ -264,14 +264,20 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
   const preview=''; // No misleading generic drawings inside cards: open the detailed spatial learning studio.
   const provenanceId=inferLegacyProvenance(n);
   const provenance=provenanceLabel(provenanceId);
-  const provenanceChip=(n.type==='input'||provenanceId!=='designer')?`<span class="node-provenance" title="Origin / provenance">${escapeHtml(provenance)}</span>`:'';
+  const activityLabel=({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[n.meta?.generationActivity];
+  const evidenceId=n.meta?.evidenceKind;
+  const recordLabel=({brief:'Source Document',observation:'Recorded Observation',drawing:'Drawing or Model',precedent:'Published Reference',performance:'Measurement or Simulation',designer:'Design Note',inference:'Analytical Note',suggestion:'Software-Generated Note',other:'Other Supporting Record'})[evidenceId];
+  const name=n.meta?.attributionName||'';
+  const provenanceChip=`<span class="node-provenance" title="Attribution${name?' · '+escapeHtml(name):''}">${escapeHtml(provenance)}${name?' · '+escapeHtml(name):''}</span>`;
+  const activityChip=activityLabel?`<span class="node-provenance" title="Generation Activity${n.meta?.activityDetails?' · '+escapeHtml(n.meta.activityDetails):''}">${escapeHtml(activityLabel)}</span>`:'';
+  const recordChip=recordLabel?`<span class="node-provenance" title="Supporting Record${n.meta?.recordTitle?' · '+escapeHtml(n.meta.recordTitle):''}">${escapeHtml(recordLabel)}</span>`:'';
   return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor}">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
       <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose a second node and preview the relationship" aria-label="Connect this reasoning node to another thought">↗ Connect to…</button><button type="button" class="node-quick-action node-quick-case" title="See separately listed built-project references in the right inspector; feature examples are in Spatial read">⌕ Case study</button></div>
-      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${previewButton}</div>
+      <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${activityChip}${recordChip}${previewButton}</div>
     </div></article>`;
 }
 

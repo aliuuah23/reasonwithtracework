@@ -334,15 +334,19 @@ function roleExplanationMarkup(node,framework=null,frameworkRole=null){
     <p><strong>When useful:</strong> ${esc(role.when)}</p>
     <p><strong>For example:</strong> ${esc(detail.example)}</p>
     <p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>
-    ${lens}<div class="trace-evidence-summary"><span>Origin · ${esc(origin)}</span><span>Evidence · ${esc(evidence)}</span></div>
+    ${lens}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
     ${node.meta?.sourceReference?`<p><strong>Source reference:</strong> ${esc(node.meta.sourceReference)}</p>`:''}
     <p class="trace-provenance-note">Provenance describes where this assertion entered the trace, not whether it is true. If the basis is missing, edit the node to record it.</p></div>
   </details>`;
 }
 function metaMarkup(node,framework=null,frameworkRole=null){
   const rows=[];
-  rows.push(['Provenance',provenanceLabel(inferLegacyProvenance(node))]);
-  rows.push(['Evidence basis', evidenceLabel(inferredEvidenceKind(node))]);
+  rows.push(['Attribution',provenanceLabel(inferLegacyProvenance(node))]);
+  if(node.meta?.attributionName)rows.push(['Named Contributor',node.meta.attributionName]);
+  rows.push(['Generation Activity',({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified']);
+  if(node.meta?.activityDetails)rows.push(['Activity Details',node.meta.activityDetails]);
+  rows.push(['Supporting Record', evidenceLabel(inferredEvidenceKind(node))]);
+  if(node.meta?.recordTitle)rows.push(['Record Title',node.meta.recordTitle]);
   if(node.meta?.sourceReference) rows.push(['Source / reference', node.meta.sourceReference]);
   if(framework && framework.id!=='tracework' && framework.id!=='freeform') rows.push(['Framework lens',`${frameworkRole?.label||'Unresolved'} · ${framework.source||framework.label}`]);
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);

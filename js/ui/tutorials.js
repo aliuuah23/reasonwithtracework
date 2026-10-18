@@ -122,7 +122,7 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     const vw=window.innerWidth,vh=window.innerHeight,pad=8;
     let rect=target?.getBoundingClientRect?.()||{left:vw*.5-80,right:vw*.5+80,top:vh*.5-40,bottom:vh*.5+40,width:160,height:80};
     const offscreen=rect.bottom<0||rect.top>vh||rect.right<0||rect.left>vw;
-    if(target && offscreen){target.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});setTimeout(place,180);return;}
+    if(target && offscreen){target.scrollIntoView({block:'center',inline:'center',behavior:'instant'});rect=target.getBoundingClientRect();}
     rect=target?.getBoundingClientRect?.()||rect;
     const left=Math.max(pad,rect.left-pad),right=Math.min(vw-pad,rect.right+pad),top=Math.max(pad,rect.top-pad),bottom=Math.min(vh-pad,rect.bottom+pad);
     const width=Math.max(30,right-left),height=Math.max(30,bottom-top);
@@ -154,9 +154,14 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
   back.onclick=()=>{if(index>0){index--;render();}};
   next.onclick=()=>{if(index<usable.length-1){index++;render();}else finish();};
   skip.onclick=finish;root.querySelector('.tutorial-popover-close').onclick=finish;
+  masks.forEach(mask=>mask.addEventListener('pointerdown',finish));
+  root.addEventListener('pointerdown',event=>{if(event.target===root)finish();});
+  let frame=0;
+  const follow=()=>{if(!root.isConnected)return;place();frame=requestAnimationFrame(follow);};
+  frame=requestAnimationFrame(follow);
   const onResize=()=>place(),onKey=e=>{if(e.key==='Escape')finish();};
   window.addEventListener('resize',onResize);window.addEventListener('scroll',onResize,true);document.addEventListener('keydown',onKey);
-  activeSpotlightCleanup=()=>{window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onResize,true);document.removeEventListener('keydown',onKey);root.remove();document.documentElement.classList.remove('tutorial-tour-active');};
+  activeSpotlightCleanup=()=>{cancelAnimationFrame(frame);window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onResize,true);document.removeEventListener('keydown',onKey);root.remove();document.documentElement.classList.remove('tutorial-tour-active');};
   render();
 }
 

@@ -319,3 +319,50 @@
   width:max-content!important;max-width:100%!important;min-width:0!important;
   flex:0 0 auto!important;align-self:flex-start!important;
 }
+
+/* D1.5 · workspace-first panels and command line. Buttons attach to edges, not a toolbar row. */
+#workspaceView{position:relative;}
+#workspaceView>.panel-edge-control{position:absolute;z-index:35;top:6px;min-height:31px;min-width:31px;
+ display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:6px 7px;
+ background:#fff;border:1px solid #dadde7;border-radius:9px;color:#5652be;
+ font-size:10px;font-weight:750;cursor:pointer;box-shadow:0 2px 9px rgba(30,35,70,.09);}
+#workspaceView>.panel-edge-control:hover,#workspaceView>.panel-edge-control:focus-visible{background:#efedff;outline:2px solid transparent;box-shadow:0 0 0 2px #c9c5ff;}
+#workspaceView>.panel-edge-left{left:max(3px,calc(var(--d14-left,330px) - 36px));}
+#workspaceView>.panel-edge-right{right:max(3px,calc(var(--d14-right,340px) - 36px));}
+#workspaceView.panel-source-closed>.panel-edge-left{left:4px;}
+#workspaceView.panel-inspector-closed>.panel-edge-right{right:4px;}
+#workspaceView>.panel-edge-control .panel-edge-label{display:none;}
+#workspaceView.panel-source-closed>.panel-edge-left .panel-edge-label,
+#workspaceView.panel-inspector-closed>.panel-edge-right .panel-edge-label{display:inline;}
+#workspaceView .canvas-toolbar{padding:10px 12px 7px;gap:5px;}
+#workspaceView .toolbar-actions{gap:5px;}
+#workspaceView .canvas-title-row{gap:6px 9px;}
+#workspaceView .canvas-panel .thought-dock{width:min(540px,calc(100% - 20px));bottom:42px;padding:7px 8px;gap:5px;grid-template-columns:minmax(0,1fr);max-height:min(46vh,290px);overflow-y:auto;}
+#workspaceView .thought-entry textarea{min-height:34px;max-height:100px;}
+#workspaceView .thought-actions{justify-content:flex-end;}
+#workspaceView .thought-reading{flex-wrap:wrap;gap:4px;min-height:0;}
+#workspaceView .thought-provenance{white-space:normal;gap:4px;}
+#workspaceView .thought-provenance select{max-width:150px!important;min-width:0;}
+#workspaceView .thought-provenance abbr{cursor:help;text-decoration:none;border:1px solid #bcbec9;border-radius:50%;padding:0 3px;}
+#workspaceView .thought-optional-field{width:100%;box-sizing:border-box;font-size:11px;min-height:29px;padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:#fff;}
+#workspaceView .thought-clarifier{font-size:9px;}
+#workspaceView .aggregate-layout-toggle{flex:0 0 auto;display:inline-flex;}
+@media(max-width:820px){
+ #workspaceView>.panel-edge-left{left:5px;top:5px;}
+ #workspaceView>.panel-edge-right{right:5px;top:5px;}
+ #workspaceView .canvas-toolbar{padding-top:8px;}
+ #workspaceView .canvas-panel .thought-dock{width:min(500px,calc(100% - 14px));bottom:32px;}
+}
+@media(max-width:560px){#workspaceView>.panel-edge-control{position:fixed;top:calc(var(--topbar,68px) + 4px);z-index:60;}}
+
+/* D1.5 · advanced metadata is present in the command line but does not crowd the canvas. */
+#workspaceView .thought-advanced-metadata{margin:3px 5px 5px;padding:0;border:1px solid var(--border);border-radius:7px;background:#fff;}
+#workspaceView .thought-advanced-metadata>summary{padding:5px 8px;color:#5c6090;cursor:pointer;font-size:10px;font-weight:720;}
+#workspaceView .thought-advanced-metadata[open]{padding-bottom:7px;}
+#workspaceView .thought-metadata-grid{display:flex;flex-wrap:wrap;gap:5px;padding:6px 7px;}
+#workspaceView .thought-advanced-metadata .thought-provenance{flex:1 1 140px;display:grid;gap:4px;}
+#workspaceView .thought-advanced-metadata .thought-provenance span{font-size:10px;}
+#workspaceView .thought-advanced-metadata .thought-provenance select{width:100%;max-width:none!important;}
+#workspaceView .thought-advanced-metadata .thought-optional-field{margin:4px 7px;width:calc(100% - 14px);}
+#workspaceView .thought-matches{max-height:70px;overflow-y:auto;}
+#workspaceView .thought-reason{max-height:56px;overflow-y:auto;}

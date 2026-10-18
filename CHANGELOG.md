@@ -1,12 +1,13 @@
 # TRACEWORK — Changelog
 
-This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.4; acceptance testing remains open.**
+This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.5; acceptance testing remains open.**
 
-## D releases — reasoning transparency (14 October 2026)
+## D releases — reasoning transparency and usability (14–18 October 2026)
 
 | Release | Consolidated change |
 |---|---|
-| **D1.4 (current baseline)** | One-row responsive ribbon; independently retractable Brief/Guidance panels; generalised provenance fields informed by PROV-O Entity/Agent/Activity; edit-triggered provenance/reasoning review; separate dismissal/pinning of warnings; loading resilience. |
+| **D1.5 (current development release)** | Compact command line and panel-edge toggles; aligned provenance fields and per-field help in command input and edit dialog; named attribution/activity/record metadata, node and inspector visibility; live text-match feedback; saved viewport; focus/path Arrange maps with separate coordinates; tutorial dismissal/positioning improvements. |
+| **D1.4** | One-row responsive ribbon; independently retractable Brief/Guidance panels; generalised provenance fields informed by PROV-O Entity/Agent/Activity; edit-triggered provenance/reasoning review; separate dismissal/pinning of warnings; loading resilience. |
 | **D1.3** | Independent, simultaneous Gap in Reasoning and Provenance Gap notices; evidence-basis clarification; node-edit typography; compact ribbon. |
 | **D1.2** | Contextual explanation of the *two connected thoughts*, including spatial considerations; advisory warnings for skipped stages; dark connection hover treatment. |
 | **D1.1** | Non-modal wire inspector; optional wire legend; responsive header; provenance-consistency warnings distinct from structural gap warnings. |

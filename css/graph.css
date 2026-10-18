@@ -299,3 +299,8 @@
  border-radius:9px;background:#202533;color:#fff;font-size:10px;line-height:1.4;font-weight:550;
  text-align:left;white-space:normal;box-shadow:0 10px 22px rgba(0,0,0,.23);pointer-events:none;
 }
+
+/* D1.5 · compact readable provenance inside nodes. */
+.graph-node .node-foot{flex-wrap:wrap;gap:3px 5px;}
+.graph-node .node-provenance{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.25;font-size:9px;
+ padding:2px 5px;background:rgba(238,239,246,.7);border-radius:5px;}

@@ -1102,3 +1102,11 @@ html.tutorial-tour-active{overflow:hidden}
 .coach-toast-head button{font-size:11px;padding:6px 10px;flex-shrink:0;}
 .toast-region{max-height:min(76dvh,660px);max-width:calc(100vw - 20px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
 @media(max-width:560px){.toast-region{right:10px;bottom:10px;}}
+
+/* D1.5 · tutorial dismissal matches adjacent navigation text scale. */
+.tutorial-popover-actions .tutorial-popover-skip{font-size:12px!important;font-weight:650!important;padding:7px 9px!important;min-height:30px!important;}
+.tutorial-mask{cursor:pointer;}
+.reasoning-edit-dialog .metadata-help{display:inline-flex;align-items:center;justify-content:center;cursor:help;
+ font-size:11px;font-weight:750;color:#5e58b5;border:1px solid #c4c4d4;border-radius:50%;width:17px;height:17px;vertical-align:middle;margin-left:5px;}
+.reasoning-edit-dialog .metadata-help:hover{background:#eceafd;}
+.reasoning-edit-dialog .recognition-readout{font-size:12px;background:#f3f2ff;border:1px solid #dfddfc;border-radius:8px;padding:8px 10px;margin:7px 0;line-height:1.5;color:#454067;}

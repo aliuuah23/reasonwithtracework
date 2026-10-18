@@ -134,21 +134,21 @@ export const frameworks = [
 // Internal legacy IDs remain readable for imported work but are not offered
 // when authoring a new attribution. A document is an Entity, not an Agent.
 export const provenanceOptions = [
-  {id:'designer',label:'Designer · Person (Agent)'},
-  {id:'collaborator',label:'Collaborator · Person (Agent)'},
-  {id:'tutor',label:'Reviewer · Person (Agent)'},
-  {id:'organisation',label:'Organisation (Agent)'},
-  {id:'system',label:'Software Tool (Agent)'},
-  {id:'other',label:'Other / Unspecified Agent'}
+  {id:'designer',label:'Designer'},
+  {id:'collaborator',label:'Collaborator'},
+  {id:'tutor',label:'Reviewer'},
+  {id:'organisation',label:'Organisation'},
+  {id:'system',label:'Software Tool'},
+  {id:'other',label:'Other / Unspecified'}
 ];
 export const legacyProvenanceLabels = {
   participant:'Legacy Attribution · Review Agent',
   researcher:'Legacy Attribution · Review Agent',
-  brief:'Source Document (Entity · Agent Not Recorded)',
-  brief_requirement:'Source Document (Entity · Agent Not Recorded)',
-  brief_description:'Source Document (Entity · Agent Not Recorded)',
-  observation:'Recorded Observation (Entity · Agent Not Recorded)',
-  precedent:'Published Reference (Entity · Agent Not Recorded)'
+  brief:'Source Document (Author Not Recorded)',
+  brief_requirement:'Source Document (Author Not Recorded)',
+  brief_description:'Source Document (Author Not Recorded)',
+  observation:'Recorded Observation (Author Not Recorded)',
+  precedent:'Published Reference (Author Not Recorded)'
 };
 
 export function getFramework(id='tracework'){

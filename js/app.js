@@ -3,10 +3,10 @@ import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './g
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
-import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d1-4-origin';
+import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d1-5-origin';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
-import { evidenceKinds, generationActivities, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-4-prov-model';
+import { evidenceKinds, generationActivities, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-5-prov-model';
 import { normaliseBrief } from './input/brief-parser.js';
 import { chunkBrief, attachChunksToHotspots } from './input/brief-chunker.js';
 import { readBriefFile } from './input/document-loader.js';
@@ -17,7 +17,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d1-2';
+import { renderGraph } from './graph/graph-renderer.js?v=d1-5-metadata';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -26,12 +26,12 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-reasoning-transparency';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-5-metadata';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js';
-import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-4-closable';
+import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-5-closable';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-2';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-5-interaction';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -61,6 +61,38 @@ let aggregateTypeFilter = 'all';
 let aggregateStatusFilter = 'all';
 let aggregateArrangeSession = null;
 let aggregateArrangeBlend = 0;
+let focusArrangeMode = false;
+let viewportSaveTimer = 0;
+let viewportRestorePending = null;
+function persistViewport(){
+  const state=getState(),vp=els.graphViewport;
+  if(!state.brief||!vp||els.app.classList.contains('hidden'))return;
+  const snapshot={zoom:canvasZoom,left:vp.scrollLeft,top:vp.scrollTop,mapMode:workspaceMapMode,
+    hotspotId:state.selectedHotspotId,focusRoot:focusPathRootId,focusArranged:focusArrangeMode,aggregateArranged:workspaceMapMode==='aggregate'&&aggregateArrangeBlend===100};
+  patchState({uiViewport:snapshot},{silent:true});
+  clearTimeout(viewportSaveTimer);
+  viewportSaveTimer=setTimeout(()=>saveProject(getState()),320);
+}
+function queueViewportSave(){
+  clearTimeout(viewportSaveTimer);
+  viewportSaveTimer=setTimeout(persistViewport,260);
+}
+function restoreSavedViewport(project){
+  const v=project?.uiViewport;
+  if(!v||!Number.isFinite(Number(v.zoom)))return false;
+  workspaceMapMode=v.mapMode==='aggregate'?'aggregate':'focus';
+  focusPathRootId=project.nodes?.some(n=>n.id===v.focusRoot)?v.focusRoot:null;
+  focusArrangeMode=Boolean(v.focusArranged);
+  if(v.aggregateArranged&&workspaceMapMode==='aggregate'){
+    const frameworkId=project.frameworkId||'tracework';
+    aggregateArrangeSession={frameworkId,before:aggregateOriginalPositions(project),target:frameworkAggregateLayout(project,frameworkId)};
+    aggregateArrangeBlend=100;
+  }else{aggregateArrangeSession=null;aggregateArrangeBlend=0;}
+  canvasZoom=Math.max(.02,Math.min(1.6,Number(v.zoom)));
+  viewportRestorePending={left:Math.max(0,Number(v.left)||0),top:Math.max(0,Number(v.top)||0)};
+  if(v.hotspotId&&project.hotspots?.some(h=>h.id===v.hotspotId)) patchState({selectedHotspotId:v.hotspotId},{silent:true});
+  return true;
+}
 const undoStack = [];
 const MAX_UNDO = 30;
 const projectMergeSelection=new Set();
@@ -105,6 +137,8 @@ async function init(){
   bindTutorialTriggers();
   updateUndoButton();
   bindCanvasPan(els.graphViewport);
+  els.graphViewport.addEventListener('scroll',queueViewportSave,{passive:true});
+  window.addEventListener('pagehide',()=>persistViewport());
   bindWheelZoom(els.graphViewport,{getZoom:()=>canvasZoom,setZoom:zoomTo,
     getSelectedNode:()=>{
       const id=[...selectedNodeIds][0]||getState().activeNodeId;
@@ -156,7 +190,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),reflowArrangeButton:$('#reflowArrangeButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),reflowArrangeButton:$('#reflowArrangeButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect'),thoughtGenerationActivity:$('#thoughtGenerationActivity'),thoughtEvidenceKind:$('#thoughtEvidenceKind'),thoughtAttributionName:$('#thoughtAttributionName'),thoughtActivityDetails:$('#thoughtActivityDetails'),thoughtRecordTitle:$('#thoughtRecordTitle'),thoughtSourceReference:$('#thoughtSourceReference')
   });
 }
 
@@ -184,7 +218,7 @@ function bindGlobalEvents(){
   if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderWorkspace(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
-  $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); };
+  $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel();queueViewportSave(); };
   $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
   $('#pathwaySearch').addEventListener('input',e=>renderPathwayCards(e.target.value));
@@ -352,23 +386,25 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; focusArrangeMode=false; viewportRestorePending=null; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
   const entering=getState();
   if(entering.brief && entering.hotspots?.length){
     const repaired=attachChunksToHotspots(repairHotspotRanges(entering.brief,entering.hotspots),entering.briefChunks||[]);
     const changed=repaired.some((h,i)=>h.start!==entering.hotspots[i]?.start || h.end!==entering.hotspots[i]?.end || h.text!==entering.hotspots[i]?.text || h.chunkId!==entering.hotspots[i]?.chunkId);
     if(changed) patchState({hotspots:repaired},{silent:true});
   }
+  const returning=restoreSavedViewport(getState());
   showNodeTypes=getState().frameworkId!=='freeform';
-  els.graphViewport.dataset.needsInitialPosition='1';
+  if(!returning)els.graphViewport.dataset.needsInitialPosition='1';else delete els.graphViewport.dataset.needsInitialPosition;
   els.landing.classList.add('hidden'); els.app.classList.remove('hidden');
   applyPanelVisibility();
   showView('workspace');
   renderWorkspace();
-  if(autoSelect && getState().hotspots.length) selectHotspot(getState().hotspots[0].id);
+  if(autoSelect && !returning && getState().hotspots.length) selectHotspot(getState().hotspots[0].id);
 }
 
 function showLanding(){
+  persistViewport();
   closeNodeContext(); document.getElementById('traceCheckPopover')?.remove(); document.getElementById('nodeSearchPopover')?.remove(); document.getElementById('nodeStatusMenu')?.remove(); document.getElementById('nodeTypeMenu')?.remove(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus';
   els.app.classList.add('hidden'); els.landing.classList.remove('hidden'); renderProjectShelf();
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='workspace'));
@@ -467,7 +503,8 @@ function renderGraphState(){
   const state=getState();
   const baseScoped=workspaceTrace(state);
   if(focusPathRootId && !baseScoped.nodes.some(n=>n.id===focusPathRootId)) focusPathRootId=null;
-  const scoped=focusPathRootId?focusTraceAround(baseScoped,focusPathRootId):baseScoped;
+  const pathScoped=focusPathRootId?focusTraceAround(baseScoped,focusPathRootId):baseScoped;
+  const scoped=workspaceMapMode==='focus'&&focusPathRootId?focusArrangedTrace(state,pathScoped):pathScoped;
   els.graphSurface?.classList.toggle('aggregate-map',workspaceMapMode==='aggregate');
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
@@ -493,8 +530,10 @@ function renderGraphState(){
       const state=getState();
       const node=state.nodes.find(n=>n.id===id);
       if(!node)return;
+      const isFocusArranged=workspaceMapMode==='focus' && focusArrangeMode;
       const isArranged=workspaceMapMode==='aggregate' && aggregateArrangeBlend===100;
-      const current=isArranged
+      const current=isFocusArranged ? ((focusPathRootId?focusArrangedTrace(state,focusTraceAround(workspaceTrace(state),focusPathRootId)):workspaceTrace(state)).nodes.find(n=>n.id===id)||node)
+        : isArranged
         ? aggregateArrangeSession?.target.get(id)||frameworkAggregateLayout(state,state.frameworkId||'tracework').get(id)
         : workspaceMapMode==='aggregate'
           ? aggregateOriginalPositions(state).get(id)
@@ -502,6 +541,14 @@ function renderGraphState(){
       if(!current)return;
       const dx=x-current.x,dy=y-current.y;
       if(!Number.isFinite(dx)||!Number.isFinite(dy)||(!dx&&!dy))return;
+      if(isFocusArranged){
+        const key=focusArrangementKey(state);
+        const target={x:current.x+dx,y:current.y+dy};
+        updateState(st=>{const n=st.nodes.find(item=>item.id===id);if(!n)return;
+          n.meta={...(n.meta||{}),focusArrangedPositions:{...(n.meta?.focusArrangedPositions||{}),[key]:target}};
+        });
+        return;
+      }
       if(isArranged){
         const frameworkId=state.frameworkId||'tracework';
         const target={x:current.x+dx,y:current.y+dy};
@@ -546,6 +593,10 @@ function renderGraphState(){
     frameworkId:state.frameworkId||'tracework'
   });
   applyZoom(els.graphViewport,els.graphStage,els.graphSurface,canvasZoom,{preserveCenter:false});
+  if(viewportRestorePending){
+    const v=viewportRestorePending;viewportRestorePending=null;
+    requestAnimationFrame(()=>{els.graphViewport.scrollLeft=v.left;els.graphViewport.scrollTop=v.top;});
+  }
   if(els.graphViewport.dataset.needsInitialPosition==='1'){
     delete els.graphViewport.dataset.needsInitialPosition;
     requestAnimationFrame(()=>{
@@ -751,7 +802,7 @@ function deleteHotspot(id){
     if(s.selectedHotspotId===id)s.selectedHotspotId=null;
     if(removed.has(s.activeNodeId))s.activeNodeId=null;
   });
-  selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
+  selectedNodeIds.clear();selectedEdgeId=null;
   renderWorkspace();toast('Hotspot deleted. Ctrl+Z restores it.');
 }
 
@@ -961,8 +1012,24 @@ function editNode(node){
   const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${selectedEvidence===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
   const currentActivity=node.meta?.generationActivity||'unspecified';
   const activityMarkup=generationActivities.map(a=>`<option value="${a.id}" ${currentActivity===a.id?'selected':''}>${escapeHtml(a.label)}</option>`).join('');
-  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or origin of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought / Statement</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">Source Input remains linked to the document Entity; its node role and source anchor remain fixed. An authoring Agent is not assumed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">Attribution / Agent <span class="field-label-aside">(PROV-O · Agent)</span></label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editGenerationActivity">Generation Activity <span class="field-label-aside">(PROV-O · Activity)</span></label><select id="editGenerationActivity">${activityMarkup}</select></div><div class="node-type-edit-row"><label for="editEvidenceKind">Supporting Record <span class="field-label-aside">(PROV-O · Entity)</span></label><select id="editEvidenceKind">${evidenceMarkup}</select></div>${legacyEvidence?'<p class="metadata-review-note">An older evidence category needs review. Select the supporting record, if one exists.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation <span class="field-label-aside">(Optional)</span></label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Source title, document location, URL, or drawing reference…"><p class="trace-provenance-note">PROV-O: a thought is an Entity; attribution refers to an Agent; generation refers to an Activity. Supporting sources are separate Entities. No source is presumed verified.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{
-    onOpen:m=>m.querySelector('#saveNodeEdit').onclick=()=>{
+  const recognition=classifyThought(node.label,{provenance:currentProvenance});
+  const match=recognition.matches?.find(item=>item.type===node.type);
+  const matchingPercent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):Math.round((recognition.confidence||0)*100);
+  const tip=(description)=>`<span class="metadata-help" tabindex="0" title="${escapeHtml(description)}" aria-label="Help: ${escapeHtml(description)}">?</span>`;
+  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or origin of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought / Statement ${tip("The exact wording of this thought. Changing the text may change its suggested reasoning role.")}</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">This statement remains linked to the original brief, so its source and reasoning role stay fixed. No author is assumed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type ${tip("Choose the reasoning role this statement performs; you can revise this without deleting links.")}</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">${`Attribution ${tip("Who or what is responsible for this thought? It might be the designer, another collaborator, a document or software. This does not prove the claim.")}`}</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editAttributionName">Named Contributor ${tip("Optional name of a person, collaborator, reviewer, organisation or software tool responsible for the thought.")}</label><input class="field-input" id="editAttributionName" maxlength="120" value="${escapeHtml(node.meta?.attributionName||'')}" placeholder="Person, collaborator, reviewer, software…"></div><div class="node-type-edit-row"><label for="editGenerationActivity">${`Generation Activity ${tip("How was this thought produced: authored, interpreted, observed, revised, generated by software or imported?")}`}</label><select id="editGenerationActivity">${activityMarkup}</select></div><div class="node-type-edit-row"><label for="editActivityDetails">Activity Details ${tip("Optional detail about how this was generated, tested or edited.")}</label><input class="field-input" id="editActivityDetails" maxlength="180" value="${escapeHtml(node.meta?.activityDetails||'')}" placeholder="Optional process, method or event"></div><div class="node-type-edit-row"><label for="editEvidenceKind">${`Supporting Record ${tip("What separate document, observation, drawing, measurement or note supports this thought, if any? Sources are not automatically verified.")}`}</label><select id="editEvidenceKind">${evidenceMarkup}</select></div><div class="node-type-edit-row"><label for="editRecordTitle">Record Title ${tip("Optional title or identifier of the supporting record.")}</label><input class="field-input" id="editRecordTitle" maxlength="180" value="${escapeHtml(node.meta?.recordTitle||'')}" placeholder="Optional drawing, document or observation name"></div>${legacyEvidence?'<p class="metadata-review-note">An older evidence category needs review. Select the supporting record, if one exists.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation ${tip("Optional precise reference, page, URL, event or drawing where the supporting record can be checked.")}</label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Source title, document location, URL, or drawing reference…"><div class="recognition-readout" title="Textual cue matching only; not a certainty score or an assessment of design quality.">Text recognition · ${matchingPercent}% wording match for ${escapeHtml(typeLabels[node.type]||node.type)}. This is a suggestion, not a probability of correctness.</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{
+    onOpen:m=>{
+      const refreshScore=()=>{
+        const text=m.querySelector('#editNodeText')?.value||'';
+        const role=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
+        const classifier=classifyThought(text,{provenance:m.querySelector('#editNodeProvenance')?.value||currentProvenance});
+        const match=classifier.matches?.find(item=>item.type===role);
+        const percent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):Math.round((classifier.confidence||0)*100);
+        const el=m.querySelector('.recognition-readout');if(el)el.textContent=`Text recognition · ${percent}% wording match for ${typeLabels[role]||role}. This is a suggestion, not a probability of correctness.`;
+      };
+      m.querySelector('#editNodeText')?.addEventListener('input',refreshScore);
+      m.querySelector('#editNodeType')?.addEventListener('change',refreshScore);
+      m.querySelector('#editNodeProvenance')?.addEventListener('change',refreshScore);
+      m.querySelector('#saveNodeEdit').onclick=()=>{
       const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
       const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
       const nextProvenance=sourceInput?'brief':(m.querySelector('#editNodeProvenance')?.value||currentProvenance);
@@ -970,6 +1037,9 @@ function editNode(node){
       const evidenceKind=m.querySelector('#editEvidenceKind')?.value||'unspecified';
       const generationActivity=m.querySelector('#editGenerationActivity')?.value||'unspecified';
       const sourceReference=m.querySelector('#editSourceReference')?.value.trim()||'';
+      const attributionName=m.querySelector('#editAttributionName')?.value.trim()||'';
+      const activityDetails=m.querySelector('#editActivityDetails')?.value.trim()||'';
+      const recordTitle=m.querySelector('#editRecordTitle')?.value.trim()||'';
       const previousNode={...node,meta:{...(node.meta||{})}};
       const oldEdges=getState().edges.filter(e=>e.source===node.id||e.target===node.id);
       checkpoint('edit reasoning and provenance');
@@ -983,7 +1053,7 @@ function editNode(node){
           n.meta={...n.meta,typeEdited:changedType||n.meta?.typeEdited,provenance:nextProvenance};
           delete n.meta.suggestedType;
         }
-        n.meta={...(n.meta||{}),evidenceKind,sourceReference,generationActivity};
+        n.meta={...(n.meta||{}),evidenceKind,sourceReference,generationActivity,attributionName,activityDetails,recordTitle};
         if(changedType){
           s.edges.filter(e=>e.source===n.id||e.target===n.id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
         }
@@ -1008,6 +1078,7 @@ function editNode(node){
       if(reasoningConcern)coach('Gap in Reasoning',`${reasoningConcern.reason} ${reasoningConcern.next||''}`,{pinnable:true,duration:9500});
       if(provenanceConcern)coach('Provenance Gap',`${provenanceConcern.reason} ${provenanceConcern.next||''}`,{pinnable:true,duration:9500});
       if(changedType)toast(`Changed to ${typeLabels[nextType]||nextType}. Existing wires were kept for review.`);
+    };
     }
   });
 }
@@ -1176,12 +1247,12 @@ function confirmRejectBranch(branchId,node){
 }
 
 function confirmReturnHome(){
-  saveProject(getState());
+  persistViewport();saveProject(getState());
   openModal(`<h2 id="modalTitle">Return to home?</h2><p>Your current trace is saved in this browser. Going home closes the active workspace session. Pathway Bank, My Trace and Discussion stay accessible, and the project can be reopened from Your traces.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmHome">Go home</button></div>`,{onOpen:m=>m.querySelector('#confirmHome').onclick=()=>{closeModal();resetState();selectedEdgeId=null;selectedNodeIds.clear();traceIssueNodeIds.clear();showLanding();}});
 }
 
 function confirmLeaveForAbout(){
-  saveProject(getState());
+  persistViewport();saveProject(getState());
   openModal(`<h2 id="modalTitle">Open About?</h2><p>Your current trace is saved locally before you leave the workspace.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay here</button><button class="primary-button compact" id="confirmAbout">Open About</button></div>`,{onOpen:m=>m.querySelector('#confirmAbout').onclick=()=>{window.location.href='about.html';}});
 }
 
@@ -1203,7 +1274,7 @@ function confirmResetLocalData(){
 
 function openMapExport(){
   if(!getState().nodes?.length){toast('Add a reasoning node before exporting a map.');return;}
-  const label=workspaceMapMode==='aggregate'?`Aggregate ${aggregateArrangeSession?'Arrange':'Original'} Map`:'Focus Map';
+  const label=workspaceMapMode==='aggregate'?`Aggregate ${aggregateArrangeBlend===100?'Arrange':'Original'} Map`:`${focusPathRootId?'Focus Path':'Focus Map'} · ${focusArrangeMode?'Arrange':'Original'}`;
   // Preview uses a separate SVG snapshot; it does not change saved node positions,
   // map filters, branching history, or any existing workspace state.
   openModal(`<h2 id="modalTitle">Export reasoning map</h2>
@@ -1477,6 +1548,7 @@ function combineProjectCopies(parts,title){
 }
 
 function openSavedProject(id){
+  if(getState().brief)persistViewport();
   const project=loadProject(id);
   if(!project)return;
   repairSharedInputs(project);
@@ -1699,7 +1771,7 @@ function addFreeThought(){
   updateState(s=>{
     const provenance=els.thoughtProvenanceSelect?.value||'designer';
     const frameworkRoles=commandFrameworkId!=='tracework'?{[commandFrameworkId]:selectedRole}:{};
-    const node=createNode({type,label:text,branchId,x:placement.x,y:placement.y,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:framework.id==='freeform'?'TRACEWORK (optional)':framework.label,classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance,frameworkRoles}});
+    const node=createNode({type,label:text,branchId,x:placement.x,y:placement.y,meta:{freeform:true,hotspotId:selectedHotspotId,classifiedBy:framework.id==='freeform'?'TRACEWORK (optional)':framework.label,classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance,attributionName:els.thoughtAttributionName?.value.trim()||'',generationActivity:els.thoughtGenerationActivity?.value||'unspecified',evidenceKind:els.thoughtEvidenceKind?.value||'unspecified',activityDetails:els.thoughtActivityDetails?.value.trim()||'',recordTitle:els.thoughtRecordTitle?.value.trim()||'',sourceReference:els.thoughtSourceReference?.value.trim()||'',frameworkRoles}});
     s.nodes.push(node);
     s.activeNodeId=node.id; s.activeBranchId=branchId;
     created=node;
@@ -1708,7 +1780,7 @@ function addFreeThought(){
   if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);}
   const visibleRole=commandFrameworkId==='tracework'?(typeLabels[type]||type):(getFrameworkCategory(commandFrameworkId,selectedRole)?.label||selectedRole);
   logEvent('Free reasoning added',`${visibleRole} · ${text}`);
-  els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer'; updateThoughtSuggestion(); renderWorkspace();
+  els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer';if(els.thoughtGenerationActivity)els.thoughtGenerationActivity.value='unspecified';if(els.thoughtEvidenceKind)els.thoughtEvidenceKind.value='unspecified';if(els.thoughtAttributionName)els.thoughtAttributionName.value='';for(const el of [els.thoughtActivityDetails,els.thoughtRecordTitle,els.thoughtSourceReference])if(el)el.value=''; updateThoughtSuggestion(); renderWorkspace();
   toast(`Added as ${visibleRole}${commandFrameworkId==='tracework'?'':` · ${getFramework(commandFrameworkId).shortLabel}`}.`);
 }
 
@@ -1723,13 +1795,13 @@ function addLooseNote(){
   let created=null;
   updateState(s=>{
     const provenance=els.thoughtProvenanceSelect?.value||'designer';
-    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:placement.x,y:placement.y,meta:{hotspotId:selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance}});
+    const node=createNode({type:'note',label:text,branchId:`note-${Date.now()}`,x:placement.x,y:placement.y,meta:{hotspotId:selectedHotspotId,suggestedType:classification.type||'interpretation',classificationReason:classification.reason,classificationConfidence:classification.confidence,provenance,attributionName:els.thoughtAttributionName?.value.trim()||'',generationActivity:els.thoughtGenerationActivity?.value||'unspecified',evidenceKind:els.thoughtEvidenceKind?.value||'unspecified',activityDetails:els.thoughtActivityDetails?.value.trim()||'',recordTitle:els.thoughtRecordTitle?.value.trim()||'',sourceReference:els.thoughtSourceReference?.value.trim()||''}});
     s.nodes.push(node); s.activeNodeId=node.id; created=node;
   });
   lastAddedNodeId=created?.id||null;
   if(created?.id){selectedNodeIds.clear();selectedNodeIds.add(created.id);}
   logEvent('Loose note added',text);
-  els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer'; updateThoughtSuggestion(); renderWorkspace();
+  els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer';if(els.thoughtGenerationActivity)els.thoughtGenerationActivity.value='unspecified';if(els.thoughtEvidenceKind)els.thoughtEvidenceKind.value='unspecified';if(els.thoughtAttributionName)els.thoughtAttributionName.value='';for(const el of [els.thoughtActivityDetails,els.thoughtRecordTitle,els.thoughtSourceReference])if(el)el.value=''; updateThoughtSuggestion(); renderWorkspace();
   toast('Added as an unclassified note.');
 }
 
@@ -1865,6 +1937,7 @@ function captureUndoUI(){
     aggregateStatusFilter,
     aggregateArrangeSession:aggregateArrangeSession?structuredClone(aggregateArrangeSession):null,
     aggregateArrangeBlend,
+    focusArrangeMode,
     canvasZoom,
     focusPathRootId,
     selectedEdgeId,
@@ -1879,6 +1952,7 @@ function restoreUndoUI(ui={}){
   aggregateStatusFilter=ui.aggregateStatusFilter||'all';
   aggregateArrangeSession=ui.aggregateArrangeSession?structuredClone(ui.aggregateArrangeSession):null;
   aggregateArrangeBlend=Number.isFinite(Number(ui.aggregateArrangeBlend))?Number(ui.aggregateArrangeBlend):0;
+  focusArrangeMode=Boolean(ui.focusArrangeMode);
   canvasZoom=Number.isFinite(Number(ui.canvasZoom))?Number(ui.canvasZoom):1;
   focusPathRootId=ui.focusPathRootId||null;
   selectedEdgeId=ui.selectedEdgeId||null;
@@ -2358,7 +2432,7 @@ function showTraceCheckPanel(issues){
 
 function zoomTo(next){
   canvasZoom=applyZoom(els.graphViewport,els.graphStage,els.graphSurface,next);
-  updateZoomLabel();
+  updateZoomLabel();queueViewportSave();
 }
 function updateZoomLabel(){ const label=$('#zoomLabel'); if(label)label.textContent=`${Math.round(canvasZoom*100)}%`; }
 
@@ -2407,11 +2481,11 @@ function updateFrameworkControls(state){
     if(framework.id==='freeform') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred types':'Reveal inferred types';
     else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
   }
-  const arranged=workspaceMapMode==='aggregate' && aggregateArrangeSession?.frameworkId===framework.id && aggregateArrangeBlend===100;
+  const arranged=workspaceMapMode==='focus'?focusArrangeMode:aggregateArrangeSession?.frameworkId===framework.id && aggregateArrangeBlend===100;
   if(els.arrangeAggregateButton){
     els.arrangeAggregateButton.classList.toggle('active',arranged);
     els.arrangeAggregateButton.setAttribute('aria-pressed',String(arranged));
-    els.arrangeAggregateButton.title=`Arrange the aggregate through ${framework.label}. Arrange edits only affect this framework layout; Original and Focus remain unchanged.`;
+    els.arrangeAggregateButton.title=`Arrange the visible ${workspaceMapMode==='focus'?'focus or path':'aggregate'} map using ${framework.label}. Original positions are preserved.`;
   }
   if(els.reflowArrangeButton)els.reflowArrangeButton.classList.toggle('hidden',!arranged);
   if(els.originalAggregateButton){
@@ -2451,7 +2525,7 @@ function setFrameworkMode(id='tracework'){
   showNodeTypes=framework.id!=='freeform';
   aggregateTypeFilter='all';
   selectedEdgeId=null; traceIssueNodeIds.clear(); focusPathRootId=null;
-  aggregateArrangeSession=null; aggregateArrangeBlend=0;
+  aggregateArrangeSession=null; aggregateArrangeBlend=0;focusArrangeMode=false;
   renderWorkspace();
   updateThoughtSuggestion();
   maybeOpenFrameworkTutorial(framework.id);
@@ -2472,6 +2546,7 @@ function toggleFrameworkLock(){
 
 
 function setWorkspaceMapMode(mode='focus'){
+  persistViewport();
   const next=mode==='aggregate'?'aggregate':'focus';
   if(next==='focus'){
     const state=getState();
@@ -2484,7 +2559,7 @@ function setWorkspaceMapMode(mode='focus'){
     if(!hotspotId){ toast('Choose a hotspot first to open a focus map.'); return; }
     patchState({selectedHotspotId:hotspotId,activeNodeId:active?.meta?.hotspotId===hotspotId?active.id:null},{silent:true});
   }
-  workspaceMapMode=next;
+  workspaceMapMode=next;focusArrangeMode=false;
   focusPathRootId=null; selectedEdgeId=null; traceIssueNodeIds.clear(); selectedNodeIds.clear();
   canvasZoom=1; updateZoomLabel();
   if(els.graphViewport) els.graphViewport.dataset.needsInitialPosition='1';
@@ -2753,12 +2828,34 @@ function aggregateTrace(state,{ignoreFilters=false}={}){
   return {nodes,edges};
 }
 
+function focusArrangementKey(state){
+  return `${state.frameworkId||'tracework'}|${state.selectedHotspotId||'none'}|${focusPathRootId||'all'}`;
+}
+function focusArrangedTrace(state,scoped){
+  if(!focusArrangeMode||workspaceMapMode==='aggregate')return scoped;
+  const key=focusArrangementKey(state),frameworkId=state.frameworkId||'tracework';
+  // Delegate role-aware placement to existing framework layout, but use a distinct
+  // focus-only coordinate store. Never pull from aggregate/Original positions.
+  const nodes=scoped.nodes.map(n=>({...n,meta:{...n.meta,aggregateArrangedPositions:{[frameworkId]:n.meta?.focusArrangedPositions?.[key]}}}));
+  const positions=frameworkAggregateLayout({...state,nodes},frameworkId);
+  return {nodes:scoped.nodes.map(n=>{const pos=positions.get(n.id)||n;return {...n,x:pos.x,y:pos.y};}),edges:scoped.edges};
+}
 function workspaceTrace(state){
-  return workspaceMapMode==='aggregate'?aggregateTrace(state):scopedTrace(state);
+  return workspaceMapMode==='aggregate'?aggregateTrace(state):focusArrangedTrace(state,scopedTrace(state));
 }
 
 // Stage C: deliberately reflow the active framework without affecting source positions.
 function reflowAggregateMap(){
+  if(workspaceMapMode==='focus'){
+    if(!focusArrangeMode)return;
+    const state=getState(),key=focusArrangementKey(state);
+    checkpoint('reflow focused framework layout');
+    updateState(st=>st.nodes.forEach(n=>{if(!n.meta?.focusArrangedPositions?.[key])return;
+      const copy={...n.meta.focusArrangedPositions};delete copy[key];n.meta={...n.meta,focusArrangedPositions:copy};}));
+    renderWorkspace();
+    setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();queueViewportSave();},40);
+    toast('Focused arrangement regenerated. Original nodes remain unchanged.');return;
+  }
   if(workspaceMapMode!=='aggregate'||aggregateArrangeBlend!==100)return;
   const state=getState(),frameworkId=state.frameworkId||'tracework';
   checkpoint(`reflow ${frameworkId} presentation`);
@@ -2779,7 +2876,16 @@ function reflowAggregateMap(){
 // A deliberate two-position toggle, never a blend slider.
 function arrangeAggregateMap(){setAggregateLayout('arranged');}
 function setAggregateLayout(mode='original'){
-  if(workspaceMapMode!=='aggregate')return;
+  if(workspaceMapMode==='focus'){
+    const arranged=mode==='arranged';
+    if(arranged&&!focusArrangeMode)checkpoint('arrange focused map');
+    focusArrangeMode=arranged;
+    selectedNodeIds.clear();selectedEdgeId=null;
+    renderWorkspace();
+    setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();queueViewportSave();},40);
+    toast(arranged?'Arrange · framework-aware focused view; Original unchanged.':'Original · restored the authored node positions.');
+    return;
+  }
   const arranged=mode==='arranged';
   const state=getState(),frameworkId=state.frameworkId||'tracework';
   if(arranged && (!aggregateArrangeSession || aggregateArrangeSession.frameworkId!==frameworkId)){
@@ -2789,7 +2895,7 @@ function setAggregateLayout(mode='original'){
     aggregateArrangeSession={frameworkId,before:new Map(before),target:new Map(target)};
   }
   aggregateArrangeBlend=arranged?100:0;
-  selectedNodeIds.clear();selectedEdgeId=null;focusPathRootId=null;
+  selectedNodeIds.clear();selectedEdgeId=null;
   renderWorkspace();
   setTimeout(()=>{canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();},40);
   toast(arranged?'Arrange map · framework-aware layout. Rearrange without altering Original.':'Original map · unstructured combined network. Source movements are reflected in Arrange.');
