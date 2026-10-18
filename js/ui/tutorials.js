@@ -9,7 +9,7 @@ const tutorials = {
   welcome: {
     eyebrow:'FIRST-TIME TOUR', title:'Welcome to TRACEWORK',
     steps:[
-      {selector:'.brief-mode-toggle',title:'Choose how the source enters',body:'Quick brief is for compact prompts. Long brief / document is for larger briefs that can be filed into editable chunks.'},
+      {selector:'.brief-mode-toggle',title:'Choose how the source enters',body:'Quick brief is for compact prompts. Long Brief or Document is for larger briefs that can be filed into editable chunks.'},
       {selector:'#landingBrief',title:'Start from real language',body:'Paste the wording you actually received or are working with. TRACEWORK begins from language rather than assuming the design problem is already resolved.'},
       {selector:'#startTracingButton',title:'Enter the reasoning workspace',body:'Start tracing creates the project locally in this browser. Nothing is published by opening a trace.'},
       {selector:'#projectShelf',title:'Return to saved traces',body:'Saved projects remain in this browser. Open an existing trace or combine projects while retaining source provenance. To recover a JSON backup, open My Trace and choose Import saved JSON.'}
@@ -18,9 +18,9 @@ const tutorials = {
   landing: {
     eyebrow:'STARTING A TRACE', title:'Starting a project',
     steps:[
-      {selector:'.brief-mode-toggle',title:'Quick or long brief',body:'Use Quick brief for a short statement. Long brief / document supports uploads, detected sections and manually added chunks.'},
+      {selector:'.brief-mode-toggle',title:'Quick or long brief',body:'Use Quick brief for a short statement. Long Brief or Document supports uploads, detected sections and manually added chunks.'},
       {selector:'#landingProjectName',title:'Name the trace',body:'A name makes saved projects easier to recognise. It can stay blank if the brief itself is enough.'},
-      {selector:'#briefChunkPreview',fallbackSelector:'.brief-mode-toggle',title:'Organise Longer Briefs (Optional)',body:'Choose Long Brief / Document above first. Then detected sections and + Chunk controls appear below the brief. Quick Brief mode does not need filing.'},
+      {selector:'#briefChunkPreview',fallbackSelector:'.brief-mode-toggle',title:'Organise Longer Briefs (Optional)',body:'Choose Long Brief or Document above first. Then detected sections and + Chunk controls appear below the brief. Quick Brief mode does not need filing.'},
       {selector:'#startTracingButton',title:'Start when the source is ready',body:'TRACEWORK keeps the source attached to the project so later reasoning can remain traceable back to where it began.'}
     ]
   },
@@ -144,24 +144,30 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
   const render=()=>{
     const step=usable[index];
     root.querySelector('.tutorial-step-number').textContent=`STEP ${String(index+1).padStart(2,'0')}`;
-    const count=root.querySelector('.tutorial-step-count');if(count)count.textContent=`${index+1} / ${usable.length}`;
+    const count=root.querySelector('.tutorial-step-count');if(count)count.textContent=`${index+1} of ${usable.length}`;
     root.querySelector('.tutorial-popover h3').textContent=step.title||title;
     root.querySelector('.tutorial-popover p').textContent=step.body||'';
     root.querySelector('.tutorial-popover-progress').innerHTML=usable.map((_,i)=>`<span class="tutorial-progress-dot ${i===index?'active':''} ${i<index?'done':''}"></span>`).join('');
     back.disabled=index===0;next.textContent=index===usable.length-1?'Done':'Next →';
-    requestAnimationFrame(place);
+    observeStep();
+    place(); // immediately track the current highlighted control
+    requestAnimationFrame(place); // re-measure after the browser lays out step text
   };
   back.onclick=()=>{if(index>0){index--;render();}};
   next.onclick=()=>{if(index<usable.length-1){index++;render();}else finish();};
   skip.onclick=finish;root.querySelector('.tutorial-popover-close').onclick=finish;
   masks.forEach(mask=>mask.addEventListener('pointerdown',finish));
   root.addEventListener('pointerdown',event=>{if(event.target===root)finish();});
+  // Following the target with a never-ending animation loop forced a layout
+  // measurement every frame and made the spotlight lag on slower laptops.
   let frame=0;
-  const follow=()=>{if(!root.isConnected)return;place();frame=requestAnimationFrame(follow);};
-  frame=requestAnimationFrame(follow);
-  const onResize=()=>place(),onKey=e=>{if(e.key==='Escape')finish();};
+  const onResize=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(place);};
+  const observer=typeof ResizeObserver==='function'?new ResizeObserver(onResize):null;
+  const observeStep=()=>{observer?.disconnect();const target=getTarget(usable[index]);if(target)observer?.observe(target);};
+  const onKey=e=>{if(e.key==='Escape')finish();};
+  // The active step's geometry is tracked by ResizeObserver and scroll events.
   window.addEventListener('resize',onResize);window.addEventListener('scroll',onResize,true);document.addEventListener('keydown',onKey);
-  activeSpotlightCleanup=()=>{cancelAnimationFrame(frame);window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onResize,true);document.removeEventListener('keydown',onKey);root.remove();document.documentElement.classList.remove('tutorial-tour-active');};
+  activeSpotlightCleanup=()=>{cancelAnimationFrame(frame);observer?.disconnect();window.removeEventListener('resize',onResize);window.removeEventListener('scroll',onResize,true);document.removeEventListener('keydown',onKey);root.remove();document.documentElement.classList.remove('tutorial-tour-active');};
   render();
 }
 

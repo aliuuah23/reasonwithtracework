@@ -83,7 +83,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
     <div class="inspector-head" style="--node-color:${colors.input}"><span class="inspector-type"><i></i>Selected language · ${esc(hotspot.kind||(/\s/.test(hotspot.text)?'phrase':'word'))}</span><h3>${esc(hotspot.text)}</h3><p>${esc(hotspot.reason)}</p><button class="secondary-button compact hotspot-inspector-edit" data-edit-hotspot-selection="${esc(hotspot.id)}">✎ Edit source selection</button><div class="stage-progress"><span class="done"></span><span></span><span></span><span></span><span></span></div></div>
     <div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${p.choices.map(c=>`<button class="choice-chip guided-direct-choice" data-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div>
     <div class="guided-help-note">Choose a cue if useful. It will move into the same writing field so it can be extended, qualified or rewritten before it becomes a node.</div>
-    <label class="field-label">Write / extend the interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
+    <label class="field-label">Write or Extend the Interpretation</label><div class="custom-answer guided-answer-stack"><textarea class="field-textarea" id="customInterpretation" rows="3" placeholder="Describe what this wording means in this project…"></textarea><button class="primary-button compact" id="addCustomInterpretation">Add interpretation →</button></div><div class="guided-validation" id="interpretationValidation"></div></div>
     <div class="inspector-section"><h4>Useful context to make explicit</h4><div class="node-meta-list"><div class="node-meta"><span>Who?</span><span>${esc(p.who.slice(0,2).join(' · '))}</span></div><div class="node-meta"><span>When?</span><span>${esc(p.when.slice(0,2).join(' · '))}</span></div></div></div>
     ${roleExplanationMarkup({type:'input',label:hotspot.text,meta:{provenance:'brief',evidenceKind:'brief'}},framework,null)}
     ${spatialMiniMarkup(hotspot.text,'input')}
@@ -197,7 +197,7 @@ function operationalMarkup(text,type,frameworkLabel){
     <div class="operation-choice"><strong>Detail suggestion</strong><p>${esc(s.detail)}</p></div>
     <div class="operation-next"><strong>Reasoning check</strong> ${esc(s.probe)}</div>
     <p class="operational-framework">Operational Grammar <strong>${esc(s.frame)}</strong></p>
-    <p class="operational-disclaimer">Open <strong>Spatial read</strong> on the node for schematic plan / 3D tests; compare a related case below when an architectural term matches.</p>
+    <p class="operational-disclaimer">Open <strong>Spatial read</strong> on the node for schematic plan and 3D tests; compare a related case below when an architectural term matches.</p>
   </section>`;
 }
 function caseStudyMarkup(items){
@@ -288,7 +288,7 @@ function nextForm(node,state,inputPrompt=null){
   if(node.status==='rejected')return `<div class="inspector-section"><p style="color:var(--muted);font-size:13px;line-height:1.6">This path is retained as part of the reasoning history. Restore it to continue working from it, or branch from an earlier active node.</p></div>`;
   if(node.type==='input'){
     const p=inputPrompt||{question:'What does this language mean for the design?',choices:[]};
-    return `<div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${(p.choices||[]).map(c=>`<button class="choice-chip guided-direct-choice" data-direct-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div><div class="guided-help-note">This guided route creates an Interpretation next. Choose a cue, then extend or rewrite it in the same field before adding the node. Node type can still be changed later with Edit.</div><label class="field-label">Write / extend the interpretation</label><textarea class="field-textarea" id="nextText" placeholder="Describe what this wording means in this project…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add interpretation →</button></div>`;
+    return `<div class="inspector-section"><span class="guided-next-label">Next node · Interpretation</span><div class="prompt-question">${esc(p.question)}</div><div class="choice-list">${(p.choices||[]).map(c=>`<button class="choice-chip guided-direct-choice" data-direct-interpretation="${attr(c)}">${esc(c)}</button>`).join('')}</div><div class="guided-help-note">This guided route creates an Interpretation next. Choose a cue, then extend or rewrite it in the same field before adding the node. Node type can still be changed later with Edit.</div><label class="field-label">Write or Extend the Interpretation</label><textarea class="field-textarea" id="nextText" placeholder="Describe what this wording means in this project…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add interpretation →</button></div>`;
   }
   if(node.type==='interpretation'){
     const p=groundingPrompt(); return `<div class="inspector-section"><div class="prompt-question">${p.question}</div><div class="choice-list">${p.sources.map(x=>`<button class="choice-chip selectable" data-ground-source="${attr(x)}">${esc(x)}</button>`).join('')}</div><div class="guided-help-note">Choose a cue if useful, then write the reasoning in your own words. The cue guides the question; it does not become the node.</div><label class="field-label">Why does this reading matter here?</label><textarea class="field-textarea" id="nextText" placeholder="Explain the basis for this interpretation…"></textarea><div class="guided-validation" id="nextValidation"></div><button class="primary-button compact" id="addNext">Add grounding →</button></div>`;
@@ -334,7 +334,7 @@ function roleExplanationMarkup(node,framework=null,frameworkRole=null){
     <p><strong>When useful:</strong> ${esc(role.when)}</p>
     <p><strong>For example:</strong> ${esc(detail.example)}</p>
     <p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>
-    ${lens}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
+    ${lens}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
     ${node.meta?.sourceReference?`<p><strong>Source reference:</strong> ${esc(node.meta.sourceReference)}</p>`:''}
     <p class="trace-provenance-note">Provenance describes where this assertion entered the trace, not whether it is true. If the basis is missing, edit the node to record it.</p></div>
   </details>`;
@@ -343,11 +343,11 @@ function metaMarkup(node,framework=null,frameworkRole=null){
   const rows=[];
   rows.push(['Attribution',provenanceLabel(inferLegacyProvenance(node))]);
   if(node.meta?.attributionName)rows.push(['Named Contributor',node.meta.attributionName]);
-  rows.push(['Generation Activity',({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified']);
+  rows.push(['Generation Activity',({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified']);
   if(node.meta?.activityDetails)rows.push(['Activity Details',node.meta.activityDetails]);
   rows.push(['Supporting Record', evidenceLabel(inferredEvidenceKind(node))]);
   if(node.meta?.recordTitle)rows.push(['Record Title',node.meta.recordTitle]);
-  if(node.meta?.sourceReference) rows.push(['Source / reference', node.meta.sourceReference]);
+  if(node.meta?.sourceReference) rows.push(['Source Reference', node.meta.sourceReference]);
   if(framework && framework.id!=='tracework' && framework.id!=='freeform') rows.push(['Framework lens',`${frameworkRole?.label||'Unresolved'} · ${framework.source||framework.label}`]);
   if(node.meta?.sourceKind)rows.push(['Grounded in',node.meta.sourceKind]);
   if(node.meta?.sourceLabel)rows.push(['Pathway source',node.meta.sourceLabel]);

@@ -264,7 +264,7 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
   const preview=''; // No misleading generic drawings inside cards: open the detailed spatial learning studio.
   const provenanceId=inferLegacyProvenance(n);
   const provenance=provenanceLabel(provenanceId);
-  const activityLabel=({authored:'Authored / Recorded',interpreted:'Interpreted / Analysed',observed:'Observed / Documented',revised:'Revised / Edited',generated:'Software Generated',imported:'Imported from Source'})[n.meta?.generationActivity];
+  const activityLabel=({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[n.meta?.generationActivity];
   const evidenceId=n.meta?.evidenceKind;
   const recordLabel=({brief:'Source Document',observation:'Recorded Observation',drawing:'Drawing or Model',precedent:'Published Reference',performance:'Measurement or Simulation',designer:'Design Note',inference:'Analytical Note',suggestion:'Software-Generated Note',other:'Other Supporting Record'})[evidenceId];
   const name=n.meta?.attributionName||'';
@@ -529,30 +529,55 @@ function bindConnectionPorts({surface,svg,nodesRoot,positions,nodesById,edges,on
         const scale=Math.max(.01,Number(getScale?.()||1));
         return{x:(evt.clientX-rect.left)/scale,y:(evt.clientY-rect.top)/scale};
       };
+      let previousDropTarget=null;
       const move=evt=>{
         const p=pointFromEvent(evt);
         temp.setAttribute('d',curvePath(start.x,start.y,p.x,p.y));
+        const element=document.elementFromPoint(evt.clientX,evt.clientY);
+        const node=element?.closest?.('.graph-node');
+        const next=node && node.dataset.id!==originId?node:null;
+        if(previousDropTarget!==next){
+          previousDropTarget?.classList.remove('connection-drop-target');
+          next?.classList.add('connection-drop-target');
+          previousDropTarget=next;
+        }
       };
       const finish=evt=>{
         window.removeEventListener('pointermove',move,true);
         window.removeEventListener('pointerup',finish,true);
-        temp.remove();nodesRoot.classList.remove('connecting');
+        window.removeEventListener('pointercancel',cancel,true);
+        temp.remove();nodesRoot.classList.remove('connecting');previousDropTarget?.classList.remove('connection-drop-target');
         nodesRoot.querySelectorAll('.node-port').forEach(p=>{
           p.classList.remove('compatible','incompatible','provenance-review');
           delete p.dataset.connectHint;
           const node=nodesById.get(p.closest('.graph-node')?.dataset.id);
           p.removeAttribute('title');
         });
-        const hit=document.elementFromPoint(evt.clientX,evt.clientY)?.closest('.node-port');
-        const otherId=hit?.closest('.graph-node')?.dataset.id;
-        const other=nodesById.get(otherId);
+        // A user may release anywhere over the target node, not just the 18px port.
+        // This is forgiving at zoomed-out and half-screen widths while preserving
+        // all existing connection and provenance validation after target resolution.
+        const hit=document.elementFromPoint(evt.clientX,evt.clientY);
+        const candidate=hit?.closest?.('.graph-node');
+        const otherId=candidate?.dataset.id;
+        const other=otherId!==originId?nodesById.get(otherId):null;
         if(!other){onConnect?.(null,null,{ok:false});return;}
         const pair=resolvePair(origin,other,startSide);
         const result=canConnect?.(pair.source,pair.target,edges)??{ok:true};
         onConnect?.(pair.source,pair.target,result);
       };
+      const cancel=()=>{
+        window.removeEventListener('pointermove',move,true);
+        window.removeEventListener('pointerup',finish,true);
+        window.removeEventListener('pointercancel',cancel,true);
+        temp.remove();previousDropTarget?.classList.remove('connection-drop-target');
+        nodesRoot.classList.remove('connecting');
+        nodesRoot.querySelectorAll('.node-port').forEach(p=>{
+          p.classList.remove('compatible','incompatible','provenance-review');delete p.dataset.connectHint;
+        });
+      };
       window.addEventListener('pointermove',move,true);
       window.addEventListener('pointerup',finish,true);
+      window.addEventListener('pointercancel',cancel,true);
       move(e);
     });
   });

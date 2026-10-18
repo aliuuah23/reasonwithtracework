@@ -14,10 +14,10 @@ export const evidenceKinds = [
 ];
 export const generationActivities=[
   {id:'unspecified',label:'Not Specified'},
-  {id:'authored',label:'Authored / Recorded'},
-  {id:'interpreted',label:'Interpreted / Analysed'},
-  {id:'observed',label:'Observed / Documented'},
-  {id:'revised',label:'Revised / Edited'},
+  {id:'authored',label:'Authored or Recorded'},
+  {id:'interpreted',label:'Interpreted or Analysed'},
+  {id:'observed',label:'Observed or Documented'},
+  {id:'revised',label:'Revised or Edited'},
   {id:'generated',label:'Software Generated'},
   {id:'imported',label:'Imported from Source'}
 ];

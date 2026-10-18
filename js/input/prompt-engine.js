@@ -4,10 +4,10 @@ export async function interpretationPrompt(hotspot){
   return { question:cfg.interpretation.question.replace('{term}',hotspot.text), choices:cfg.interpretation.choices, who:cfg.who, when:cfg.when };
 }
 export function groundingPrompt(){
-  return { question:'What makes this interpretation relevant here?', sources:['User need','Site condition','Brief / requirement','Precedent','Observation','Literature','Assumption'] };
+  return { question:'What makes this interpretation relevant here?', sources:['User need','Site condition','Brief Requirement','Precedent','Observation','Literature','Assumption'] };
 }
 export function consequencePrompt(){
-  return { question:'If you follow this reading, what changes spatially?', hints:['Organisation','Enclosure','Movement','Adjacency','Scale','Visibility','Furniture / elements','Programme'] };
+  return { question:'If you follow this reading, what changes spatially?', hints:['Organisation','Enclosure','Movement','Adjacency','Scale','Visibility','Furniture and Elements','Programme'] };
 }
 export function evaluationPrompt(){
   return { question:'What does this move prioritise — and what might it compromise?', hints:['Access','Privacy','Interaction','Comfort','Efficiency','Adaptability','Legibility','Operational simplicity'] };

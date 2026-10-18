@@ -6,8 +6,8 @@
   <title>About — TRACEWORK</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/components.css?v=d1-1-context">
-  <link rel="stylesheet" href="css/responsive.css?v=d1-1-centred">
+  <link rel="stylesheet" href="css/components.css?v=d1-6-help">
+  <link rel="stylesheet" href="css/responsive.css?v=d1-6-docked-composer">
 </head>
 <body>
   <header class="topbar">
@@ -53,7 +53,7 @@
   <div class="framework-explorer-backdrop" id="frameworkExplorerBackdrop" hidden>
     <section class="framework-explorer-dialog" id="frameworkExplorerDialog" role="dialog" aria-modal="true" aria-labelledby="frameworkExplorerTitle">
       <header class="framework-explorer-top"><div><span class="product-kicker">FRAMEWORK GUIDE · <span id="frameworkExplorerSource"></span></span><h2 id="frameworkExplorerTitle"></h2></div><button type="button" class="framework-explorer-close" id="frameworkExplorerClose" aria-label="Close framework guide">×</button></header>
-      <div class="framework-explorer-progress"><span id="frameworkExplorerSlideTitle"></span><span id="frameworkExplorerCounter">1 / 4</span></div>
+      <div class="framework-explorer-progress"><span id="frameworkExplorerSlideTitle"></span><span id="frameworkExplorerCounter">1 of 4</span></div>
       <div class="framework-explorer-body" id="frameworkExplorerBody"></div>
       <footer class="framework-explorer-footer"><button type="button" class="framework-explorer-control" id="frameworkExplorerPrevious">← Previous</button><div class="framework-explorer-dots" id="frameworkExplorerDots" aria-label="Framework guide slides"></div><button type="button" class="framework-explorer-control framework-explorer-primary" id="frameworkExplorerNext">Next →</button></footer>
     </section>
@@ -62,8 +62,8 @@
     <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
   </div>
   <script type="module">
-    import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './js/ui/tutorials.js';
-    import { initializeFrameworkExplorer } from './js/ui/framework-explorer.js?v=C2.2';
+    import { bindTutorialTriggers, maybeOpenFirstVisitTutorial } from './js/ui/tutorials.js?v=d1-6-tour';
+    import { initializeFrameworkExplorer } from './js/ui/framework-explorer.js?v=d1-6-counter';
     initializeFrameworkExplorer();
     bindTutorialTriggers();
     maybeOpenFirstVisitTutorial('about');

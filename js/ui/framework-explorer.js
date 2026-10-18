@@ -68,7 +68,7 @@ function paintDialog(){
  byId('frameworkExplorerTitle').textContent=f.label;
  byId('frameworkExplorerSource').textContent=primaryLabel(f);
  byId('frameworkExplorerSlideTitle').textContent=slides[index];
- byId('frameworkExplorerCounter').textContent=`${index+1} / ${slides.length}`;
+ byId('frameworkExplorerCounter').textContent=`${index+1} of ${slides.length}`;
  byId('frameworkExplorerPrevious').disabled=index===0;
  byId('frameworkExplorerNext').disabled=index===slides.length-1;
  byId('frameworkExplorerDots').innerHTML=slides.map((s,i)=>`<button type="button" data-slide-index="${i}" aria-label="Go to ${escapeHTML(s)}" title="${escapeHTML(s)}" class="${i===index?'is-active':''}" ${i===index?'aria-current="step"':''}></button>`).join('');

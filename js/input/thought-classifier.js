@@ -126,8 +126,8 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
 
   // Structural cues are weighted more strongly than isolated nouns so the classifier
   // does not collapse everything architectural into Spatial Consequence.
-  if(has(/\b(means?|could mean|might mean|may mean|read as|interpret|understand as|implies?)\b/)) bump('interpretation',6.4,'explicit meaning / reading language');
-  if(has(/\b(because|since|due to|based on|from observation|evidence|precedent|research)\b/)) bump('grounding',4.4,'context / evidence / reason');
+  if(has(/\b(means?|could mean|might mean|may mean|read as|interpret|understand as|implies?)\b/)) bump('interpretation',6.4,'explicit meaning or interpretation language');
+  if(has(/\b(because|since|due to|based on|from observation|evidence|precedent|research)\b/)) bump('grounding',4.4,'context, evidence or reason');
   if(has(/\b(students?|users?|people|visitors?|occupants?)\s+(need|require|benefit from|struggle with|tend to)\b/)) bump('grounding',5.2,'user need or behaviour used as reasoning');
   if(has(/\b(site|sun|wind|rain|heat|hot|shade|noise|crowding|peak periods?|time of day|morning|afternoon|evening|vegetation|slope|accessibility)\b/) && !has(/^\s*(create|provide|place|move|arrange|use|add|remove|orient|screen|raise|lower)\b/)) bump('grounding',1.8,'contextual condition');
 
@@ -136,15 +136,15 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   const spatialObject=has(/\b(space|spatial|layout|seating|furniture|threshold|route|circulation|canopy|enclosure|edge|zone|opening|wall|roof|bench|table|cluster|form|section|plan|screen|level)\b/);
   const spatialEffect=has(/\b(creates?|produces?|results? in|leads? to|makes .* possible|opens? up|blocks?|separates?|connects?|channels?|shades?|encloses?)\b/);
   const userMovement=has(/\b(students?|users?|people|visitors?|occupants?)\b[^.!?]{0,70}\b(?:can|could|should|would|will)?\s*(?:move|shift|walk|pass|circulate)\b/);
-  if(spatialAction && !userMovement) bump('consequence',4.5,'architectural / spatial action');
+  if(spatialAction && !userMovement) bump('consequence',4.5,'architectural or spatial action');
   if(spatialAction && spatialObject && !userMovement) bump('consequence',2.2,'action + spatial element');
   if(spatialEffect && spatialObject) bump('consequence',2,'spatial effect');
   if(spatialObject && !spatialAction && !spatialEffect) bump('consequence',0.35,'spatial vocabulary only');
 
-  if(has(/\b(but|however|while|whereas|although|trade-?off|at the cost of|compromise|risk|drawback|better|worse|conflict|interfere|priority|prioriti[sz]e|works|fails?)\b/)) bump('evaluation',4.2,'comparison / judgement / conflict');
+  if(has(/\b(but|however|while|whereas|although|trade-?off|at the cost of|compromise|risk|drawback|better|worse|conflict|interfere|priority|prioriti[sz]e|works|fails?)\b/)) bump('evaluation',4.2,'comparison, judgement or conflict');
   if(has(/\b(more|less)\s+(effective|efficient|flexible|private|open|comfortable|predictable|accessible)\b/)) bump('evaluation',2.2,'comparative judgement');
 
-  if(has(/\b(the aim is|the goal is|the intention is|the purpose is|we want to|ultimately|in order to|so that)\b/)) bump('goal',7,'explicit intention / purpose');
+  if(has(/\b(the aim is|the goal is|the intention is|the purpose is|we want to|ultimately|in order to|so that)\b/)) bump('goal',7,'explicit intention or purpose');
   if(has(/\b((my|our|the|design|project|main)\s+)?(goal|aim|intention|objective|purpose)s?\b/)) bump('goal',7.4,'explicit design-goal or intention wording');
   if(has(/\b(suppose|imagine|consider)\b/) && has(/\b(goal|aim|intention|objective|purpose)\b/)) bump('goal',3.2,'hypothetical stated as a goal');
   if(has(/^\s*(?:our|my|the|this|design|project|main)\s+(?:goal|aim|objective|intention|purpose)\b/)) bump('goal',11,'the statement frames a design aim before describing a possible means');
@@ -154,7 +154,7 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   if(has(/\b(to|so that|in order to)\s+(support|enable|encourage|allow|ensure|promote|protect|maintain)\b/)) bump('goal',3,'purpose clause');
 
   // Source provenance helps distinguish source material from reasoning about it.
-  if(provenance==='brief') bump('input',3.6,'brief / source provenance');
+  if(provenance==='brief') bump('input',3.6,'brief or source provenance');
   else if(provenance==='tutor') bump('input',1.2,'tutor-comment provenance');
   else if(provenance==='observation') bump('grounding',1.4,'observation provenance');
   else if(provenance==='precedent') bump('grounding',1.4,'precedent provenance');

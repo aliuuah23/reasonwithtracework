@@ -10,9 +10,9 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d1-5-provenance">
-  <link rel="stylesheet" href="css/graph.css?v=d1-5-node-metadata">
-  <link rel="stylesheet" href="css/responsive.css?v=d1-5-panels">
+  <link rel="stylesheet" href="css/components.css?v=d1-6-help">
+  <link rel="stylesheet" href="css/graph.css?v=d1-6-drop-targets">
+  <link rel="stylesheet" href="css/responsive.css?v=d1-6-docked-composer">
 </head>
 <body>
   <header class="topbar">
@@ -48,12 +48,12 @@
             <button type="button" class="tutorial-link" data-tutorial="landing">? Tutorial</button>
             <div class="brief-mode-toggle" aria-label="Brief input mode">
               <button type="button" class="brief-mode-button active" data-brief-mode="quick">Quick brief</button>
-              <button type="button" class="brief-mode-button" data-brief-mode="document">Long brief / document</button>
+              <button type="button" class="brief-mode-button" data-brief-mode="document">Long Brief or Document</button>
             </div>
           </div>
         </div>
         <div class="project-name-field">
-          <label for="landingProjectName">Project / trace name <span>optional</span></label>
+          <label for="landingProjectName">Project or Trace Name <span>optional</span></label>
           <input id="landingProjectName" type="text" maxlength="80" placeholder="e.g. Flexible Pavilion">
         </div>
         <div class="document-brief-tools hidden" id="documentBriefTools">
@@ -160,11 +160,11 @@
                       <span>Framework</span>
                       <select id="frameworkSelect" aria-label="Reasoning framework">
                       <option value="tracework">TRACEWORK Grammar</option>
-                      <option value="freeform">Freeform / Low-Structure</option>
+                      <option value="freeform">Freeform (Low Structure)</option>
                       <optgroup label="Literature frameworks">
                         <option value="requirements">Requirements Elicitation</option>
                         <option value="fivewhys">Five Whys</option>
-                        <option value="laddering">Laddering / Means–End</option>
+                        <option value="laddering">Laddering (Means–End)</option>
                         <option value="framing">Design Framing</option>
                         <option value="reflective">Reflective Practice</option>
                         <option value="semantics">Design Semantics</option>
@@ -232,30 +232,30 @@
                   <option value="consequence">Spatial consequence</option>
                   <option value="evaluation">Evaluation</option>
                   <option value="goal">Goal</option>
-                  <option value="input">Input / given condition</option>
+                  <option value="input">Input (Given Condition)</option>
                 </select>
               </div>
               <details class="thought-advanced-metadata"><summary>Attribution · Activity · Supporting Record (Optional)</summary>
               <div class="thought-metadata-grid">
                 <label class="thought-provenance" title="Who or what is responsible for this thought?">
-                  <span>Attribution <abbr title="Who or what contributed this thought, such as you, a colleague or software?" aria-label="Attribution help">?</abbr></span>
+                  <span>Attribution <button type="button" class="thought-help-button" data-help="Who or what contributed this thought, such as you, a colleague or software?" aria-label="Explain attribution">?</button></span>
                   <select id="thoughtProvenanceSelect" aria-label="Thought attribution">
                     <option value="designer">Designer</option><option value="collaborator">Collaborator</option>
                     <option value="tutor">Reviewer</option><option value="organisation">Organisation</option>
-                    <option value="system">Software Tool</option><option value="other">Other / Unspecified</option>
+                    <option value="system">Software Tool</option><option value="other">Other or Unspecified</option>
                   </select>
                 </label>
                 <label class="thought-provenance" title="How did this thought come about?">
-                  <span>Activity <abbr title="How the thought was produced: written, observed, analysed, revised, imported or generated." aria-label="Activity help">?</abbr></span>
+                  <span>Activity <button type="button" class="thought-help-button" data-help="How the thought was produced: written, observed, analysed, revised, imported or generated." aria-label="Explain activity">?</button></span>
                   <select id="thoughtGenerationActivity" aria-label="Generation Activity">
                     <option value="unspecified">Not Specified</option>
-                    <option value="authored">Authored / Recorded</option><option value="interpreted">Interpreted / Analysed</option>
-                    <option value="observed">Observed / Documented</option><option value="revised">Revised / Edited</option>
+                    <option value="authored">Authored or Recorded</option><option value="interpreted">Interpreted or Analysed</option>
+                    <option value="observed">Observed or Documented</option><option value="revised">Revised or Edited</option>
                     <option value="generated">Software Generated</option><option value="imported">Imported from Source</option>
                   </select>
                 </label>
                 <label class="thought-provenance" title="Is there a record supporting this thought?">
-                  <span>Record <abbr title="Optional supporting document, observation, drawing, measurement, reference or note. A recorded source is not automatically verified." aria-label="Supporting Record help">?</abbr></span>
+                  <span>Record <button type="button" class="thought-help-button" data-help="Optional supporting document, observation, drawing, measurement, reference or note. A recorded source is not automatically verified." aria-label="Explain record">?</button></span>
                   <select id="thoughtEvidenceKind" aria-label="Supporting Record">
                     <option value="unspecified">Not Specified</option><option value="brief">Source Document</option>
                     <option value="observation">Recorded Observation</option><option value="drawing">Drawing or Model</option>
@@ -335,7 +335,7 @@
             <button class="secondary-button" data-requires-project id="exportJsonButton">Export project</button>
             <button class="secondary-button" id="importJsonButton" type="button">Import saved JSON</button><input type="file" id="importJsonFile" accept=".json,application/json" hidden>
             <button class="secondary-button" data-requires-project id="projectAuditButton" type="button">Project check</button>
-            <button class="secondary-button" data-requires-project id="exportMapTraceButton" type="button">Export map · SVG / PNG / PDF</button>
+            <button class="secondary-button" data-requires-project id="exportMapTraceButton" type="button">Export map · SVG, PNG and PDF</button>
             <button class="secondary-button danger-subtle" data-requires-project id="resetLocalDataButton">Reset local data</button>
           </div>
         </div>
@@ -376,6 +376,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-5-combined"></script>
+  <script type="module" src="js/app.js?v=d1-6-interactions"></script>
 </body>
 </html>

@@ -31,13 +31,13 @@ export const frameworks = [
     arrangement:'sequence',
     connectionMode:'soft',
     categories:[
-      category('statement','Stakeholder / source statement','input','The initially stated need, expectation or condition before refinement.', ['the brief','brief states','stakeholder','user says','given that','existing condition'], ['brief','statement','stakeholder','given','condition','expectation'], ['input']),
-      category('refinement','Clarification / refinement','interpretation','A clarification or refinement that makes an initially informal statement more explicit.', ['what does','could mean','this means','clarify','refine','in this context'], ['clarify','refine','meaning','means','interpret','unclear'], ['interpretation']),
-      category('goal','Goal / need','goal','The desired condition or need that explains why the requirement matters.', ['users need','we need','the goal is','the aim is','should support','should enable','why'], ['need','needs','goal','aim','support','enable','purpose','why'], ['goal','grounding']),
+      category('statement','Stakeholder or Source Statement','input','The initially stated need, expectation or condition before refinement.', ['the brief','brief states','stakeholder','user says','given that','existing condition'], ['brief','statement','stakeholder','given','condition','expectation'], ['input']),
+      category('refinement','Clarification or Refinement','interpretation','A clarification or refinement that makes an initially informal statement more explicit.', ['what does','could mean','this means','clarify','refine','in this context'], ['clarify','refine','meaning','means','interpret','unclear'], ['interpretation']),
+      category('goal','Goal or Need','goal','The desired condition or need that explains why the requirement matters.', ['users need','we need','the goal is','the aim is','should support','should enable','why'], ['need','needs','goal','aim','support','enable','purpose','why'], ['goal','grounding']),
       category('scenario','Scenario','grounding','A concrete situation used to test or elaborate how a goal or requirement may operate.', ['when users','during','if ','scenario','in use','for example'], ['scenario','when','during','use','situation','case'], ['grounding','interpretation']),
-      category('constraint','Constraint / obstacle','evaluation','A limit, obstacle, dependency or conflict that conditions whether a goal or requirement can be achieved.', ['must not','cannot','without increasing','fixed','remain unobstructed','obstacle','conflicts with'], ['constraint','limit','must','cannot','fixed','obstacle','conflict','unobstructed'], ['input','evaluation']),
+      category('constraint','Constraint or Obstacle','evaluation','A limit, obstacle, dependency or conflict that conditions whether a goal or requirement can be achieved.', ['must not','cannot','without increasing','fixed','remain unobstructed','obstacle','conflicts with'], ['constraint','limit','must','cannot','fixed','obstacle','conflict','unobstructed'], ['input','evaluation']),
       category('requirement','Operational requirement','consequence','A more explicit condition that can guide implementation or spatial response.', ['should provide','must allow','shall','requirement is','needs to provide','ensure'], ['provide','allow','require','requirement','ensure','must'], ['goal','consequence']),
-      category('validation','Validation / negotiation','evaluation','A check, negotiation or comparison used to test whether goals and requirements remain coherent or satisfied.', ['check whether','test whether','does this','satisfy','validate','negotiate','works with'], ['check','test','validate','satisfy','negotiate','conflict','works'], ['evaluation'])
+      category('validation','Validation or Negotiation','evaluation','A check, negotiation or comparison used to test whether goals and requirements remain coherent or satisfied.', ['check whether','test whether','does this','satisfy','validate','negotiate','works with'], ['check','test','validate','satisfy','negotiate','conflict','works'], ['evaluation'])
     ]
   },
   {
@@ -50,14 +50,14 @@ export const frameworks = [
     connectionMode:'soft',
     categories:[
       category('surface','Surface statement','input','The visible issue, claim or condition that begins the enquiry.', ['the issue is','the problem is','currently','at first'], ['issue','problem','condition','statement'], ['input','interpretation']),
-      category('reason','Why? / reason','grounding','An explicit reason offered in response to the current statement.', ['because','due to','since','so that'], ['because','reason','due','since','why'], ['grounding']),
+      category('reason','Why? (Reason)','grounding','An explicit reason offered in response to the current statement.', ['because','due to','since','so that'], ['because','reason','due','since','why'], ['grounding']),
       category('deeper','Deeper reason','grounding','A further reason reached by asking why again.', ['this happens because','which comes from','underlying','results from','because of'], ['underlying','cause','results','drives','deeper'], ['grounding']),
       category('root','Root concern','goal','The underlying concern or purpose that the repeated enquiry ultimately exposes.', ['ultimately','at the root','fundamentally','the core issue','what matters is'], ['ultimately','root','fundamental','core','purpose','value','matters'], ['goal','evaluation'])
     ]
   },
   {
     id:'laddering',
-    label:'Laddering / Means–End',
+    label:'Laddering (Means–End)',
     shortLabel:'Laddering',
     source:'Reynolds & Gutman (1988)',
     description:'Uses the source-supported means–end chain ATTRIBUTE → CONSEQUENCE → VALUE. TRACEWORK may spatialise the consequence later, but the framework itself remains this three-part ladder.',
@@ -78,9 +78,9 @@ export const frameworks = [
     arrangement:'sequence',
     connectionMode:'soft',
     categories:[
-      category('situation','Situation / WHAT','input','The unresolved situation, need or issue being engaged.', ['the situation is','currently','we have','there is','the issue is'], ['situation','condition','context','issue','problem','what'], ['input','grounding']),
-      category('frame','Frame / HOW','interpretation','The way of seeing the situation that makes a course of action conceivable.', ['frame this as','rather than','seen as','treat this as','the idea is','working principle'], ['frame','lens','reframe','principle','how','idea'], ['interpretation','grounding']),
-      category('value','Value / WHY','goal','The desired value, outcome or aspiration that the frame is intended to achieve.', ['so that','the aim is','the value is','we want','should support','why'], ['value','aim','goal','outcome','purpose','why'], ['goal']),
+      category('situation','Situation (What)','input','The unresolved situation, need or issue being engaged.', ['the situation is','currently','we have','there is','the issue is'], ['situation','condition','context','issue','problem','what'], ['input','grounding']),
+      category('frame','Frame (How)','interpretation','The way of seeing the situation that makes a course of action conceivable.', ['frame this as','rather than','seen as','treat this as','the idea is','working principle'], ['frame','lens','reframe','principle','how','idea'], ['interpretation','grounding']),
+      category('value','Value (Why)','goal','The desired value, outcome or aspiration that the frame is intended to achieve.', ['so that','the aim is','the value is','we want','should support','why'], ['value','aim','goal','outcome','purpose','why'], ['goal']),
       category('response','Design response','consequence','A possible design proposition made possible by the chosen frame.', ['respond by','could create','provide','use','arrange','place','design'], ['create','provide','use','arrange','place','move','space','spatial'], ['consequence'])
     ]
   },
@@ -94,10 +94,10 @@ export const frameworks = [
     connectionMode:'soft',
     categories:[
       category('frame','Current frame','interpretation','The present understanding of the situation that guides action.', ['i think','i read','the idea is','the problem is','i am treating'], ['frame','idea','understand','interpret','problem'], ['interpretation']),
-      category('move','Move / experiment','consequence','A design action, proposition, drawing move or experiment made within the current frame.', ['i will','try','move','place','add','remove','rearrange','change','test'], ['move','place','add','remove','arrange','draw','model','test','experiment'], ['consequence']),
-      category('backtalk','Back-talk / consequence','evaluation','What the situation reveals or does in response to the move.', ['this creates','this causes','the result is','now','it becomes','reveals'], ['result','creates','causes','effect','outcome','reveals','consequence'], ['evaluation','consequence']),
+      category('move','Move or Experiment','consequence','A design action, proposition, drawing move or experiment made within the current frame.', ['i will','try','move','place','add','remove','rearrange','change','test'], ['move','place','add','remove','arrange','draw','model','test','experiment'], ['consequence']),
+      category('backtalk','Back-talk and Consequence','evaluation','What the situation reveals or does in response to the move.', ['this creates','this causes','the result is','now','it becomes','reveals'], ['result','creates','causes','effect','outcome','reveals','consequence'], ['evaluation','consequence']),
       category('reflection','Reflection-in-action','evaluation','A judgement about what the move and its consequences reveal.', ['i notice','this works','this does not','however','but','on reflection'], ['notice','works','fails','however','but','reflect','better','worse'], ['evaluation','grounding']),
-      category('reframe','Reframe / next move','interpretation','A revised understanding or next action prompted by reflection.', ['instead','rethink','reframe','revise','change the idea','try another'], ['instead','reframe','revise','adjust','again','alternative','next'], ['interpretation','consequence'])
+      category('reframe','Reframe or Next Move','interpretation','A revised understanding or next action prompted by reflection.', ['instead','rethink','reframe','revise','change the idea','try another'], ['instead','reframe','revise','adjust','again','alternative','next'], ['interpretation','consequence'])
     ]
   },
   {
@@ -109,18 +109,18 @@ export const frameworks = [
     arrangement:'network',
     connectionMode:'soft',
     categories:[
-      category('expression','Expression / term','input','The word, phrase, statement, preference, discomfort or artefact whose meaning is being examined.', ['the word','the phrase','the statement','the object','the brief'], ['word','phrase','statement','object','term','brief','preference'], ['input']),
+      category('expression','Expression or Term','input','The word, phrase, statement, preference, discomfort or artefact whose meaning is being examined.', ['the word','the phrase','the statement','the object','the brief'], ['word','phrase','statement','object','term','brief','preference'], ['input']),
       category('meaning','Possible meaning','interpretation','A possible interpretation carried by that expression rather than a fixed definition.', ['could mean','might mean','means','i interpret','suggests','implies'], ['meaning','means','interpret','reading','suggests','implies'], ['interpretation']),
       category('context','Context','grounding','The user, situation, culture, site or circumstance through which the meaning is constructed.', ['in this context','for these users','on this site','because','depending on'], ['context','user','site','culture','because','situation'], ['grounding']),
-      category('use','Use / experience','evaluation','What the meaning implies for use, behaviour or lived experience.', ['when used','users experience','in use','behaviour','occupation','interaction'], ['use','experience','behaviour','occupy','interaction','activity'], ['evaluation','grounding']),
-      category('value_relation','Value / relation','goal','The value, priority or relation that becomes significant through the interpretation.', ['what matters','value','relationship','between','priority','important because'], ['value','relation','relationship','priority','important','care'], ['goal','evaluation']),
-      category('atmosphere','Atmosphere / quality','evaluation','The atmospheric, perceptual or qualitative implication carried by the meaning.', ['feels','atmosphere','sense of','quality','quiet','welcoming','open'], ['feel','atmosphere','quality','sense','comfort','welcoming','open'], ['evaluation','interpretation']),
+      category('use','Use and Experience','evaluation','What the meaning implies for use, behaviour or lived experience.', ['when used','users experience','in use','behaviour','occupation','interaction'], ['use','experience','behaviour','occupy','interaction','activity'], ['evaluation','grounding']),
+      category('value_relation','Value and Relation','goal','The value, priority or relation that becomes significant through the interpretation.', ['what matters','value','relationship','between','priority','important because'], ['value','relation','relationship','priority','important','care'], ['goal','evaluation']),
+      category('atmosphere','Atmosphere and Quality','evaluation','The atmospheric, perceptual or qualitative implication carried by the meaning.', ['feels','atmosphere','sense of','quality','quiet','welcoming','open'], ['feel','atmosphere','quality','sense','comfort','welcoming','open'], ['evaluation','interpretation']),
       category('implication','Architectural consequence','consequence','A spatial or architectural implication produced by the interpreted meaning in context.', ['spatially','therefore','this suggests','design implication','create','provide'], ['spatial','implication','create','provide','arrange','space','form'], ['consequence'])
     ]
   },
   {
     id:'freeform',
-    label:'Freeform / Low-Structure',
+    label:'Freeform (Low Structure)',
     shortLabel:'Freeform',
     source:'TRACEWORK working mode',
     description:'Suppresses a visible framework while keeping the same reasoning network. Use it when categories would get in the way.',
@@ -139,7 +139,7 @@ export const provenanceOptions = [
   {id:'tutor',label:'Reviewer'},
   {id:'organisation',label:'Organisation'},
   {id:'system',label:'Software Tool'},
-  {id:'other',label:'Other / Unspecified'}
+  {id:'other',label:'Other or Unspecified'}
 ];
 export const legacyProvenanceLabels = {
   participant:'Legacy Attribution · Review Agent',
@@ -319,30 +319,30 @@ export function frameworkGuidance(frameworkId,currentRoleId,{sourceText=''}={}){
       root:{nextRole:null,question:'A root concern has been reached. Start another Why chain if another cause may also matter.',placeholder:'',choices:[]}
     },
     laddering:{
-      attribute:{nextRole:'consequence',question:'What does this attribute enable, prevent or change for the user?',placeholder:'This allows / prevents / changes…',choices:['Functional consequence','Experiential consequence']},
-      consequence:{nextRole:'value',question:'Why is that consequence important?',placeholder:'This matters because…',choices:['Control / agency','Comfort / security','Belonging / identity']},
+      attribute:{nextRole:'consequence',question:'What does this attribute enable, prevent or change for the user?',placeholder:'This allows, prevents or changes…',choices:['Functional consequence','Experiential consequence']},
+      consequence:{nextRole:'value',question:'Why is that consequence important?',placeholder:'This matters because…',choices:['Control and Agency','Comfort and Security','Belonging and Identity']},
       value:{nextRole:null,question:'This ladder has reached a value. Start another attribute or compare how the value could become architectural.',placeholder:'',choices:[]}
     },
     framing:{
       situation:{nextRole:'frame',question:'What way of seeing this situation would make it designable?',placeholder:'Rather than treating this as…, frame it as…',choices:['Change the question','Change the relationship','Change what counts as the problem']},
       frame:{nextRole:'value',question:'What value or outcome makes this frame worth pursuing?',placeholder:'This frame matters because it could…',choices:['User value','Spatial aim','Performance outcome']},
-      value:{nextRole:'response',question:'What design response becomes possible through this frame?',placeholder:'Respond by…',choices:['Spatial organisation','Element / system','Sequence / threshold']},
+      value:{nextRole:'response',question:'What design response becomes possible through this frame?',placeholder:'Respond by…',choices:['Spatial organisation','Element or System','Sequence and Threshold']},
       response:{nextRole:'frame',question:'What alternative frame could produce a different response?',placeholder:'Another way to frame the situation is…',choices:['Reframe the situation','Keep response and change frame']}
     },
     reflective:{
-      frame:{nextRole:'move',question:'What move or experiment would test this current frame?',placeholder:'Try / place / move / draw / model…',choices:['Make a move','Test an alternative']},
-      move:{nextRole:'backtalk',question:'What does the situation do in response to this move?',placeholder:'This creates / reveals / causes…',choices:['Unexpected effect','Spatial consequence','Constraint becomes visible']},
-      backtalk:{nextRole:'reflection',question:'What does that back-talk make you notice or reconsider?',placeholder:'I notice / this works because / this fails because…',choices:['What worked?','What failed?','What changed?']},
-      reflection:{nextRole:'reframe',question:'How should the frame or next move change because of that reflection?',placeholder:'Instead / revise / reframe / try another…',choices:['Reframe','Revise the move','Try an alternative']},
-      reframe:{nextRole:'move',question:'What next move would test the revised frame?',placeholder:'Try / move / change…',choices:['Test the reframe','Make the next move']}
+      frame:{nextRole:'move',question:'What move or experiment would test this current frame?',placeholder:'Try placing, moving, drawing or modelling…',choices:['Make a move','Test an alternative']},
+      move:{nextRole:'backtalk',question:'What does the situation do in response to this move?',placeholder:'This creates, reveals or causes…',choices:['Unexpected effect','Spatial consequence','Constraint becomes visible']},
+      backtalk:{nextRole:'reflection',question:'What does that back-talk make you notice or reconsider?',placeholder:'I notice, this works because, or this fails because…',choices:['What worked?','What failed?','What changed?']},
+      reflection:{nextRole:'reframe',question:'How should the frame or next move change because of that reflection?',placeholder:'Instead, revise, reframe or try another…',choices:['Reframe','Revise the move','Try an alternative']},
+      reframe:{nextRole:'move',question:'What next move would test the revised frame?',placeholder:'Try, move or change…',choices:['Test the reframe','Make the next move']}
     },
     semantics:{
       expression:{nextRole:'meaning',question:'What possible meaning does this expression carry here?',placeholder:'In this project, this could mean…',choices:['Possible meaning','Alternative reading']},
-      meaning:{nextRole:'context',question:'What makes this meaning matter: context, use, relation, atmosphere or an architectural implication?',placeholder:'Develop the meaning through context, use, value, quality or spatial implication…',choices:['Context','Use / experience','Value / relation','Atmosphere / quality','Architectural consequence'],roleOptions:['context','use','value_relation','atmosphere','implication']},
+      meaning:{nextRole:'context',question:'What makes this meaning matter: context, use, relation, atmosphere or an architectural implication?',placeholder:'Develop the meaning through context, use, value, quality or spatial implication…',choices:['Context','Use and Experience','Value and Relation','Atmosphere and Quality','Architectural consequence'],roleOptions:['context','use','value_relation','atmosphere','implication']},
       context:{nextRole:'meaning',question:'How does this context change or qualify the meaning?',placeholder:'In this context, the expression becomes…',choices:['Qualify the meaning','Surface another meaning'],roleOptions:['meaning','use','implication']},
-      use:{nextRole:'implication',question:'What architectural implication follows from this use or experience?',placeholder:'Spatially, this suggests…',choices:['Spatial consequence','Relationship / threshold'],roleOptions:['implication','value_relation']},
+      use:{nextRole:'implication',question:'What architectural implication follows from this use or experience?',placeholder:'Spatially, this suggests…',choices:['Spatial consequence','Relationship and Threshold'],roleOptions:['implication','value_relation']},
       value_relation:{nextRole:'implication',question:'How might this value or relation become spatially consequential?',placeholder:'This could be expressed through…',choices:['Architectural consequence','Atmospheric quality'],roleOptions:['implication','atmosphere']},
-      atmosphere:{nextRole:'implication',question:'What architectural condition could support or challenge this quality?',placeholder:'This quality could be shaped through…',choices:['Architectural consequence','Use / experience'],roleOptions:['implication','use']},
+      atmosphere:{nextRole:'implication',question:'What architectural condition could support or challenge this quality?',placeholder:'This quality could be shaped through…',choices:['Architectural consequence','Use and Experience'],roleOptions:['implication','use']},
       implication:{nextRole:'meaning',question:'What meaning does this architectural consequence reinforce, challenge or reveal?',placeholder:'This consequence changes the reading because…',choices:['Re-read the expression','Add context'],roleOptions:['meaning','context']}
     }
   };
@@ -437,7 +437,7 @@ export function frameworkTutorialSteps(frameworkId='tracework'){
     fivewhys:'Use repeated “why?” questions to move beneath a surface statement. TRACEWORK keeps this intentionally light because Five Whys is an elicitation technique, not a full design ontology.',
     laddering:'Follow Attribute → Consequence → Value. This reveals why a stated spatial quality matters before deciding how architecture should respond.',
     framing:'Use framing to change how an unclear situation is seen so that a design response becomes possible. The framework is a lens for constructing the problem, not merely categorising an answer.',
-    reflective:'Use the cycle Current frame → Move → Back-talk → Reflection → Reframe / next move. The right panel follows the conversation between the designer and the developing situation.',
+    reflective:'Use the cycle Current frame → Move → Back-talk → Reflection → Reframe or Next Move. The right panel follows the conversation between the designer and the developing situation.',
     semantics:'Treat meaning as contextual, relational and potentially multiple. The map is intentionally network-like: expression, meaning, context, use, value, atmosphere and architectural implication can connect in several directions.',
     freeform:'Use this mode when visible categories get in the way. The same reasoning remains available for later inspection through TRACEWORK or a literature framework.'
   };

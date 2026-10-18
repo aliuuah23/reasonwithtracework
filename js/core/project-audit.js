@@ -26,7 +26,7 @@ export function auditProject(project={}){
   const unknownChunk=hotspots.filter(h=>h.chunkId&&chunks.length&&!chunks.some(c=>c.id===h.chunkId));
   if(unknownChunk.length)warnings.push(`${unknownChunk.length} hotspot${unknownChunk.length===1?' has':'s have'} a missing source section.`);
   const present=new Set(nodes.map(n=>n.type));
-  const stages=[['input','Source / hotspot'],['interpretation','Interpretation'],['grounding','Grounding'],['consequence','Spatial consequence'],['evaluation','Evaluation / trade-off'],['goal','Design goal']]
+  const stages=[['input','Source or Hotspot'],['interpretation','Interpretation'],['grounding','Grounding'],['consequence','Spatial consequence'],['evaluation','Evaluation and Trade-off'],['goal','Design goal']]
     .map(([type,label])=>({type,label,recorded:present.has(type)}));
   const routes=new Map();
   nodes.filter(n=>n.type!=='input').forEach(n=>{
