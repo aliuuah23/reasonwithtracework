@@ -1,14 +1,21 @@
-# TRACEWORK D2.16 — CLEAN-SLATE FEATURE FREEZE (19 October 2026)
+# TRACEWORK D3 — Final Example-Ready Feature Freeze (19 October 2026)
 
-**Status:** D2.15 accepted in the browser. D2.16 is the final clean-install deployment candidate; D3 is a short manual acceptance checklist, not a scheduled feature-development series.
+**Status:** Final D3 deployment candidate. All user-accepted D2.15 interactions are unchanged.
 
-**Destructive reset on first open:** The first time each browser opens D2.16, TRACEWORK deletes that browser's old TRACEWORK project bank, active project, local preferences, and tutorial-completion flags. The reset is explicitly intentional and cannot be undone by the site. **Export any project worth keeping to a JSON file BEFORE loading D2.16.** A persistent D2.16 marker prevents subsequent reloads from deleting newly-created work. Other websites' local storage is not touched. A website deployment cannot remotely clear local data on devices that have not opened this release.
+- **Optional examples restored:** Home includes two separate actions: **Try Short Brief · 13 nodes** and **Try Long Brief · 42 nodes**. Each is a fully connected test trace, NOT an automatically seeded project. Click to add just that example under **Your traces**; existing projects and edits are never overwritten. The buttons do not change the active project.
+- **Clean start retained:** This release carries forward D2.16's one-time TRACEWORK browser-data reset. If the browser has already opened D2.16, its reset marker is preserved and D3 **will not reset new data again**. If this is the first clean-slate release ever opened in a browser, previous TRACEWORK saves there are deleted on first load: **export any project worth keeping to JSON first**. Other websites are unaffected.
+- **No other demos:** The legacy one-click prefill fixture and automatic starter pathways remain removed. Framework resources, research references, and empirical context remain available.
+- **Feature freeze:** No functional changes to D2.15 maps, framework choices, provenance, reasoning tools, node alignment, resize, image nodes, architectural studies, exports or D1.9 accepted interactions.
+- **Backend limitation:** Original model-generated imagery still needs a separately hosted secured service; local vector diagrams remain procedural.
 
-**Published clean state:** Old test/demo project JSON files and starter Pathway Bank templates are excluded; no example buttons are shown. Project creation, import/export, My Trace, framework guidance, provenance, image/reference nodes, resizing, Focus and Aggregate maps, architectural study generation, exports, and saved state functionality remain. Research-backed ontology, framework definitions, spatial-reading references and pilot-derived empirical metadata are *read-only knowledge resources*, not saved project/test data, and remain to preserve functionality.
+## D3 short final acceptance
+1. **Clean and examples:** Home begins without seeded traces; add each example independently and confirm exactly 13/42 nodes; refresh and confirm they persist without duplicates.
+2. **Maps and reasoning:** Open an example; check Focus/Aggregate, Original/Arrange, framework modes, source/rejected highlighting, and preserved D1.9 interactions.
+3. **Visuals and storage:** Paste or drop a reference, edit/resize/align it, save/reopen and check SVG/PNG/PDF/JSON exports.
 
-**Freeze:** No alterations to accepted D2.15 reasoning, visualization, layout, D1.9 interaction or image/node tools. Genuine model-backed image generation still depends on configuring and testing the optional secured backend; offline procedural diagrams must not be described as AI renders.
+## Previous release notes
 
-**D3 rapid acceptance:** Fresh home with no previous projects; create and save a brief; inspect Focus/Aggregate, framework changes and halo; paste/drop/edit/resize visual nodes; test failed/rejected branches and undo; export/re-import PNG/SVG/PDF/JSON; confirm half-screen controls and frozen D1.9 interactions. Fix only regressions that block real tracing.
+D2.16 established the clean-slate policy; D3 supersedes its example-removal decision. Other prior improvements are recorded in CHANGELOG.md.
 
 ## D2.15 validation
 
@@ -69,7 +76,7 @@ TRACEWORK is a browser-based research prototype for making architectural design 
 
 ## Start here
 
-1. Open the website; choose **Quick brief** or **Long Brief or Document** and start a trace. No example/test projects are published in the D2.16 clean-slate release.
+1. Open the website; choose **Quick brief** or **Long Brief or Document** and start a trace. Use the optional Short and Long example buttons to restore the 13-node or 42-node test trace; they are never seeded automatically.
 2. Select a phrase or interpretive hotspot in your source. Develop connected reasoning nodes; use the right-hand guidance and optional links, alternatives and evaluations.
 3. Switch between **Focus Map** and **Aggregate Map**; choose **Original Map** or **Arrange Map** when appropriate. Framework views are analytic lenses and should not be mistaken for participants' recorded reasoning.
 4. Use **My Trace** to inspect saved projects, run a project check and export a JSON backup. Use **Export map** and its preview for SVG, PNG or vector PDF (Chrome print-to-PDF).

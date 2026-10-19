@@ -187,7 +187,7 @@ async function init(){
       return id?els.graphNodes?.querySelector(`[data-id="${CSS.escape(String(id))}"]`):null;
     }});
   // C2.5: new devices deliberately start empty. Existing browser projects remain untouched.
-  // The two canonical examples are added only when the visitor clicks Try long + short examples.
+  // The two canonical examples are added only when the visitor selects the Short or Long example button.
   renderProjectShelf();
   renderEmptyInspector();
   const params=new URLSearchParams(window.location.search);
@@ -241,8 +241,10 @@ function bindGlobalEvents(){
   $('#toggleInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
   $('#collapseSourcePanel')?.addEventListener('click',()=>togglePanelVisibility('source'));
   $('#collapseInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
-  // D2.16: example fixtures removed from the published clean-slate build.
-  // Test example buttons are intentionally absent in the clean-slate release.
+  // D3: clean initial project shelf, but allow explicit, separate restoration of
+  // the 13-node and 42-node canonical examples. Never seed them automatically.
+  $('#restoreShortExampleButton')?.addEventListener('click',()=>restoreCanonicalExample('short'));
+  $('#restoreLongExampleButton')?.addEventListener('click',()=>restoreCanonicalExample('long'));
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
   els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
   els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); } });
@@ -1804,7 +1806,7 @@ function confirmLeaveForAbout(){
 }
 
 function confirmResetLocalData(){
-  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. It also resets tutorial progress on this browser. No examples will be restored automatically. Existing traces should be exported to JSON before resetting.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
+  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. It also resets tutorial progress on this browser. Examples will not be restored automatically, but the Short and Long buttons can add them later. Export any original traces to JSON before resetting.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
     const ok=clearAllProjects();
     if(!ok){toast('Could not clear local data.');return;}
     resetTutorialProgress();
@@ -1956,6 +1958,37 @@ async function seedAggregateTestProject(){
     const project=await (await fetch('./data/aggregate-test-project.json')).json();
     ensureProject(project);
   }catch(err){ console.warn('TRACEWORK aggregate test project could not be seeded.',err); }
+}
+
+
+// D3: optional examples remain in the final clean installation solely for
+// deterministic regression tests. They never prepopulate a new browser.
+const CANONICAL_EXAMPLES=Object.freeze({
+  short:{file:'test-project.json',count:13,button:'restoreShortExampleButton',dismissKey:'tracework.dismissedTestProject.v1'},
+  long:{file:'aggregate-test-project.json',count:42,button:'restoreLongExampleButton',dismissKey:'tracework.dismissedAggregateTestProject.v1'}
+});
+async function restoreCanonicalExample(kind){
+  const config=CANONICAL_EXAMPLES[kind];if(!config)return;
+  const button=document.getElementById(config.button);
+  const originalLabel=button?.textContent||'';
+  if(button){button.disabled=true;button.textContent='Opening example…';}
+  try{
+    const response=await fetch(`./data/${config.file}?v=d3-final-example`,{cache:'no-store'});
+    if(!response.ok)throw new Error(`Example unavailable (${response.status})`);
+    const candidate=await response.json();
+    if(!candidate.projectId||!candidate.brief||!Array.isArray(candidate.nodes)||
+       candidate.nodes.length!==config.count||!Array.isArray(candidate.edges)||!Array.isArray(candidate.hotspots))
+      throw new Error('Incomplete example fixture');
+    const existing=listProjects().some(project=>project.projectId===candidate.projectId);
+    if(!existing&&!ensureProject(candidate))throw new Error('Browser could not save the example');
+    localStorage.removeItem(config.dismissKey);
+    renderProjectShelf();
+    const shelf=document.getElementById('projectShelfWrap');
+    if(shelf&&!shelf.classList.contains('hidden'))shelf.scrollIntoView({behavior:'smooth',block:'start'});
+    toast(existing?'Example already in Your traces. Open it there.':
+      `${kind==='short'?'Short':'Long'} example added to Your traces (${config.count} nodes).`);
+  }catch(error){console.error('Example restoration failed',error);toast('Could not add this example. Your saved projects were not changed.');}
+  finally{if(button){button.disabled=false;button.textContent=originalLabel;}}
 }
 
 function stripLegacyAggregateDemo(project){

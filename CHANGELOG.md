@@ -1,3 +1,12 @@
+## D3 — Example-Ready Clean Slate and Feature Freeze (19 October 2026)
+
+- Final deployment name **D3** (no new D2.17 numbering).
+- Restore the **Short Brief (13-node)** and **Long Brief (42-node)** test projects and separate on-demand homepage buttons; never seed on first visit.
+- Preserve the D2.16 one-time clean-slate marker and clear-only-once behaviour, without repeating cleanup for a browser that already opened D2.16.
+- Restore examples without overwriting existing projects or unexpectedly switching the active project.
+- Keep all D2.15 accepted feature code unchanged; no replacement of framework or architectural generating modules.
+- Final user verification required; optional secured model backend for original AI renders remains unconfigured by the static ZIP.
+
 ## D2.16 — Final Clean-Slate Release / D2 Feature Freeze
 
 - One-time browser-local reset of TRACEWORK projects, active trace, tutorial state, panel preferences and optional model endpoint session. A stored marker ensures that **new projects are not removed on subsequent loads**.

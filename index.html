@@ -64,7 +64,10 @@
         <textarea id="landingBrief" rows="7" placeholder="Paste a brief, requirement, design statement or project intention…"></textarea>
         <div class="brief-chunk-preview hidden" id="briefChunkPreview"></div>
         <div class="start-actions">
-          
+          <div class="example-actions" aria-label="Optional example traces">
+            <button class="secondary-button restore-examples-button" id="restoreShortExampleButton" type="button" title="Add the 13-node short-brief example to Your traces without replacing existing work">Try Short Brief · 13 nodes</button>
+            <button class="secondary-button restore-examples-button" id="restoreLongExampleButton" type="button" title="Add the 42-node long-brief example to Your traces without replacing existing work">Try Long Brief · 42 nodes</button>
+          </div>
           <button class="primary-button" id="startTracingButton">Start tracing <span>→</span></button>
         </div>
       </div>
@@ -380,6 +383,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d2.16-clean-slate-freeze"></script>
+  <script type="module" src="js/app.js?v=d3-final-examples-retained"></script>
 </body>
 </html>
