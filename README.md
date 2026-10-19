@@ -1,4 +1,4 @@
-## D2.6 — Workflow clarity and aggregate reasoning diagrams (test deployment)
+## D2.7 — Workflow clarity and aggregate reasoning diagrams (test deployment)
 
 - Architectural Propositions opens immediately on a readable **Reasoning Summary**; **Design Studies** is the second tab. No blank intermediate selection modal.
 - All generic controls use building-type-neutral language; project-specific typology remains visible only in outputs derived from a relevant brief.
@@ -97,5 +97,5 @@ A visual proposition can be previewed, exported as SVG, printed as an **Architec
 Focus schemes use a strategy-linked programme-plan inset and identify pilot brief checks (additional seats, route, sheltered footprint and individual/group use where present in the brief). Twenty seats are indicated as potential seat loci when the brief requests them; this is **not** evidence of dimensional clearance, occupancy or access compliance. Source-led secondary spatial ideas are shown alongside the primary form. Aggregate adopts five differentiated form-making morphologies (archipelago, annulus, radial canopy, directional ribbons and an oblique accordion-fold canopy), with distinct source assignments and no false attribution to participants. The original D1.9 interaction implementations have not been refactored. All visual and saving interactions require live browser PASS/FAIL checks.
 
 
-## D2.6 update
+## D2.7 update
 Each map remembers its own Original/Arrange mode and canvas position when switching. Aggregate studies now include plan, sectional intent and axonometric morphology, with explicit speculative qualifications. Focus schemes remain unchanged.

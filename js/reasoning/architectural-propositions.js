@@ -1,4 +1,4 @@
-// TRACEWORK D2.4 — evidence-led pavilion assembly and differentiated architectural form studies.
+// TRACEWORK D2.7 — evidence-led design studies: aggregate synthesis across the full reasoning network.
 // Geometry is authored procedurally, in the browser, from statements and links in the user's trace.
 // No request is made to a third-party service and no generated proposal is attributed to a participant.
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -109,36 +109,76 @@ export function supportedOptions(state,scoped,max=12,{selectedRootId=null}={}){
 
 // D2.4: Keep whole-pavilion pathways and speculative project-scale translations distinct.
 // Alternatives here are SYSTEM translations, never new participant-authored branches.
+// Whole-map synthesis: combinations come from the entire visible Aggregate network,
+// not just a hotspot or a single branch. This is deterministic procedural inference;
+// it does NOT impersonate free-form model generation or claim participant authorship.
 export function aggregateFormOptions(state,scoped,{min=3,max=5}={}){
-  const routes=supportedOptions(state,scoped,40);
-  if(!routes.length)return [];
-  const distinct=[],seen=new Set();
-  // Diversity is not equivalent to a numerical ranking: favour documented different
-  // spatial intentions and preserve the original route as the evidence source.
-  for(const route of routes){
-    const kind=route.strategy;
-    if(seen.has(kind))continue;
-    seen.add(kind);distinct.push({...route,translation:'source-led',variation:0});
-    if(distinct.length>=max)break;
+ const nodes=(scoped?.nodes||state.nodes||[]).filter(sourceNode).filter(live);
+ const edges=(scoped?.edges||state.edges||[]).filter(e=>e.status!=='rejected'&&!e.meta?.artifact);
+ if(!nodes.some(n=>n.type==='consequence'||n.type==='interpretation'||n.type==='note'))return [];
+ const analysis=scoreStrategies(nodes), themes=analysis.ordered.filter(k=>analysis.scores[k]>=3&&(analysis.sources[k]||[]).length);
+ if(!themes.length)return [];
+ const byId=new Map(nodes.map(n=>[n.id,n]));
+ const neighbours=new Map(nodes.map(n=>[n.id,new Set()]));
+ for(const e of edges){if(neighbours.has(e.source)&&neighbours.has(e.target)){neighbours.get(e.source).add(e.target);neighbours.get(e.target).add(e.source);}}
+ const primaryNodes=k=>nodes.filter(n=>['consequence','interpretation','note'].includes(n.type)&&patterns[k].test(n.label||''));
+ const linksBetween=(a,b)=>{
+  if(!b)return false;
+  const targets=new Set(primaryNodes(b).map(n=>n.id));
+  for(const source of primaryNodes(a)){
+   const visited=new Set([source.id]), queue=[[source.id,0]];
+   while(queue.length){const [id,depth]=queue.shift();if(depth>0&&targets.has(id))return true;
+    if(depth>=3)continue;
+    for(const next of neighbours.get(id)||[])if(!visited.has(next)){visited.add(next);queue.push([next,depth+1]);}
+   }
   }
-  const affinities={pockets:['cluster','petals','ribbon','ring','fold'],social:['ring','cluster','fold','petals','ribbon'],climate:['petals','ribbon','fold','ring','cluster'],movement:['ribbon','fold','ring','cluster','petals'],privacy:['fold','ring','cluster','petals','ribbon'],capacity:['cluster','fold','ring','ribbon','petals'],duration:['ribbon','cluster','fold','ring','petals'],court:['ring','petals','cluster','fold','ribbon'],tier:['fold','ring','ribbon','petals','cluster'],adaptable:['cluster','fold','petals','ring','ribbon']};
-  const used=new Set();
-  for(const option of distinct){
-    const family=(affinities[option.strategy]||['fold','ribbon','ring','petals','cluster']).find(k=>!used.has(k))||'fold';
-    option.formalVariant=family;used.add(family);
+  return false;
+ };
+ // Five genuinely different morphological investigations. The formal families
+ // are assigned AFTER identifying dominant and linked intentions in the map.
+ const affinities={
+  movement:['ribbon','fold','cluster','ring','petals'],privacy:['fold','cluster','ring','petals','ribbon'],
+  capacity:['cluster','fold','ring','ribbon','petals'],climate:['petals','ribbon','fold','cluster','ring'],
+  duration:['ribbon','cluster','fold','petals','ring'],social:['ring','petals','cluster','fold','ribbon'],
+  pockets:['cluster','petals','fold','ring','ribbon'],court:['ring','petals','fold','ribbon','cluster'],
+  tier:['fold','ring','cluster','petals','ribbon'],adaptable:['cluster','ribbon','fold','petals','ring'],
+  greenery:['petals','cluster','ring','ribbon','fold']};
+ const count=Math.max(3,Math.min(5,max,Math.max(min,Math.min(5,themes.length+2))));
+ const used=new Set(), result=[];
+ for(let i=0;i<count;i++){
+  const primary=themes[i%themes.length];
+  // Promote independent pathways with high evidence coverage, but allow creative
+  // cross-branch synthesis; never pretend an unconnected synthesis was recorded.
+  const other=themes.filter(k=>k!==primary).sort((a,b)=>
+   Number(linksBetween(primary,b))-Number(linksBetween(primary,a)) ||
+   analysis.scores[b]-analysis.scores[a] || a.localeCompare(b));
+  const secondary=other.length?other[Math.floor(i/themes.length)%Math.min(other.length,3)]:null;
+  const pairedConnected=linksBetween(primary,secondary);
+  const prefer=[...(affinities[primary]||['fold','ribbon','cluster','ring','petals']),...(affinities[secondary]||[])];
+  const family=prefer.find(x=>!used.has(x))||['cluster','ring','petals','ribbon','fold'].find(x=>!used.has(x))||'fold';
+  used.add(family);
+  const supporting=new Set();
+  for(const k of [primary,secondary].filter(Boolean)){
+   for(const n of primaryNodes(k).slice(0,12)){
+    supporting.add(n.id);
+    for(const id of neighbours.get(n.id)||[])supporting.add(id);
+   }
   }
-  const strategies=['ribbon','petals','ring','fold','cluster'];
-  let alt=1;
-  // One recorded spatial move can be interpreted in more than one spatial geometry.
-  // Those interpretations must be clearly called variants, not fictitious recordings.
-  while(distinct.length<Math.min(min,max) && routes.length){
-    const base=routes[(alt-1)%routes.length];
-    const formalVariant=(affinities[base.strategy]||strategies).find(k=>!used.has(k))||strategies[(alt-1)%strategies.length];
-    used.add(formalVariant);
-    distinct.push({...base,id:`${base.id}-translation-${alt}`,translation:'speculative',variation:alt,formalVariant});
-    alt++;
-  }
-  return distinct.slice(0,max);
+  const evidence=nodes.filter(n=>supporting.has(n.id));
+  const evidenceIds=new Set(evidence.map(n=>n.id));
+  const relevantEdges=edges.filter(e=>evidenceIds.has(e.source)&&evidenceIds.has(e.target));
+  const {score,criteria}=optionScore(evidence,relevantEdges);
+  const components=[primary,secondary].filter(Boolean).map(k=>({key:k,score:analysis.scores[k],
+   sourceId:primaryNodes(k).find(n=>n.type==='consequence')?.id||primaryNodes(k)[0]?.id||null,
+   sourceText:primaryNodes(k).find(n=>n.type==='consequence')?.label||primaryNodes(k)[0]?.label||''}));
+  result.push({id:`aggregate-combination-${i+1}`,strategy:primary,
+   title:secondary?`${formLabels[primary]} + ${formLabels[secondary]}`:formLabels[primary],
+   formalVariant:family,aggregateThemes:components,aggregateNetworkCount:nodes.length,
+   linkedEvidence:pairedConnected,sourceIds:[...evidenceIds],
+   translation:secondary&&!pairedConnected?'speculative':'source-led',
+   nodes:evidence,edges:relevantEdges,score,criteria,variation:i});
+ }
+ return result;
 }
 function expressedMoves(nodes){
   const analysis=scoreStrategies(nodes.filter(live));
@@ -156,6 +196,7 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
   const analysis=scoreStrategies(nodes);const strategy=option?.strategy||analysis.choice;
   const moves=expressedMoves(nodes), secondary=moves.filter(m=>m.key!==strategy).slice(0,5);
   const lead=strategicNotes(strategy,nodes);
+  const aggregateThemes=mode==='aggregate'?(option?.aggregateThemes||[]):[];
   const architecture=buildingType(state.brief);
   const brief=text(state.brief);
   const checks=[
@@ -191,17 +232,24 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
   if(mode==='aggregate'){
     const family=option?.formalVariant||'fold';
     const familyLogic={
-      cluster:'Dispersed occupation pieces connected by selective links; gaps remain meaningful',
-      ring:'A continuous perimeter organised around an open centre, with multiple thresholds',
-      petals:'Radial, directionally varied pieces converging on a shared spatial focus',
-      ribbon:'Continuous linear bands that distinguish movement from adjacent occupation',
-      fold:'Alternating folded planes creating a directional sequence of sheltered and exposed pockets'
+      cluster:'A distributed set of activity islands shares circulation and selective thresholds',
+      ring:'A connected occupied perimeter frames a central void and controlled access',
+      petals:'Directional wings respond differently around an identifiable common focus',
+      ribbon:'Continuous bands organise routes, stopping places and intervening zones',
+      fold:'A succession of folded planes differentiates open, screened and occupied edges'
     };
-    const spatialEffect={movement:'Separate through-movement from areas where people linger',privacy:'Stage degrees of visual exposure through layered edges',capacity:'Reserve reversible occupation without assuming increased built footprint',climate:'Vary openness and shelter according to environmental intention',duration:'Differentiate arrival, short pauses and sustained occupation',social:'Support both proximity and retreat without forcing a single pattern',pockets:'Give separate activities distinct territories without fixed enclosed rooms',court:'Make a central void an organising spatial relationship',tier:'Express varied occupation levels and connected accessible routes',adaptable:'Enable rearrangement while keeping an identifiable stable zone'};
     annotations.length=0;
-    annotations.push({heading:'Recorded spatial intention',form:formLabels[strategy],sourceId:lead?.id||null,sourceText:lead?.label||'',grounded:Boolean(lead),status:lead?'Recorded spatial direction; form is an interpretation':'Needs a recorded spatial decision'});
-    annotations.push({heading:'Form relationship',form:familyLogic[family]||familyLogic.fold,sourceId:null,sourceText:'',grounded:false,status:'System-proposed formal translation; designer review required'});
-    annotations.push({heading:'Potential spatial outcome',form:spatialEffect[strategy]||'Spatial organisation must be further specified',sourceId:null,sourceText:'',grounded:false,status:'Potential consequence; not an architectural performance claim'});
+    const first=aggregateThemes[0];const second=aggregateThemes[1];
+    annotations.push({heading:'Recorded intention A',form:formLabels[first?.key||strategy],
+      sourceId:first?.sourceId||lead?.id||null,sourceText:first?.sourceText||lead?.label||'',
+      grounded:Boolean(first?.sourceId||lead),status:'Recorded spatial intention; formalisation remains interpretive'});
+    annotations.push({heading:second?'Recorded intention B':'Alternative interpretation',
+      form:second?formLabels[second.key]:'A different spatial organisation explored from the available evidence',
+      sourceId:second?.sourceId||null,sourceText:second?.sourceText||'',grounded:Boolean(second?.sourceId),
+      status:second?'Recorded additional intention across the wider map':'Additional spatial relation is system-proposed'});
+    annotations.push({heading:'Combined architectural hypothesis',form:familyLogic[family]||familyLogic.fold,
+      sourceId:null,sourceText:'',grounded:false,
+      status:option?.linkedEvidence?'Linked intentions within the trace; geometry is inferred':'Cross-branch synthesis; spatial relationship is proposed, not recorded'});
   }
   // A whole pavilion also communicates sourced secondary moves, rather than only
   // the single primary visual taxonomy. Secondary features are drawn below.
@@ -214,13 +262,15 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
   const {score,criteria}=option?{score:option.score,criteria:option.criteria}:optionScore(nodes,scoped?.edges||[]);
   return {id:`prop-${Date.now()}-${ordinal}`,title,mode,ordinal,architecture,strategy,concept:mode==='aggregate'?formLabels[strategy]:strategyName,
     formalVariant:option?.formalVariant||(['movement','duration','adaptable'].includes(strategy)?'ribbon':['court','social','privacy'].includes(strategy)?'ring':['pockets','climate'].includes(strategy)?'petals':'fold'),
-    translation:option?.translation||'source-led',secondaryMoves:secondary.map(x=>({key:x.key,sourceId:x.source.id,sourceText:x.source.label})),
+    translation:option?.translation||'source-led',aggregateThemes,aggregateNetworkCount:option?.aggregateNetworkCount||0,
+    linkedEvidence:!!option?.linkedEvidence,
+    secondaryMoves:secondary.map(x=>({key:x.key,sourceId:x.source.id,sourceText:x.source.label})),
     fullPavilion:mode!=='aggregate',briefChecks:checks,
-    layout:formLabels[strategy],branchId:option?.id||null,branchTitle:option?.title||lead?.label||'Visible trace',
+    layout:mode==='aggregate'&&aggregateThemes[1]?`${formLabels[strategy]} × ${formLabels[aggregateThemes[1].key]}`:formLabels[strategy],branchId:option?.id||null,branchTitle:option?.title||lead?.label||'Visible trace',
     documentedScore:score,scoreCriteria:criteria,annotations,sourceIds:[...new Set(all.map(n=>n.id))],
     recordedClaims:annotations.filter(a=>a.grounded).length,assumptions:annotations.filter(a=>!a.grounded).map(a=>a.form),
     sourceStatement:lead?.label||'',sourceStatementId:lead?.id||null,
-    note:mode==='aggregate'?'Form proposition translated from recorded reasoning. Spatial relationships are proposals, not a verified building, measured plan or participant design.':'Coordinated whole-project design option from this pathway. Roof, access route, spatial zoning and occupation are proposed together; seating, footprints, structural integrity, shelter and accessibility are NOT verified.',
+    note:mode==='aggregate'?`Whole-map synthesis from ${option?.aggregateNetworkCount||nodes.length} considered reasoning nodes. Recorded intentions are evidence; their spatial combination and form are hypotheses, not validated plans, participant drawings or free-form AI output.`:'Coordinated whole-project design option from this pathway. Roof, access route, spatial zoning and occupation are proposed together; seating, footprints, structural integrity, shelter and accessibility are NOT verified.',
     frameworkId:state.frameworkId||'tracework',evidenceStatus:analysis.choice==='generic'?'Insufficient documented spatial direction':'Source-led spatial interpretation'};
 }
 const f=x=>Number(x.toFixed(2));
@@ -288,7 +338,7 @@ function geometricTrace(kind){return {movement:'independent route and occupied e
 // Aggregate deliberately tests distinct formal hypotheses, rather than five
 // variations of the same roof template. Its geometry is not a participant claim.
 function abstractGraphicFor(spec){
- const kind=spec.formalVariant||'fold';let ground='',furn='',roof='',wall='',markers={};
+ const kind=spec.formalVariant||'fold';let ground='',furn='',roof='',wall='',humanParts='',markers={};
  ground+=halo(5,5,5,4.75,-.19,'#e9efe9',.94);
  for(let r=2;r<=4;r++)ground+=`<ellipse cx="${P(5,5)[0]}" cy="${P(5,5)[1]}" rx="${r*37}" ry="${r*19}" fill="none" stroke="#cbd9d3" stroke-width="1" stroke-dasharray="4 6"/>`;
  if(kind==='cluster'){
@@ -349,35 +399,42 @@ function abstractGraphicFor(spec){
   furn+=seat(1.8,4.1,2.0,.51,false)+seat(6.6,5.6,2,.51,false);
   roof+=columns([[1.25,1.55],[8.65,1.45],[1.7,8.25],[8.6,8.4]],3.35);
  }
- // The speculative spatial layer responds to recorded intentions, rather than
- // treating a formal family as proof of actual design performance.
- const movement=(spec.secondaryMoves||[]).some(m=>m.key==='movement');
- const activity=(spec.secondaryMoves||[]).some(m=>m.key==='social');
- const kindSpatial=spec.strategy;
- if(['movement','duration','adaptable'].includes(kindSpatial)||movement){
+ // Compose secondary/tertiary programme directly from BOTH recorded intentions.
+ const moves=new Set([spec.strategy,...(spec.aggregateThemes||[]).map(m=>m.key),...(spec.secondaryMoves||[]).map(m=>m.key)]);
+ if(['movement','duration','adaptable'].some(k=>moves.has(k))){
    const trace=kind==='ring'?[[1.3,5,.07],[3,8.4,.07],[7.3,8.4,.07],[8.7,5,.07]]:
      kind==='cluster'?[[1.4,1.8,.07],[3.8,4.5,.07],[6,5.2,.07],[8.6,8.6,.07]]:
      [[1.1,5,.07],[3.5,5,.07],[6.1,5,.07],[8.9,5,.07]];
-   for(let i=1;i<trace.length;i++)ground+=segment(trace[i-1],trace[i],'#288991',2.9,'stroke-dasharray="7 5"');
+   for(let i=1;i<trace.length;i++)ground+=segment(trace[i-1],trace[i],'#288991',3.1,'stroke-dasharray="7 5"');
  }
- if(kindSpatial==='privacy'){
+ if(moves.has('privacy')){
    wall+=curvingScreen(4.7,5.5,2.4,3.1,-1.7,-.35,2.05,'#94afa7');
    wall+=curvingScreen(4.7,5.5,3.5,4.0,-1.7,-.6,1.25,'#c6d0bc');
  }
- if(kindSpatial==='capacity'||kindSpatial==='adaptable'){
+ if(moves.has('capacity')||moves.has('adaptable')){
    for(const [x,y] of [[2.1,2.15],[3.0,6.7],[7.6,3.1],[7.1,7.3]])furn+=prism(x,y,.09,.54,.59,.38,'#b6b08c');
  }
- if(kindSpatial==='social'||activity){
+ if(moves.has('social')){
    furn+=arcBench(5.1,5.0,1.3,1.03,.15,2.2);
    ground+=halo(5,5,.85,.8,.04,'#d3c39f',.55);
  }
- if(kindSpatial==='climate'){
+ if(moves.has('climate')){
    for(let i=0;i<4;i++)roof+=segment([1+i*2,1.1,3.62],[1+i*2,8.8,3.62],'#5e9c9b',.95,'stroke-dasharray="3 5"');
  }
+ if(moves.has('tier')){
+   for(let i=0;i<3;i++)furn+=prism(.9+i*.75,8.4-i*.2,.04,2.2,.44,.17+i*.18,'#bdba9d');
+ }
+ if(moves.has('greenery')){
+   humanParts+=tree(.35,.5)+tree(9.55,9.25);
+ }
+ if(moves.has('duration')){
+   for(const [x,y] of [[1.2,1.25],[7.5,8.1]])furn+=seat(x,y,1.3,.36,false);
+ }
+ if(moves.has('court')&&kind!=='ring')ground+=halo(5,5,1.5,1.35,.04,'#cadfce',.70);
  // Human scale and a translucent site datum are useful, but do not pretend
  // that approximate geometry proves access, engineering or occupancy.
  ground+=human(10.2,8.2)+human(-.1,5.2);
- return {shapes:ground+furn+wall+roof,markers,geometry:geometricTrace(spec.strategy)};
+ return {shapes:ground+furn+wall+roof+humanParts,markers,geometry:geometricTrace(spec.strategy)};
 }
 // The orthographic inset and the axonometric draw from the same spatial strategy.
 // It is a programme-and-access check diagram, not a scaled measured drawing.
@@ -444,8 +501,16 @@ function aggregateFormPlan(spec){
    shape+=`<path d="${pts.map(([u,v],i)=>`${i?'L':'M'}${p(u,v)}`).join(' ')}" fill="none" stroke="#4c8283" stroke-width="2"/>`;
    for(const [u,v] of [[.21,.78],[.53,.77],[.82,.76]])shape+=dot(u,v);
  }
- // Secondary abstract analysis: explicitly show how the chosen spatial intent
- // could redirect occupation, thresholds or movement inside this morphology.
+ // Distinguish the two evidenced intentions as graphically independent moves.
+ // Both marks are derived from the same aggregateThemes used in the axon.
+ const combo=new Set((spec.aggregateThemes||[]).map(m=>m.key));
+ if(combo.has('pockets'))for(const [u,v] of [[.16,.24],[.78,.30],[.25,.72],[.77,.72]])shape+=`<circle cx="${x+u*s}" cy="${y+v*s}" r="${s*.085}" fill="none" stroke="#b19060" stroke-width="1.5" stroke-dasharray="3 2"/>`;
+ if(combo.has('tier'))for(let i=0;i<3;i++)shape+=`<path d="M${p(.10,.68+i*.085)}L${p(.40,.68+i*.085)}" stroke="#b99667" stroke-width="2.6"/>`;
+ if(combo.has('privacy'))for(let i=0;i<2;i++)shape+=`<path d="M${p(.14+i*.11,.19)}Q${p(.37+i*.09,.45)} ${p(.14+i*.11,.81)}" fill="none" stroke="#9b8a64" stroke-width="2" stroke-dasharray="3 2"/>`;
+ if(combo.has('climate'))for(let i=0;i<4;i++)shape+=`<path d="M${p(.2+i*.17,.05)}l${s*.06} ${s*.10}" fill="none" stroke="#5e9c9b" stroke-width="1.4"/>`;
+ if(combo.has('social'))shape+=`<circle cx="${x+s*.5}" cy="${y+s*.5}" r="${s*.12}" fill="#e2d2b4" stroke="#b4956e" stroke-width="1"/>`;
+ if(combo.has('capacity')||combo.has('adaptable'))for(let i=0;i<3;i++)shape+=dot(.24+i*.23,.76,2.7);
+ // Secondary abstract analysis: the drawing is a testable proposition.
  const strategy=spec.strategy;
  const movement=['movement','duration','adaptable'].includes(strategy);
  if(movement){
@@ -499,6 +564,11 @@ function aggregateFormSection(spec){
    art+=L([[.02,.48],[.15,.17],[.31,.51],[.48,.12],[.66,.49],[.83,.17],[.98,.50]],'#5d9791',4.4);
    for(const v of [.08,.31,.66,.94])art+=L([[v,.49],[v,.86]],'#7c9d99',1.6);
  }
+ const paired=new Set((spec.aggregateThemes||[]).map(m=>m.key));
+ if(paired.has('climate'))for(let i=0;i<5;i++)art+=L([[.12+i*.17,.10],[.08+i*.17,.20]],'#6a9a99',1.3);
+ if(paired.has('privacy'))for(const u of [.18,.48,.79])art+=L([[u,.49],[u,.79]],'#9aab9f',1.8);
+ if(paired.has('tier'))for(let i=0;i<3;i++)art+=L([[.16+i*.24,.83-i*.07],[.37+i*.24,.83-i*.07]],'#b49b7c',2.4);
+ if(paired.has('capacity')||paired.has('adaptable'))for(const u of [.11,.41,.63,.88])art+=L([[u,.80],[u+.04,.80]],'#b49b7c',4);
  // Occupation datum and human scale, intentionally undimensioned.
  for(const v of [.26,.72]){
    art+=L([[v-.045,.79],[v+.045,.79]],'#b59c77',3);
@@ -613,7 +683,16 @@ function wraps(str,max=43,limit=3){let rows=[''];for(const word of text(str).spl
 function multi(str,x,y,{size=13,max=48,lines=2,line=17,color='#2b4853',weight='400'}={}){return `<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="${size}" font-weight="${weight}">${wraps(str,max,lines).map((t,i)=>`<tspan x="${x}" dy="${i?line:0}">${escape(t)}</tspan>`).join('')}</text>`;}
 export function renderPropositionSVG(spec,{width=1180,height=790}={}){
   const {shapes,markers}=graphicFor(spec);const anns=(spec.annotations||[]).slice(0,3);
-  const pins=anns.map((a,i)=>{const p=P(...(markers[a.heading]||[5,5,.1]));return `<circle cx="${p[0]}" cy="${p[1]}" r="13" fill="#fff" stroke="#28586a" stroke-width="2.2"/><text x="${p[0]}" y="${p[1]+4.6}" text-anchor="middle" font-size="12" font-weight="700" fill="#28586a" font-family="Arial">${i+1}</text>`;}).join('');
+  // In Aggregate each evidence pin has its own position; D2.6 previously
+  // piled all three atop one another, obscuring the architectural geometry.
+  const pinPlaces=spec.mode==='aggregate'?({
+    cluster:[[2.3,3.0,1.0],[8.1,7.5,.55],[5.1,5,3.0]],
+    ring:[[1.3,5,.4],[8.2,5,.7],[5,8.0,3.3]],
+    petals:[[2.2,2.1,.7],[8,7,.6],[5,5,3.85]],
+    ribbon:[[2.2,2.65,.5],[7.7,7.3,.5],[5,3.5,3.2]],
+    fold:[[1.7,3,.6],[8,6.8,.6],[4.7,5,4.0]]
+   })[spec.formalVariant]||[[2.3,3,.6],[8,7,.6],[5,5,3.5]]:null;
+  const pins=anns.map((a,i)=>{const p=P(...(pinPlaces?.[i]||markers[a.heading]||[5,5,.1]));return `<circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#fff" stroke="#28586a" stroke-width="2"/><text x="${p[0]}" y="${p[1]+4.3}" text-anchor="middle" font-size="11" font-weight="700" fill="#28586a" font-family="Arial">${i+1}</text>`;}).join('');
   const notes=anns.map((a,i)=>{const y=190+i*152;return `<rect x="767" y="${y}" width="375" height="137" rx="11" fill="#fff" stroke="#d6e2e0"/><circle cx="788" cy="${y+24}" r="12" fill="#254d60"/><text x="788" y="${y+28.5}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" font-family="Arial">${i+1}</text>${multi(a.heading,810,y+28,{size:17,weight:'700',max:36,lines:1})}${multi(a.form,783,y+53,{size:12,max:53,lines:2,line:17})}${multi(a.grounded?'SOURCE: '+a.sourceText:'SYSTEM ASSUMPTION — verify before use',783,y+94,{size:10,max:65,lines:2,line:14,color:a.grounded?'#37706f':'#956b48'})}`;}).join('');
   const score=Number.isFinite(Number(spec.documentedScore))?`Trace completeness: ${spec.documentedScore} pts`:'Trace completeness: not scored';
   const isAggregate=spec.mode==='aggregate';
@@ -634,24 +713,26 @@ export function renderPropositionSVG(spec,{width=1180,height=790}={}){
   ${multi(spec.layout,38,101,{size:13,max:90,lines:1,color:'#56717e'})}
   <rect x="24" y="132" width="725" height="557" rx="15" fill="#e8eeeb" stroke="#d3ddda"/>
   <path d="M38 589L742 250" fill="none" stroke="#fff" stroke-width="1" opacity=".5"/>
-  <g transform="translate(44,85)">${shapes}${pins}</g>
+  <g transform="${isAggregate?'translate(121,83)':'translate(44,85)'}">${shapes}${pins}</g>
   ${plan}
   ${isAggregate?aggregateFormSection(spec):''}
   ${isAggregate?'':register}
   ${isAggregate?`<rect x="248" y="601" width="483" height="86" rx="9" fill="#f9fbf9" fill-opacity=".97" stroke="#c9d8d4"/>
-    <text x="263" y="621" font-family="Arial" font-size="10" font-weight="700" letter-spacing=".8" fill="#46636b">SPATIAL LOGIC / WHAT TO INVESTIGATE</text>
-    ${multi((spec.annotations?.[1]?.form||'Form relationships to be evaluated'),263,636,{size:10,max:74,lines:2,line:13,color:'#406675'})}
-    <text x="263" y="676" font-family="Arial" font-size="8.5" fill="#906f4c">Formal hypothesis · access, dimensions and performance untested</text>`:''}
+    <text x="263" y="619" font-family="Arial" font-size="10" font-weight="700" letter-spacing=".8" fill="#46636b">COMBINED ARCHITECTURAL INTENTIONS</text>
+    ${multi('A  '+(spec.aggregateThemes?.[0]?formLabels[spec.aggregateThemes[0].key]:'Spatial intention to be specified'),263,634,{size:10,max:79,lines:1,color:'#406675'})}
+    ${multi('B  '+(spec.aggregateThemes?.[1]?formLabels[spec.aggregateThemes[1].key]:'Alternative spatial reading'),263,649,{size:10,max:79,lines:1,color:'#406675'})}
+    ${multi('FORM  '+(spec.annotations?.[2]?.form||'Form relationship requires testing'),263,663,{size:9.5,max:83,lines:1,color:'#406675'})}
+    <text x="263" y="678" font-family="Arial" font-size="8.5" fill="#906f4c">Spatial synthesis is inferred · access and performance untested</text>`:''}
   <text x="47" y="697" font-family="Arial" font-size="11" fill="#526a77">${isAggregate?'FORM + PLAN + SECTION · SPECULATIVE SPATIAL TRANSLATION':'PROGRAMME + SITE STUDY · ROUTES, SHELTER AND OCCUPANCY REQUIRE CHECKING'}</text>
   <text x="767" y="151" font-family="Arial" font-size="12" font-weight="700" fill="#536e78" letter-spacing=".8">ARCHITECTURAL FEATURES AND REASONING</text>
   ${notes}
   ${checkBand}
   <rect x="765" y="653" width="378" height="40" rx="7" fill="#e6eeeb"/>${multi(score+' · '+(spec.translation==='speculative'?'ALTERNATIVE TRANSLATION':'SOURCE-LED'),777,678,{size:12,max:57,lines:1,weight:'700'})}
   <path d="M28 719H1144" stroke="#d3dedb"/>
-  ${multi('SOURCE MOVE: '+(spec.sourceStatement||'No specified spatial consequence'),38,740,{size:12,max:164,lines:2,line:17,color:'#405a63'})}
+  ${multi(isAggregate?'SYNTHESIS: '+(spec.aggregateThemes||[]).map(m=>formLabels[m.key]).join(' + '):'SOURCE MOVE: '+(spec.sourceStatement||'No specified spatial consequence'),38,740,{size:12,max:164,lines:2,line:17,color:'#405a63'})}
   <text x="39" y="778" font-family="Arial" font-size="10" fill="#70838a">System-generated study, not a participant drawing. Proposals and source reasoning must be evaluated by the designer.</text>
   </svg>`;
 }
 export function propositionMarkdown(spec){
-  return `# ${spec.title}\n\n**Brief checks (NOT verified):** ${spec.briefChecks?.length?spec.briefChecks.map(c=>c.label).join('; '):'No stated measurable checks extracted'}\n\n**Map scope:** ${spec.mode.replaceAll('-',' ')}\n**Spatial direction:** ${spec.layout}\n**Documented branch:** ${spec.branchTitle}\n**Documentary support:** ${spec.documentedScore??'not scored'} (not architectural quality)\n**Status:** ${spec.fullPavilion?'Complete pathway design configuration':'Aggregate abstract form study'}; ${spec.translation==='speculative'?'speculative alternative geometry':'source-led spatial translation'}, not participant drawing or validated design\n\n## Primary source statement\n${spec.sourceStatement||'No sufficiently specific design move recorded'}\n\n## Architectural translation\n${spec.annotations.map((a,i)=>`${i+1}. **${a.heading}:** ${a.form}\n   - ${a.grounded?`Linked statement [${a.sourceId}]: ${a.sourceText}`:'System assumption, not recorded evidence'}`).join('\n')}\n\n## Scoring basis\n${Object.entries(spec.scoreCriteria||{}).map(([k,v])=>`- ${k}: ${v}`).join('\n')}\n\n## Verification required\n${spec.note}\n`;
+  return `# ${spec.title}\n\n**Whole-map synthesis:** ${spec.mode==='aggregate'?(spec.aggregateThemes||[]).map(m=>`${m.key}: ${m.sourceText} [${m.sourceId}]`).join(' + '):'Not applicable to selected Focus route'}\n**Aggregate network considered:** ${spec.aggregateNetworkCount||'—'} nodes\n**Evidence relation:** ${spec.linkedEvidence?'Connected within the source network':'Cross-branch or single-direction speculative composition'}\n\n**Brief checks (NOT verified):** ${spec.briefChecks?.length?spec.briefChecks.map(c=>c.label).join('; '):'No stated measurable checks extracted'}\n\n**Map scope:** ${spec.mode.replaceAll('-',' ')}\n**Spatial direction:** ${spec.layout}\n**Documented branch:** ${spec.branchTitle}\n**Documentary support:** ${spec.documentedScore??'not scored'} (not architectural quality)\n**Status:** ${spec.fullPavilion?'Complete pathway design configuration':'Aggregate abstract form study'}; ${spec.translation==='speculative'?'speculative alternative geometry':'source-led spatial translation'}, not participant drawing or validated design\n\n## Primary source statement\n${spec.sourceStatement||'No sufficiently specific design move recorded'}\n\n## Architectural translation\n${spec.annotations.map((a,i)=>`${i+1}. **${a.heading}:** ${a.form}\n   - ${a.grounded?`Linked statement [${a.sourceId}]: ${a.sourceText}`:'System assumption, not recorded evidence'}`).join('\n')}\n\n## Scoring basis\n${Object.entries(spec.scoreCriteria||{}).map(([k,v])=>`- ${k}: ${v}`).join('\n')}\n\n## Verification required\n${spec.note}\n`;
 }

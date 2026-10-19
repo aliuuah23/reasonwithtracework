@@ -1,3 +1,12 @@
+## D2.7 — Aggregate Whole-Map Architectural Synthesis (test candidate)
+
+- Aggregate form options now examine reasoning across the entire Aggregate map rather than taking one Focus-like pathway as a stand-in for a full-map design.
+- Combine two documented spatial intentions per proposal where evidence supports them; show which source thoughts contributed, and distinguish speculative cross-branch translations.
+- Use different morphologies and integrate layered movement, privacy, occupation, climate and adaptability in generated axonometric, plan and section drawings.
+- Focus drawings, D2.6 workspace persistence, D2.5 terminology/source highlighting and frozen D1.9 interactions intentionally unchanged.
+- Geometry is an offline procedural architectural hypothesis, not generative AI or a verified construction drawing.
+- Browser testing required for deployment acceptance.
+
 # TRACEWORK D2.6 — Workspace Continuity + Developed Aggregate Studies
 
 - Restore each Focus and Aggregate map exactly where the user left it: Original/Arrange status, scroll position, zoom, and focused pathway, independently for each map. Persist both views when saving a project; restore legacy projects safely.
