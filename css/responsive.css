@@ -652,3 +652,34 @@
   white-space:nowrap;gap:6px!important;
 }
 #workspaceView .canvas-panel .thought-match strong{font-size:10px!important;font-variant-numeric:tabular-nums;}
+
+/* D2.15: canvas-width-aware command composer; full-width D1.9 remains as-is.
+   Avoid the two-column collision of the new Image/Reference button with
+   classification and Add to field in split-screen/half-screen mode. */
+#workspaceView .canvas-panel { container-type:inline-size; }
+@container (max-width: 1000px) {
+  #workspaceView .canvas-panel .thought-dock:not(.hidden) {
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:39px 30px auto 26px minmax(0,1fr) auto!important;
+    height:195px!important;min-height:195px!important;max-height:195px!important;
+    align-content:start!important;gap:5px 8px!important;
+    padding:9px 12px 11px!important;
+  }
+  #workspaceView .canvas-panel .thought-entry>textarea{grid-column:1!important;grid-row:1!important;}
+  #workspaceView .canvas-panel .thought-reading{grid-column:1!important;grid-row:2!important;min-width:0!important;flex-wrap:wrap!important;}
+  #workspaceView .canvas-panel .thought-reading select{max-width:min(190px,48%)!important;min-width:90px!important;}
+  #workspaceView .canvas-panel .thought-actions{
+    grid-column:1!important;grid-row:3!important;align-self:stretch!important;
+    justify-content:flex-end!important;flex-wrap:wrap!important;
+    gap:6px!important;min-width:0!important;white-space:normal!important;
+  }
+  #workspaceView .canvas-panel .thought-actions button{flex:0 1 auto!important;max-width:100%;min-height:31px!important;padding:6px 10px!important;}
+  #workspaceView .canvas-panel .thought-advanced-metadata{grid-column:1!important;grid-row:4!important;max-width:100%!important;}
+  #workspaceView .canvas-panel .thought-reason{grid-column:1!important;grid-row:5!important;}
+  #workspaceView .canvas-panel .thought-matches{grid-column:1!important;grid-row:6!important;}
+}
+@container (max-width: 490px) {
+  #workspaceView .canvas-panel .thought-dock:not(.hidden){height:215px!important;min-height:215px!important;max-height:215px!important;grid-template-rows:39px 30px auto 26px minmax(0,1fr) auto!important;}
+  #workspaceView .canvas-panel .thought-actions{justify-content:flex-start!important;}
+  #workspaceView .canvas-panel .thought-actions button{font-size:10px!important;}
+}

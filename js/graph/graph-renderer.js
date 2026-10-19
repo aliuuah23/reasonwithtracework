@@ -459,39 +459,46 @@ function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false
     const maxOriginY=Math.max(...[...origins.values()].map(o=>o.y));
     dx=Math.min(maxX-maxOriginX,Math.max(20-minOriginX,dx));
     dy=Math.min(maxY-maxOriginY,Math.max(20-minOriginY,dy));
-    // Local, softly snapping smart guides: only compare spatially nearby cards.
-    // Prefer matching the same anchor (centre-centre or edge-edge) over arbitrary
-    // edge-to-centre snaps. Shift temporarily suppresses snapping for precision.
+    // C1 smart guides for ALL draggable cards, including tall/wide image and
+    // architectural-study nodes. Guide proximity is not snap proximity:
+    // the dotted guide can appear before the cursor reaches the 6px magnet.
     const dragged=new Set(origins.keys()),primary=origins.get(el.dataset.id)||origins.values().next().value;
     const pWidth=primary.el.offsetWidth||230,pHeight=primary.el.offsetHeight||112;
     const px=primary.x+dx,py=primary.y+dy;
+    const guideRange=primary.el.dataset.artifact?24:10;
     let bestX=null,bestY=null;
     if(!e.shiftKey){
       positions.forEach((other,id)=>{
         if(dragged.has(id))return;
         const otherEl=nodesRoot.querySelector(`.graph-node[data-id="${cssEscape(id)}"]`);
-        const w=otherEl?.offsetWidth||230,h=otherEl?.offsetHeight||112;
-        // Ignore distant nodes: guides should describe visible neighbourhoods.
-        const nearbyX=Math.abs((px+pWidth/2)-(other.x+w/2))<340;
-        const nearbyY=Math.abs((py+pHeight/2)-(other.y+h/2))<265;
-        if(nearbyY){
+        if(!otherEl)return;
+        const w=otherEl.offsetWidth||230,h=otherEl.offsetHeight||112;
+        // Use the actual bounding boxes, not centre-distance cutoffs that
+        // incorrectly discard comparisons with wide/tall visual artifacts.
+        const nearX=px<=other.x+w+200 && px+pWidth>=other.x-200;
+        const nearY=py<=other.y+h+200 && py+pHeight>=other.y-200;
+        if(nearY){
           [0,.5,1].forEach((fraction,index)=>{
             const guide=other.x+w*fraction,delta=guide-(px+pWidth*fraction);
             const cost=Math.abs(delta)+(index===1?0:1.25);
-            if(Math.abs(delta)<=6 && (!bestX||cost<bestX.cost))bestX={delta,guide,cost,from:Math.min(py,other.y)-16,to:Math.max(py+pHeight,other.y+h)+16};
+            const tolerance=(otherEl.dataset.artifact||primary.el.dataset.artifact)?24:guideRange;
+            if(Math.abs(delta)<=tolerance && (!bestX||cost<bestX.cost))bestX={delta,guide,cost,from:Math.min(py,other.y)-16,to:Math.max(py+pHeight,other.y+h)+16};
           });
         }
-        if(nearbyX){
+        if(nearX){
           [0,.5,1].forEach((fraction,index)=>{
             const guide=other.y+h*fraction,delta=guide-(py+pHeight*fraction);
             const cost=Math.abs(delta)+(index===1?0:1.25);
-            if(Math.abs(delta)<=6 && (!bestY||cost<bestY.cost))bestY={delta,guide,cost,from:Math.min(px,other.x)-16,to:Math.max(px+pWidth,other.x+w)+16};
+            const tolerance=(otherEl.dataset.artifact||primary.el.dataset.artifact)?24:guideRange;
+            if(Math.abs(delta)<=tolerance && (!bestY||cost<bestY.cost))bestY={delta,guide,cost,from:Math.min(px,other.x)-16,to:Math.max(px+pWidth,other.x+w)+16};
           });
         }
       });
     }
-    if(bestX)dx+=bestX.delta;
-    if(bestY)dy+=bestY.delta;
+    // Fine snapping stays as subtle as the D1 alignment baseline. Guides do
+    // not write any new graph geometry and never survive releasing the drag.
+    if(bestX && Math.abs(bestX.delta)<=6)dx+=bestX.delta;
+    if(bestY && Math.abs(bestY.delta)<=6)dy+=bestY.delta;
     onGuides?.({x:bestX?.guide??null,y:bestY?.guide??null,
       xFrom:bestY?.from,xTo:bestY?.to,yFrom:bestX?.from,yTo:bestX?.to});
     origins.forEach((o,id)=>{

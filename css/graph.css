@@ -415,3 +415,15 @@
   border-radius:8px;background:#e7f3f0!important;color:#174c52!important;
   font-size:11px;font-weight:700;letter-spacing:.01em;text-transform:none;
 }
+
+/* D2.15: visual-card alignment uses the same dotted guides as thought cards. */
+.graph-surface:has(.graph-artifact.dragging) .graph-align-guide.visible{
+  opacity:1;
+  filter:drop-shadow(0 0 1px rgba(70,76,110,.16));
+}
+.graph-surface:has(.graph-artifact.dragging) .graph-align-guide.vertical{
+  background-image:repeating-linear-gradient(to bottom,#858cab 0 4px,transparent 4px 9px);
+}
+.graph-surface:has(.graph-artifact.dragging) .graph-align-guide.horizontal{
+  background-image:repeating-linear-gradient(to right,#858cab 0 4px,transparent 4px 9px);
+}

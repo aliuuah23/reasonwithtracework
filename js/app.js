@@ -20,7 +20,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d2.14-selection-and-reference-edit';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.15-visual-smart-guides';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';

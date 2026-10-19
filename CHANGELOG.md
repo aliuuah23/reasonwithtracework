@@ -1,3 +1,12 @@
+## D2.15 — Half-screen composer and visual-node alignment (testing candidate)
+
+- Reflow Image / Reference + Add as Note + Add to Field onto their own row at compressed central canvas widths; keep full-width command bar styling unchanged.
+- Apply drag-only dotted smart alignment guides to large architectural proposition and Image/Reference cards using the actual card dimensions, with 6px magnet snapping preserved.
+- Keep guides ephemeral; no new connections or saved alignment edges.
+- Cache-bust changed source modules/stylesheets.
+- Preserve accepted D2.14 image editing, source attribution, halos and D1.9 interactions.
+- Browser acceptance still required.
+
 ## D2.14 — Selection parity and editable references (test candidate)
 
 - Fix Aggregate selection overriding the Focus-style halo; use one selected node style across Focus and Aggregate for every framework.

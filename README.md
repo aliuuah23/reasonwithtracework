@@ -1,3 +1,7 @@
+## D2.15 validation
+
+Focused follow-up to D2.14: check half-screen Image/Reference command positioning and dotted drag-to-align guides for image/form cards. No change to generation, reasoning or project data.
+
 ## D2.14 deployment candidate
 
 Test Focus/ Aggregate selection halo parity, command-line/right-panel image insertion, image node editing and existing framework/image persistence. The external model-backed generation endpoint is optional and remains unconfigured on a static GitHub Pages deployment. Final D2 acceptance requires live testing.
