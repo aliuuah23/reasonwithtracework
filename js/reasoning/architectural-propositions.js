@@ -1,3 +1,4 @@
+import { getFramework, frameworkRoleForNode } from '../core/frameworks.js';
 // TRACEWORK D2.7 — evidence-led design studies: aggregate synthesis across the full reasoning network.
 // Geometry is authored procedurally, in the browser, from statements and links in the user's trace.
 // No request is made to a third-party service and no generated proposal is attributed to a participant.
@@ -116,7 +117,22 @@ export function aggregateFormOptions(state,scoped,{min=3,max=5}={}){
  const nodes=(scoped?.nodes||state.nodes||[]).filter(sourceNode).filter(live);
  const edges=(scoped?.edges||state.edges||[]).filter(e=>e.status!=='rejected'&&!e.meta?.artifact);
  if(!nodes.some(n=>n.type==='consequence'||n.type==='interpretation'||n.type==='note'))return [];
- const analysis=scoreStrategies(nodes), themes=analysis.ordered.filter(k=>analysis.scores[k]>=3&&(analysis.sources[k]||[]).length);
+ const analysis=scoreStrategies(nodes);
+ // The visible framework changes how supported evidence is prioritised, not what
+ // participants are claimed to have said. Unsupported themes stay unsupported.
+ const lens=state.frameworkId||'tracework';
+ const lensWeights={requirements:{consequence:1.55,evaluation:1.3,grounding:1.2},
+  fivewhys:{grounding:1.55,goal:1.35,interpretation:1.25},
+  laddering:{goal:1.5,consequence:1.4,interpretation:1.2},
+  framing:{interpretation:1.55,goal:1.3,consequence:1.2},
+  reflective:{evaluation:1.6,consequence:1.45,interpretation:1.2},
+  semantics:{interpretation:1.5,grounding:1.3,evaluation:1.35}}[lens]||{};
+ const lensScore=k=>analysis.scores[k]+(analysis.sources[k]||[]).reduce((sum,n)=>{
+  const role=frameworkRoleForNode(n,lens);
+  const canonical=role?.canonicalType||n.type;
+  return sum+(lensWeights[canonical]||1)*2;
+ },0);
+ const themes=analysis.ordered.filter(k=>analysis.scores[k]>=3&&(analysis.sources[k]||[]).length).sort((a,b)=>lensScore(b)-lensScore(a));
  if(!themes.length)return [];
  const byId=new Map(nodes.map(n=>[n.id,n]));
  const neighbours=new Map(nodes.map(n=>[n.id,new Set()]));
@@ -151,7 +167,7 @@ export function aggregateFormOptions(state,scoped,{min=3,max=5}={}){
   // cross-branch synthesis; never pretend an unconnected synthesis was recorded.
   const other=themes.filter(k=>k!==primary).sort((a,b)=>
    Number(linksBetween(primary,b))-Number(linksBetween(primary,a)) ||
-   analysis.scores[b]-analysis.scores[a] || a.localeCompare(b));
+   lensScore(b)-lensScore(a) || a.localeCompare(b));
   const secondary=other.length?other[Math.floor(i/themes.length)%Math.min(other.length,3)]:null;
   const pairedConnected=linksBetween(primary,secondary);
   const prefer=[...(affinities[primary]||['fold','ribbon','cluster','ring','petals']),...(affinities[secondary]||[])];
@@ -168,9 +184,13 @@ export function aggregateFormOptions(state,scoped,{min=3,max=5}={}){
   const evidenceIds=new Set(evidence.map(n=>n.id));
   const relevantEdges=edges.filter(e=>evidenceIds.has(e.source)&&evidenceIds.has(e.target));
   const {score,criteria}=optionScore(evidence,relevantEdges);
-  const components=[primary,secondary].filter(Boolean).map(k=>({key:k,score:analysis.scores[k],
-   sourceId:primaryNodes(k).find(n=>n.type==='consequence')?.id||primaryNodes(k)[0]?.id||null,
-   sourceText:primaryNodes(k).find(n=>n.type==='consequence')?.label||primaryNodes(k)[0]?.label||''}));
+  const usedSourceIds=new Set();
+  const components=[primary,secondary].filter(Boolean).map(k=>{
+    const candidates=primaryNodes(k).sort((a,b)=>Number(b.type==='consequence')-Number(a.type==='consequence'));
+    const chosen=candidates.find(n=>!usedSourceIds.has(n.id))||candidates[0];
+    if(chosen)usedSourceIds.add(chosen.id);
+    return {key:k,score:analysis.scores[k],sourceId:chosen?.id||null,sourceText:chosen?.label||'',sameSource:!!chosen&&[...usedSourceIds].filter(id=>id===chosen.id).length>1};
+  });
   result.push({id:`aggregate-combination-${i+1}`,strategy:primary,
    title:secondary?`${formLabels[primary]} + ${formLabels[secondary]}`:formLabels[primary],
    formalVariant:family,aggregateThemes:components,aggregateNetworkCount:nodes.length,
@@ -263,6 +283,8 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
   return {id:`prop-${Date.now()}-${ordinal}`,title,mode,ordinal,architecture,strategy,concept:mode==='aggregate'?formLabels[strategy]:strategyName,
     formalVariant:option?.formalVariant||(['movement','duration','adaptable'].includes(strategy)?'ribbon':['court','social','privacy'].includes(strategy)?'ring':['pockets','climate'].includes(strategy)?'petals':'fold'),
     translation:option?.translation||'source-led',aggregateThemes,aggregateNetworkCount:option?.aggregateNetworkCount||0,
+    frameworkLabel:getFramework(state.frameworkId||'tracework').label,
+    evidencedMoves:analysis.ordered.filter(k=>analysis.scores[k]>=3&&(analysis.sources[k]||[]).length).slice(0,7).map(k=>({key:k,weight:analysis.scores[k],sources:analysis.sources[k].slice(0,3).map(n=>({id:n.id,label:n.label}))})),
     linkedEvidence:!!option?.linkedEvidence,
     secondaryMoves:secondary.map(x=>({key:x.key,sourceId:x.source.id,sourceText:x.source.label})),
     fullPavilion:mode!=='aggregate',briefChecks:checks,
@@ -713,7 +735,84 @@ function graphicFor(spec){
 }
 function wraps(str,max=43,limit=3){let rows=[''];for(const word of text(str).split(/\s+/)){const i=rows.length-1;if((rows[i]+' '+word).trim().length>max&&rows[i]){if(rows.length===limit){rows[i]=rows[i].slice(0,max-2)+'…';break;}rows.push(word);}else rows[i]=(rows[i]+' '+word).trim();}return rows;}
 function multi(str,x,y,{size=13,max=48,lines=2,line=17,color='#2b4853',weight='400'}={}){return `<text x="${x}" y="${y}" fill="${color}" font-family="Arial,sans-serif" font-size="${size}" font-weight="${weight}">${wraps(str,max,lines).map((t,i)=>`<tspan x="${x}" dy="${i?line:0}">${escape(t)}</tspan>`).join('')}</text>`;}
+// D2.9: A full architectural analysis plate rather than a repeated icon with extra labels.
+// Every overlay is conditional on the current project reasoning; no pilot-only answers are embedded.
+function aggregateEvidenceDrawing(spec){
+ const moves=spec.evidencedMoves||[];
+ const principles=new Set(moves.map(m=>m.key));
+ const pairs=(spec.aggregateThemes||[]);
+ const family=spec.formalVariant||'fold';
+ const target=(key)=>principles.has(key)||pairs.some(p=>p.key===key);
+ const row=moves.slice(0,5).map((m,i)=>{
+   const y=856+i*25; const intensity=Math.min(210,18+(m.weight||3)*5);
+   return `<circle cx="903" cy="${y-3}" r="5" fill="${i%2?'#b99d70':'#408f91'}"/>
+    <text x="918" y="${y}" font-size="12.5" font-weight="600" fill="#2f515c">${escape(wraps(formLabels[m.key]||m.key,48,1)[0])}</text>
+    <rect x="1350" y="${y-12}" width="${Math.min(75,intensity/3)}" height="8" rx="4" fill="${i%2?'#dac39c':'#9ecbc5'}"/>`;
+ }).join('');
+ // Architectural analysis overlays depend on the actual evidence, not generic templates.
+ const path=(d,color='#318a90',width=3,dash='6 5')=>`<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
+ let diagram=`<rect x="33" y="820" width="835" height="162" rx="14" fill="#f7faf8" stroke="#cbdcd7"/>
+  <text x="50" y="846" font-size="13" font-weight="700" fill="#34545e">RELATIONSHIP TEST · SOURCE-DRIVEN SPATIAL LAYERS</text>`;
+ const sq=(cx,cy,fill)=>`<rect x="${cx}" y="${cy}" width="80" height="30" rx="9" fill="${fill}" stroke="#719c99"/>`;
+ diagram+=sq(74,894,'#bedbd4')+sq(298,894,'#d9d1b8')+sq(524,894,'#a4c7c4');
+ diagram+=path('M154 909 H298','#468f8a',3,'none')+path('M378 909 H524','#468f8a',3,'none');
+ const labels=[pairs[0]&&formLabels[pairs[0].key]||'Recorded intention', pairs[1]&&formLabels[pairs[1].key]||'Additional reading', 'Proposed spatial relationship'];
+ labels.forEach((label,i)=>{const x=[74,298,524][i];diagram+=`<text x="${x}" y="947" font-size="11" fill="#57737a">${escape(wraps(label,24,1)[0])}</text>`;});
+ if(target('movement'))diagram+=path('M60 962 H840','#207f90',3,'9 5');
+ if(target('privacy'))diagram+=path('M254 872 V974 M479 872 V974','#a18b65',3,'4 5');
+ if(target('adaptable')||target('capacity'))for(const x of [150,190,230,600,640])diagram+=`<rect x="${x}" y="968" width="21" height="8" rx="2" fill="#c3a57b"/>`;
+ if(target('climate'))for(const x of [88,280,480,680])diagram+=path(`M${x} 870 l25 15`,'#68a5a7',2,'none');
+ if(target('social')||target('pockets'))for(const x of [180,400,710])diagram+=`<circle cx="${x}" cy="887" r="12" stroke="#b19a73" stroke-width="2" fill="none"/>`;
+ return {diagram,row};
+}
+function renderDetailedAggregateSVG(spec){
+ const {shapes}=abstractGraphicFor(spec), pins=(spec.annotations||[]).slice(0,3).map((a,i)=>{
+   const positions=[[3,3,.65],[8,7,.6],[5,5,3.3]],p=P(...positions[i]);
+   return `<circle cx="${p[0]}" cy="${p[1]}" r="12" fill="#ffffff" stroke="#28586a" stroke-width="2"/><text x="${p[0]}" y="${p[1]+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#28586a">${i+1}</text>`;
+ }).join('');
+ const {diagram,row}=aggregateEvidenceDrawing(spec);
+ const labels=(spec.annotations||[]).slice(0,3).map((a,i)=>{
+   const y=171+i*183;
+   return `<rect x="892" y="${y}" width="550" height="169" rx="12" fill="white" stroke="#c8dad8"/>
+     <circle cx="918" cy="${y+29}" r="15" fill="#275466"/>
+     <text x="918" y="${y+34}" text-anchor="middle" font-size="14" font-weight="700" fill="white">${i+1}</text>
+     ${multi(a.heading,942,y+32,{size:19,max:38,lines:1,weight:'700'})}
+     ${multi(a.form,913,y+65,{size:14,max:61,lines:2,line:21})}
+     <text x="913" y="${y+106}" font-size="11" fill="${a.grounded?'#3a7881':'#a47451'}">${a.grounded?'DOCUMENTED SOURCE':'PROPOSED RELATIONSHIP · REVIEW'}</text>
+     ${multi(a.sourceText||a.status||'The geometry is interpretive, not a recorded participant design.',913,y+128,{size:11,max:76,lines:2,line:17,color:'#56717b'})}`;
+ }).join('');
+ const section=aggregateFormSection(spec),elevation=aggregateFormElevation(spec),plan=aggregateFormPlan(spec);
+ const drawingCard=(x,y,w,h,title,subtitle,content,transform)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="14" fill="white" stroke="#cbdad7"/>
+    <text x="${x+18}" y="${y+25}" font-size="14" font-weight="700" fill="#3e6470">${title}</text>
+    <text x="${x+18}" y="${y+45}" font-size="10" fill="#799195">${subtitle}</text>
+    <g transform="${transform}">${content}</g>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="1290" viewBox="0 0 1480 1290" role="img" aria-label="${escape(spec.title)}; axonometric, plan, section, elevation and diagram, based on current reasoning">
+  <rect width="1480" height="1290" fill="#f8faf8"/>
+  <text x="34" y="33" font-size="14" letter-spacing="1.4" font-weight="700" fill="#4f7583">TRACEWORK / AGGREGATE DESIGN EXPLORATION / ${spec.ordinal}</text>
+  ${multi(spec.title,34,70,{size:27,max:78,lines:1,weight:'700'})}
+  ${multi(spec.layout,34,99,{size:14,max:110,lines:1,color:'#58727c'})}
+  <rect x="28" y="119" width="843" height="470" rx="16" fill="#e7efeb" stroke="#bdcec9"/>
+  <text x="48" y="145" font-size="12" font-weight="700" letter-spacing="1" fill="#4a7077">01 · ARCHITECTURAL ASSEMBLY / SPATIAL HYPOTHESIS</text>
+  <g transform="translate(103,-24) scale(1.18)">${shapes}${pins}</g>
+  ${drawingCard(28,602,285,323,'02 · FORM PLAN','Spatial organisation, not to scale',plan,'translate(16,493) scale(1.10)')}
+  ${drawingCard(325,602,270,323,'03 · SECTION','Roof and occupation in profile',section,'translate(296,175) scale(1.16)')}
+  ${drawingCard(608,602,263,323,'04 · ELEVATION','Edge / access and thresholds',elevation,'translate(579,-15) scale(1.15)')}
+  <text x="895" y="147" font-size="13" letter-spacing=".9" font-weight="700" fill="#456b74">ARCHITECTURAL FEATURES / RECORDED REASONING</text>
+  ${labels}
+  <rect x="891" y="737" width="552" height="57" rx="10" fill="#e6efeb"/>
+  ${multi(`Documented links: ${spec.documentedScore??'not scored'} pts (evidence coverage, not design quality)`,907,762,{size:14,max:79,lines:1,weight:'700'})}
+  <text x="907" y="782" font-size="11" fill="#68818a">${spec.translation==='speculative'?'Cross-pathway combination proposed':'Source-linked interpretation proposed'} · all performance checks outstanding</text>
+  <g transform="translate(0,133)">${diagram}</g>
+  <rect x="891" y="819" width="552" height="163" rx="12" fill="white" stroke="#cbdad7"/>
+  <text x="907" y="843" font-size="13" font-weight="700" fill="#4b6c73">EVIDENCE THEMES IN THE CURRENT MAP</text>
+  ${row}
+  <path d="M30 1155 H1450" stroke="#cbdad7"/>
+  ${multi('SOURCE SYNTHESIS: '+(spec.aggregateThemes||[]).map(m=>formLabels[m.key]).join(' + '),38,1180,{size:15,max:150,lines:2,line:21,color:'#385967'})}
+  <text x="38" y="1250" font-size="12" fill="#748b8d">Framework: ${escape(spec.frameworkLabel||'TRACEWORK Grammar')} · Interpretive geometry, not a verified or measured design. Authored reasoning is unchanged; review form decisions before use.</text>
+ </svg>`;
+}
 export function renderPropositionSVG(spec,{width=1180,height=790}={}){
+  if(spec.mode==='aggregate')return renderDetailedAggregateSVG(spec);
   const {shapes,markers}=graphicFor(spec);const anns=(spec.annotations||[]).slice(0,3);
   // In Aggregate each evidence pin has its own position; D2.6 previously
   // piled all three atop one another, obscuring the architectural geometry.

@@ -255,12 +255,13 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 function artifactNodeMarkup(n,selected,issue){
   const kind=n.meta?.artifactKind;
   const visual=kind==='architectural-proposition';
+  const rejected=n.status==='rejected'||n.meta?.status==='rejected';
   const title=visual?'Architectural Proposition':'Reasoning Digest';
   const img=n.meta?.imagePng||'';
   const safeImage=img.startsWith('data:image/png;base64,')?img:'';
   const preview=visual&&safeImage?`<img class="node-artifact-image" src="${safeImage}" alt="Annotated architectural axonometric · ${escapeHtml(n.label)}" draggable="false">`:
     `<p class="node-artifact-excerpt">${escapeHtml((n.meta?.markdownDigest||'').replace(/^#+\s*/gm,'').slice(0,220))}</p>`;
-  return `<article class="graph-node graph-artifact ${selected?'selected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d">
+  return `<article class="graph-node graph-artifact ${selected?'selected artifact-halo':''} ${rejected?'rejected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d">
   <button class="node-port port-in" type="button" aria-label="Connect supporting reasoning"></button><button class="node-port port-out" type="button" aria-label="Connect this output"></button>
   <div class="node-accent"></div><div class="node-body"><div class="node-type"><i></i>${title}</div><div class="node-label">${escapeHtml(n.label)}</div>${preview}
   <div class="node-foot"><span class="node-provenance">System-generated · ${escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${visual?'Open proposition ↗':'Read digest ↗'}</button></div></div></article>`;

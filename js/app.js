@@ -1,5 +1,5 @@
 import { auditProject } from './core/project-audit.js';
-import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.6-workspace-persistence-aggregate-detail';
+import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.9-evidence-detail';
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.5-plain-language';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
@@ -19,7 +19,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d2.6-workspace-persistence-aggregate-detail';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.9-artifact-halo';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -3055,8 +3055,10 @@ function deoverlapAggregateLayout(nodes,positions){
   const placed=(nodes||[]).map((n,index)=>{
     const p=positions.get(n.id)||{x:n.x||0,y:n.y||0};
     const lines=Math.max(0,Math.ceil(String(n.label||'').length/34)-2);
-    const h=Math.min(225,112+(lines*18)+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
-    return {id:n.id,index,x:p.x,y:p.y,w:230,h};
+    const isVisual=n.meta?.artifactKind==='architectural-proposition';
+    const isDigest=n.meta?.artifactKind==='reasoning-digest';
+    const h=isVisual?435:isDigest?260:Math.min(225,112+(lines*18)+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
+    return {id:n.id,index,x:p.x,y:p.y,w:isVisual?350:isDigest?285:230,h};
   }).sort((a,b)=>a.y-b.y||a.x-b.x||a.index-b.index);
   const gapX=64,gapY=58;
   for(let pass=0;pass<24;pass++){
@@ -3123,14 +3125,14 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     const counts=new Map();
     nodes.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
-      if(n.type==='note'){
+      if(n.type==='note'&&!n.meta?.artifactKind){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
         positions.set(n.id,{x:190+(nth%3)*420,y:140+Math.ceil(categories.length/cols)*690+Math.floor(nth/3)*265});
         return;
       }
-      const role=frameworkRoleForNode(n,frameworkId);
-      const roleId=role?.id||categories[0]?.id;
-      const center=centers.get(roleId)||{x:130,y:110};
+      const role=n.meta?.artifactKind?null:frameworkRoleForNode(n,frameworkId);
+      const roleId=n.meta?.artifactKind?'__visuals__':role?.id||categories[0]?.id;
+      const center=centers.get(roleId)||(n.meta?.artifactKind?{x:190+(cols-1)*760,y:130+Math.ceil(categories.length/cols)*690}:{x:130,y:110});
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const localCol=nth%3,localRow=Math.floor(nth/3);
       const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
@@ -3149,14 +3151,14 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     }));
     nodes.forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
-      if(n.type==='note'){
+      if(n.type==='note'&&!n.meta?.artifactKind){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
         positions.set(n.id,{x:cx-235+(nth%2)*450,y:cy-65+Math.floor(nth/2)*235});
         return;
       }
-      const role=frameworkRoleForNode(n,frameworkId);
-      const roleId=role?.id||categories[0]?.id;
-      const center=centers.get(roleId)||{x:cx,y:cy};
+      const role=n.meta?.artifactKind?null:frameworkRoleForNode(n,frameworkId);
+      const roleId=n.meta?.artifactKind?'__visuals__':role?.id||categories[0]?.id;
+      const center=centers.get(roleId)||(n.meta?.artifactKind?{x:cx+rx*.65,y:cy+ry*.35}:{x:cx,y:cy});
       const nth=counts.get(roleId)||0; counts.set(roleId,nth+1);
       const ring=Math.floor(nth/4),slot=nth%4;
       positions.set(n.id,{x:center.x+(slot%2)*420-210,y:center.y+Math.floor(slot/2)*225+ring*380-110});
@@ -3168,9 +3170,9 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
   // groups stay adjacent within that role. Avoid old 405px row lanes, which
   // multiplied whitespace and made Arrange look like a stretched spreadsheet.
   const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
-  const byRole=new Map([...categories.map(c=>[c.id,[]]),['__note__',[]]]);
+  const byRole=new Map([...categories.map(c=>[c.id,[]]),['__note__',[]],['__artifact__',[]]]);
   nodes.forEach(n=>{
-    const role=n.type==='note'?'__note__':frameworkRoleForNode(n,frameworkId)?.id||categories[0]?.id;
+    const role=n.meta?.artifactKind?'__artifact__':n.type==='note'?'__note__':frameworkRoleForNode(n,frameworkId)?.id||categories[0]?.id;
     if(!byRole.has(role))byRole.set(role,[]);
     byRole.get(role).push(n);
   });
@@ -3187,7 +3189,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       if(lastHotspot!==null && lastHotspot!==n.meta?.hotspotId)cursorY+=25;
       lastHotspot=n.meta?.hotspotId;
       const lines=Math.max(0,Math.ceil(String(n.label||'').length/34)-2);
-      const height=Math.min(240,112+lines*18+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
+      const height=n.meta?.artifactKind==='architectural-proposition'?455:n.meta?.artifactKind==='reasoning-digest'?270:Math.min(240,112+lines*18+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
       positions.set(n.id,{x:100+index*425,y:cursorY});
       cursorY+=height+72;
     });
@@ -3204,14 +3206,14 @@ function aggregateTrace(state,{ignoreFilters=false}={}){
       const hotspot=hotspotById.get(n.meta?.hotspotId);
       if(aggregateHotspotFilter!=='all' && n.meta?.hotspotId!==aggregateHotspotFilter) return false;
       if(aggregateChunkFilter!=='all' && hotspot?.chunkId!==aggregateChunkFilter) return false;
-      if(aggregateTypeFilter!=='all'){
+      if(aggregateTypeFilter!=='all'&&!n.meta?.artifactKind){
         const framework=getFramework(state.frameworkId||'tracework');
         if(framework.id!=='freeform' && framework.id!=='tracework'){
           const role=n.type==='note'?'note':frameworkRoleForNode(n,framework.id)?.id;
           if(role!==aggregateTypeFilter) return false;
         }else if(n.type!==aggregateTypeFilter) return false;
       }
-      const status=n.status==='rejected'?'rejected':n.meta?.provisional?'provisional':'active';
+      const status=(n.status==='rejected'||n.meta?.status==='rejected')?'rejected':n.meta?.provisional?'provisional':'active';
       if(aggregateStatusFilter!=='all' && status!==aggregateStatusFilter) return false;
       return true;
     });

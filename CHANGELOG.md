@@ -1,3 +1,14 @@
+## D2.9 — Artifact handling, architectural elaboration, and rejected-path visibility (test candidate)
+
+- Cache-bust all changed module and graph stylesheet references.
+- Treat architectural images as wide, tall artifacts in every framework-aware Arrange layout, with independent saved placements.
+- Strong visible selection halo for form and architectural proposition nodes.
+- Keep rejected traces visible and faded in Aggregate, consistent with Focus; preserve default all-status selection.
+- Replace small Aggregate proposition sheets with a new larger architectural analysis plate: axonometric, plan, section, elevation, source-driven spatial relationship diagram, and trace evidence.
+- Avoid treating multiple themes in the same sourced node as separate independent authored statements where another source is available.
+- Preserve existing D1.9 interactions and accepted Focus studies.
+- Live-browser visual and storage testing still required before acceptance.
+
 ## D2.7 — Aggregate Whole-Map Architectural Synthesis (test candidate)
 
 - Aggregate form options now examine reasoning across the entire Aggregate map rather than taking one Focus-like pathway as a stand-in for a full-map design.

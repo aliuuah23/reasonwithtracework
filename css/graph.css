@@ -364,3 +364,17 @@
   border:2px solid color-mix(in srgb,var(--node-color) 46%,transparent);
   box-shadow:0 0 0 8px color-mix(in srgb,var(--node-color) 12%,transparent);
 }
+
+/* D2.9: visible, persistent halo even on image-based generated cards. */
+.graph-surface .graph-node.graph-artifact.selected,
+.graph-surface .graph-node.graph-artifact.artifact-halo {
+  z-index:8;
+  outline:5px solid #49bfc5!important;
+  outline-offset:8px!important;
+  border:2px solid #a1f1e7!important;
+  box-shadow:0 0 0 15px rgba(55,189,190,.22),0 0 0 23px rgba(31,146,157,.12),0 18px 38px rgba(19,69,78,.28)!important;
+}
+.graph-surface .graph-node.graph-artifact.selected::after {inset:-14px;border:2px solid rgba(65,198,195,.54);}
+.graph-surface.aggregate-map .graph-node.rejected{opacity:.36!important;filter:saturate(.38)}
+.graph-surface.aggregate-map .trace-edge.rejected{opacity:.26!important;stroke-dasharray:4 6!important;}
+.graph-surface.aggregate-map .graph-node.graph-artifact.rejected.selected{opacity:.92!important;}

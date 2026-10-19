@@ -1,3 +1,7 @@
+## D2.9 testing candidate
+
+Deployment fixes form-node visibility, framework-aware arrangements, Aggregate rejected traces, and rich source-led architectural analysis. The on-device procedural drawing system **does not call an AI image service**; every interpretation must be checked.
+
 ## D2.7 — Workflow clarity and aggregate reasoning diagrams (test deployment)
 
 - Architectural Propositions opens immediately on a readable **Reasoning Summary**; **Design Studies** is the second tab. No blank intermediate selection modal.
