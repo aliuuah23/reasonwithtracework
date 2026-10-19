@@ -1275,7 +1275,18 @@ html.tutorial-tour-active{overflow:hidden}
  .prop-disclosure{font-size:11px!important;}
 }
 /* On selecting a saved study, source reasoning is readable without drawing extra lines. */
-.graph-node.artifact-source-thought{outline:3px solid #167d85;outline-offset:4px;box-shadow:0 0 0 7px rgba(38,153,155,.12),0 7px 24px rgba(19,85,89,.18);z-index:6;}
+.graph-node.artifact-source-thought{
+  outline:5px solid #cf5a87!important;
+  outline-offset:8px!important;
+  border:2px solid #e5a1bf!important;
+  box-shadow:0 0 0 10px rgba(213,88,139,.20),0 0 0 18px rgba(232,173,203,.18),0 14px 30px rgba(119,34,74,.18)!important;
+  z-index:6;
+}
+.graph-surface.aggregate-map .graph-node.artifact-source-thought,
+.graph-surface .graph-node.artifact-source-thought{
+  border-radius:16px;
+}
+
 .show-artifact-sources .trace-edge.artifact-source-wire{stroke:#07888f!important;stroke-width:4.6px!important;opacity:1!important;filter:drop-shadow(0 0 2px rgba(0,125,135,.36));}
 .show-artifact-sources .trace-edge.artifact-unrelated-wire{opacity:.11!important;}
 

@@ -1,4 +1,12 @@
-## D2.10 — Architectural Plate Legibility (test candidate)
+## D2.11 — Final D2 visual parity and highlight consistency (test candidate)
+
+- Make source-thought highlighting visually consistent between Focus and Aggregate maps.
+- Keep the stronger Focus-style pink halo when a form or architectural proposition highlights contributing reasoning.
+- Preserve Aggregate/Focus drawing outputs accepted in D2.10.
+- Audit D2 tools for framework parity so reasoning tools, architectural propositions and inserted visual nodes remain available across TRACEWORK, Freeform and literature frameworks.
+- Carry forward D2 visual capabilities and prepare the close of D2 before D3 verification.
+
+## D2.11 — Architectural Plate Legibility (test candidate)
 
 - Correct Evidence Themes title/body separation with larger vertical spacing and aligned rows.
 - Replace confusing abstract relationship marks with a three-stage A + B → proposed form diagram, using current map themes and clearly distinguishing source from interpretation.

@@ -1,4 +1,8 @@
-## D2.10 — Legibility-only corrective release
+## D2.11
+
+Final D2 deployment candidate for visual parity, source-highlighting consistency and framework-wide tool availability.
+
+## D2.11 — Legibility-only corrective release
 
 This is a narrowly scoped architectural presentation adjustment to the D2.9 release. It improves labels and evidence relationship readability on Aggregate sheets. Architecture geometry, provenance, framework logic, workspace arrangement and node interaction remain unchanged. Tested offline, pending deployment verification.
 
