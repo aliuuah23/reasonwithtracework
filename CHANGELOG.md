@@ -1,3 +1,11 @@
+## D2.3 — Pathway-specific architectural propositions (19 October 2026)
+
+- **Correction, not decoration:** Removed the repeated generic pavilion template and brief-driven form selection. Each scheme now derives its layout strategy chiefly from the candidate branch's recorded Spatial Consequence and interpretation, with source statements and explicit assumptions.
+- **Architecture families:** circulation-spine/edge occupation, privacy gradient, expandable capacity, ventilated shelter, duration zoning, individual/group coexistence, distributed small occupation pockets, courtyard, tiering and reconfiguration. If there is no specific recorded spatial move, do not pretend a credible scheme exists.
+- **Focus Path:** one selected branch, or choose among branches when focusing a shared Input. **Focus Map:** all relevant pathways of a hotspot. **Aggregate:** top three documented pathways ranked by a transparent evidence-completeness rubric, with score ties stated and an option to view all. Ranking is not architectural quality.
+- **Comparison UI:** three visible together, single-view toggle, next/previous, detail-with-back navigation, comparison printing, per-option SVG/annotation PDF/Markdown and workspace image-node insertion. Existing D2.2 Markdown Digest retained.
+- **Limits:** procedural pavilion concept studies, not photorealistic generation or buildable validated architecture. Tests must be repeated on deployed GitHub Pages, especially save/reopen and visual exports.
+
 ## D2.2 Architectural Propositions — 19 October 2026
 
 - Added **Architectural Propositions** to Focus Path, Focus Map and Aggregate Map. Rule-based architectural axonometrics display formed structure, canopy, circulation, seating and relevant partitions rather than Spatial Studio keyword cards.

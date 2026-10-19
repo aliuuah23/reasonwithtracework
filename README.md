@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current development release:** D2.2 Architectural Propositions (19 October 2026). **Accepted usability baseline:** D1.9; D2.2 live-browser verification pending.
+**Current development release:** D2.3 Pathway-specific Architectural Propositions (19 October 2026). **Accepted usability baseline:** D1.9; D2.3 full-site deployed-browser verification pending.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -41,7 +41,11 @@ Projects are currently stored **in this browser on this device**. Before clearin
 
 This is a static GitHub Pages website. Keep `index.html`, `about.html`, `css/`, `js/` and `data/` at the repository root. Upload the **contents** of the deployment ZIP with these directory paths intact; do not flatten them into a single folder. Running from `file://` can block browser module and JSON fetching; GitHub Pages or a local HTTP server is required.
 
-D2.2 updates the website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
+**D2.3 Architectural Propositions (test build):** Focus Path selects one documented chain; Focus Map shows the pathways attached to the selected hotspot; Aggregate Map compares the top three branches by a **documentary-support score**, and allows viewing all paths when rankings are tied. Side-by-side, one-at-a-time, back-to-comparison, annotated SVG, printable comparison and rationale sheets, scoped Markdown and workspace image-node insertion are available. Different **spatial consequences** lead to different procedural concept studies (circulation, privacy, capacity, climate, occupation duration, individual/group coexistence, distributed pause, courtyard, tiers, reconfiguration). Documented reasoning is never changed.
+
+**Validation and limits:** This release is a static, offline, rule-based *pavilion-oriented architectural concept prototype*; no remote image-generation API is involved. It cannot establish that a design is constructible, sufficiently sheltered, accessible, structurally safe, sized for a specified number of users, or aesthetically ready for an architectural crit. It deliberately withholds a formed scheme where no identifiable spatial move is recorded. The score ranks **completeness of supporting trace**, not design quality. Comparable completeness produces a **tie**, not a claim that one path is strongest. Unsupported building types must be reviewed manually. Designers should compare the schematic outputs to participant drawings without attributing TRACEWORK-generated form to participants.
+
+D2.3 updates the website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
 
 ## Current limitations and planned work
 

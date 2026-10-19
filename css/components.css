@@ -1222,3 +1222,26 @@ html.tutorial-tour-active{overflow:hidden}
 .modal:has(.prop-modal){box-sizing:border-box;width:min(1120px,calc(100vw - 30px));max-width:100%;max-height:94vh;padding:clamp(12px,1.6vw,22px)}
 .modal .prop-modal{width:100%;min-width:0}
 @media(max-width:760px){.modal:has(.prop-modal){width:calc(100vw - 20px);padding:12px}.prop-grid{grid-template-columns:1fr}.prop-modal .modal-actions{flex-wrap:wrap}}
+
+/* D2.3 pathway-specific architectural comparison — all alternatives remain inspectable in one dialog. */
+.modal:has(.prop-modal){width:min(1450px,calc(100vw - 24px));max-width:100%;max-height:95vh}
+.prop-modal{width:100%}
+.prop-option-list{max-height:min(69vh,790px);overflow:auto;scrollbar-gutter:stable}
+.prop-comparison-tools{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:10px 0 16px;flex-wrap:wrap}
+.prop-comparison-tools>div:first-child{flex:1 1 250px}
+.prop-comparison-tools .prop-inline-actions{margin:0}
+.prop-grid-compare{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.prop-grid-single{grid-template-columns:minmax(0,680px);justify-content:center}
+.prop-option{display:flex;flex-direction:column;min-width:0;gap:5px}
+.prop-option-heading{display:flex;justify-content:space-between;gap:7px;color:#35586a;font-size:12px;align-items:center}
+.prop-option-heading span{color:#627987;font-size:10px}
+.prop-option h3{font-size:14px;line-height:1.28;margin:3px 0}
+.prop-option p.prop-source-line{font-size:11px;line-height:1.4;min-height:45px;margin:4px 0}
+.prop-option .prop-inline-actions{margin-top:auto}
+.prop-option .prop-thumb{border:1px solid #dce5e3;aspect-ratio:1.5;display:flex;align-items:center;justify-content:center}
+.prop-option .prop-thumb svg{width:100%;height:100%;object-fit:contain}
+.prop-active-layout{background:#e0eff0!important;border-color:#668c94!important}
+.prop-choose-label{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600}
+.prop-choose-label select{max-width:340px;padding:7px;border-radius:7px;border:1px solid #bdcaca}
+@media (max-width:1030px){.prop-grid-compare{grid-template-columns:repeat(3,minmax(245px,1fr));overflow:auto}.prop-option-list{max-height:67vh}}
+@media (max-width:650px){.prop-grid-compare{grid-template-columns:repeat(3,minmax(255px,1fr))}.prop-comparison-tools{flex-direction:column}.prop-option-list{max-height:65vh}}
