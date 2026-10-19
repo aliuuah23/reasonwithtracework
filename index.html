@@ -10,8 +10,8 @@
   <link rel="dns-prefetch" href="//www.archdaily.com">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
-  <link rel="stylesheet" href="css/components.css?v=d2.12-visual-completion">
-  <link rel="stylesheet" href="css/graph.css?v=d2.12-visual-completion">
+  <link rel="stylesheet" href="css/components.css?v=d2.14-selection-and-reference-edit">
+  <link rel="stylesheet" href="css/graph.css?v=d2.14-selection-and-reference-edit">
   <link rel="stylesheet" href="css/responsive.css?v=d1.8">
 </head>
 <body>
@@ -277,6 +277,7 @@
               <div class="thought-clarifier">Hover any match to see what the role means and which wording cues triggered it. Match strengths are independent fits, not probabilities.</div>
             </div>
             <div class="thought-actions">
+              <button class="secondary-button" id="imageReferenceDockButton" type="button" title="Add an Image / Reference node">＋ Image / Reference</button>
               <button class="secondary-button" id="addLooseNoteButton" disabled>Add as note</button>
               <button class="primary-button compact" id="addFreeThoughtButton" disabled>Add to field →</button>
             </div>
@@ -307,7 +308,7 @@
         </section>
 
         <aside class="inspector-panel panel" id="inspectorPanel">
-          <div class="inspector-panel-actions"><button type="button" class="panel-inline-collapse" id="collapseInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" title="Collapse Guidance panel" aria-label="Collapse Guidance panel"><span aria-hidden="true">◨</span></button></div>
+          <div class="inspector-panel-actions"><button type="button" class="secondary-button compact" id="imageReferenceInspectorButton" title="Add an image or reference node; link it to the selected thought">＋ Image / Reference</button><button type="button" class="panel-inline-collapse" id="collapseInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" title="Collapse Guidance panel" aria-label="Collapse Guidance panel"><span aria-hidden="true">◨</span></button></div>
           <div id="inspectorContent"></div>
         </aside>
       </div>
@@ -379,6 +380,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d2.12-visual-model-ready"></script>
+  <script type="module" src="js/app.js?v=d2.14-selection-and-reference-edit"></script>
 </body>
 </html>

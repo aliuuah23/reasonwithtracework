@@ -1,3 +1,15 @@
+## D2.14 deployment candidate
+
+Test Focus/ Aggregate selection halo parity, command-line/right-panel image insertion, image node editing and existing framework/image persistence. The external model-backed generation endpoint is optional and remains unconfigured on a static GitHub Pages deployment. Final D2 acceptance requires live testing.
+
+## D2.13 — Direct image paste/drop and image export repair (test candidate)
+
+- Ctrl/Cmd+V with an image on the workspace opens a confirmation dialog to create a reference node, or replace a selected reference image. Text-field paste is left alone.
+- Drag a PNG/JPEG/WebP onto a reasoning node to propose a linked reference node; drop onto an image-reference node to replace its image while preserving connections; drop onto the board to make an independent reference.
+- Verify attribution and title before insertion. Existing modal upload/paste/drop remains.
+- Correct map SVG/PNG/PDF export to embed JPEG/WebP image nodes as well as PNG, including reference nodes.
+- Neither installed AI image generation nor full D2 acceptance is claimed: a secured backend and comprehensive browser regression remain outstanding.
+
 # TRACEWORK D2.12 — D2 Visual and model connection (testing candidate)
 
 ## How to test

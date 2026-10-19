@@ -387,3 +387,31 @@
 .graph-node.graph-artifact .node-body{height:100%;box-sizing:border-box;}
 .graph-node.graph-artifact .node-artifact-image{max-height:calc(100% - 105px);object-fit:contain;}
 .graph-node.artifact-source-thought,.graph-surface.aggregate-map .graph-node.artifact-source-thought{opacity:1!important;filter:none!important;box-shadow:0 0 0 9px color-mix(in srgb,var(--node-color) 27%,transparent),0 0 0 16px color-mix(in srgb,var(--node-color) 14%,transparent),0 12px 28px rgba(34,40,61,.14)!important;border:2px solid var(--node-color)!important;outline:none!important;z-index:8;}
+
+/* D2.14: identical selection language on Focus and Aggregate, overriding the
+   old aggregate-only reduced shadow. A selected node must not lose its halo. */
+.graph-surface .graph-node.selected:not(.graph-artifact),
+.graph-surface.aggregate-map .graph-node.selected:not(.graph-artifact) {
+  opacity:1!important;filter:none!important;z-index:24;
+  border:2px solid var(--node-color)!important;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--node-color) 37%,transparent),
+             0 0 0 14px color-mix(in srgb,var(--node-color) 17%,transparent),
+             0 14px 30px rgba(34,40,61,.15)!important;
+}
+/* When an output reveals its supporting thoughts, use the same two concentric
+   bands in either map, not the conflicting former framework/aggregate styles. */
+.graph-surface .graph-node.artifact-source-thought,
+.graph-surface.aggregate-map .graph-node.artifact-source-thought {
+  opacity:1!important;filter:none!important;z-index:20;
+  border:2px solid var(--node-color)!important;
+  outline:none!important;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--node-color) 37%,transparent),
+             0 0 0 14px color-mix(in srgb,var(--node-color) 17%,transparent),
+             0 14px 30px rgba(34,40,61,.15)!important;
+}
+/* Reference attribution is a label, not a disabled-looking chip. */
+.graph-node.graph-artifact[data-artifact="image-reference"] .node-provenance {
+  display:inline-flex;align-items:center;max-width:100%;padding:5px 9px;
+  border-radius:8px;background:#e7f3f0!important;color:#174c52!important;
+  font-size:11px;font-weight:700;letter-spacing:.01em;text-transform:none;
+}

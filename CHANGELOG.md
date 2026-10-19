@@ -1,3 +1,21 @@
+## D2.14 — Selection parity and editable references (test candidate)
+
+- Fix Aggregate selection overriding the Focus-style halo; use one selected node style across Focus and Aggregate for every framework.
+- Match highlighted supporting-thought rings to the same selection treatment.
+- Relocate Image / Reference creation from the upper ribbon into the command composer and right Guidance panel.
+- Give reference nodes a readable, title-cased, high-contrast origin label.
+- Add editable reference title, origin, citation and optional image replacement via double-click, inspector and preview. Preserve edges and saved images.
+- Preserve all D2.13 direct paste/drop, resize, framework tools, visual exports and existing propositions.
+- Acceptance pending deployment browser testing; external model backend still needs configuration for true AI renders.
+
+## D2.13 — Direct image paste/drop and image export repair (test candidate)
+
+- Ctrl/Cmd+V with an image on the workspace opens a confirmation dialog to create a reference node, or replace a selected reference image. Text-field paste is left alone.
+- Drag a PNG/JPEG/WebP onto a reasoning node to propose a linked reference node; drop onto an image-reference node to replace its image while preserving connections; drop onto the board to make an independent reference.
+- Verify attribution and title before insertion. Existing modal upload/paste/drop remains.
+- Correct map SVG/PNG/PDF export to embed JPEG/WebP image nodes as well as PNG, including reference nodes.
+- Neither installed AI image generation nor full D2 acceptance is claimed: a secured backend and comprehensive browser regression remain outstanding.
+
 ## D2.12 — D2 Visual completion candidate (not accepted until browser testing)
 
 - Image/Reference nodes: PNG/JPEG/WebP upload, drag/drop and clipboard paste in an explicit authoring modal, attribution/source, persistent local image, image preview, connection ports and vector-map exports.
@@ -190,4 +208,4 @@ The archive includes every original TXT note, including versions not individuall
 
 ## Following the current baseline
 
-Planned/under verification (not yet release claims): classification precision, contextual Start Me Off and What Next, Reveal/Compare Structure, authentic Freeform behaviour, Decision Digest, image/reference nodes, resizable nodes, comprehensive regression and final freeze. New releases should update **this file and the current README**, not add a new root-level TXT deployment note.
+Planned/under verification (not yet release claims): classification precision, contextual Start Me Off and What Next, Reveal/Compare Structure, authentic Freeform behaviour, Decision Digest, browser acceptance for image/reference nodes and resizing, secure model-service activation, comprehensive regression and final freeze. New releases should update **this file and the current README**, not add a new root-level TXT deployment note.

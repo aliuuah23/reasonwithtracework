@@ -277,14 +277,17 @@ function artifactNodeMarkup(n,selected,issue){
   const visual=kind==='architectural-proposition'||kind==='image-reference';
   const rejected=n.status==='rejected'||n.meta?.status==='rejected';
   const title=kind==='image-reference'?'Image / Reference':visual?'Architectural Proposition':'Reasoning Summary';
+  const originNames={designer:'Designer',participant:'Participant',tutor:'Tutor / Reviewer',precedent:'Published Precedent',observation:'Observation',other:'Other Recorded Source',collaborator:'Collaborator',organisation:'Organisation',system:'Software Tool'};
+  const rawOrigin=String(n.meta?.sourceLabel||'designer');
+  const readableOrigin=originNames[rawOrigin.toLowerCase()]||rawOrigin.charAt(0).toUpperCase()+rawOrigin.slice(1);
   const img=n.meta?.imagePng||n.meta?.imageData||'';
   const safeImage=/^data:image\/(png|jpeg|webp);base64,/.test(img)?img:'';
-  const preview=visual&&safeImage?`<img class="node-artifact-image" src="${safeImage}" alt="Annotated architectural axonometric · ${escapeHtml(n.label)}" draggable="false">`:
+  const preview=visual&&safeImage?`<img class="node-artifact-image" src="${safeImage}" alt="${escapeHtml(kind==='image-reference'?'Reference image · ':'Architectural study · ')}${escapeHtml(n.label)}" draggable="false">`:
     `<p class="node-artifact-excerpt">${escapeHtml((n.meta?.markdownDigest||'').replace(/^#+\s*/gm,'').slice(0,220))}</p>`;
   return `<article class="graph-node graph-artifact ${selected?'selected artifact-halo':''} ${rejected?'rejected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d;${n.meta?.cardWidth?`width:${n.meta.cardWidth}px;`:``}${n.meta?.cardHeight?`height:${n.meta.cardHeight}px;`:``}">
   <button class="node-port port-in" type="button" aria-label="Connect supporting reasoning"></button><button class="node-port port-out" type="button" aria-label="Connect this output"></button>
   <div class="node-accent"></div><div class="node-body"><div class="node-type"><i></i>${title}</div><div class="node-label">${escapeHtml(n.label)}</div>${preview}
-  <div class="node-foot"><span class="node-provenance">${kind==='image-reference'?escapeHtml(n.meta?.sourceLabel||'Designer reference'):'System-generated · '+escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${kind==='image-reference'?'Open reference ↗':visual?'Open proposition ↗':'Read summary ↗'}</button></div></div><span class="node-resize-handle" title="Drag to resize this node" aria-label="Resize node"></span></article>`;
+  <div class="node-foot"><span class="node-provenance">${kind==='image-reference'?escapeHtml(readableOrigin):'System-generated · '+escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${kind==='image-reference'?'Open reference ↗':visual?'Open proposition ↗':'Read summary ↗'}</button></div></div><span class="node-resize-handle" title="Drag to resize this node" aria-label="Resize node"></span></article>`;
 }
 function nodeMarkup(n,selected,issue,frameworkId='tracework',showNodeTypes=true){
   if(n.meta?.artifactKind) return artifactNodeMarkup(n,selected,issue);

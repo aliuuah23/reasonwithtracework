@@ -1,8 +1,8 @@
 import { traceImagePrompt, generatedImagePlate } from './reasoning/trace-image-prompts.js?v=d2.12';
 import { auditProject } from './core/project-audit.js';
 import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.11-final-d2-visual-parity';
-import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.12-framework-prompts';
-import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
+import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.13-framework-prompts';
+import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.13-image-export';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
@@ -20,7 +20,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d2.12-resize-nodes';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.14-selection-and-reference-edit';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -261,15 +261,43 @@ function bindGlobalEvents(){
   $('#compareButton').onclick=openCompare;
   $('#reasoningToolsButton').onclick=()=>openReasoningTools();
   $('#architecturalPropositionButton').onclick=()=>openArchitecturalPropositions();
-  // Add one project-neutral image/reference tool alongside existing reasoning tools.
-  const studyButton=$('#architecturalPropositionButton');
-  if(studyButton&&!document.getElementById('imageReferenceButton')){
-    const refButton=document.createElement('button');refButton.type='button';refButton.id='imageReferenceButton';
-    refButton.className=studyButton.className;refButton.textContent='Image / Reference +';
-    refButton.title='Add your own image, sketch, observation or precedent to the reasoning map';
-    studyButton.insertAdjacentElement('afterend',refButton);
-    refButton.addEventListener('click',openImageReferenceUploader);
-  }
+  // Image creation belongs alongside the node-composition controls, not the
+  // global architectural studies ribbon. Both actions work in every framework.
+  const addImageFromSelection=()=>{
+    const selected=getState().nodes.find(n=>n.id===getState().activeNodeId);
+    openImageReferenceUploader({linkedSourceId:selected&&!selected.meta?.artifactKind?selected.id:null});
+  };
+  $('#imageReferenceDockButton')?.addEventListener('click',addImageFromSelection);
+  $('#imageReferenceInspectorButton')?.addEventListener('click',addImageFromSelection);
+  const workspaceAcceptsImage=()=>Boolean(getState().brief)&&!els.workspace?.classList.contains('hidden')&&
+    document.getElementById('modalBackdrop')?.classList.contains('hidden');
+  // Ctrl/Cmd+V copies image data into a NEW reference node from the workspace.
+  // Typing and ordinary copy/paste in text-editing fields remain unaffected.
+  document.addEventListener('paste',event=>{
+    if(!workspaceAcceptsImage()||event.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+    const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();
+    if(!file)return;
+    event.preventDefault();
+    const targetId=event.target.closest('.graph-node')?.dataset.id||getState().activeNodeId;
+    const target=getState().nodes.find(n=>n.id===targetId);
+    openImageReferenceUploader({initialFile:file,linkedSourceId:target?.meta?.artifactKind?null:target?.id,replaceNodeId:target?.meta?.artifactKind==='image-reference'?target.id:null});
+  });
+  // Dropping an image onto a reasoning node links a new reference to that thought.
+  // Dropping onto an existing reference replaces its image, after user confirmation.
+  // Dropping on the canvas with no target creates an independent image/reference node.
+  const imageFromTransfer=dt=>[...(dt?.files||[])].find(file=>file.type.startsWith('image/'))||null;
+  els.graphViewport.addEventListener('dragover',event=>{
+    if(!workspaceAcceptsImage()||!imageFromTransfer(event.dataTransfer))return;
+    event.preventDefault();event.dataTransfer.dropEffect='copy';
+  });
+  els.graphViewport.addEventListener('drop',event=>{
+    if(!workspaceAcceptsImage())return;
+    const file=imageFromTransfer(event.dataTransfer);if(!file)return;
+    event.preventDefault();event.stopPropagation();
+    const targetId=event.target.closest('.graph-node')?.dataset.id;
+    const target=getState().nodes.find(n=>n.id===targetId);
+    openImageReferenceUploader({initialFile:file,linkedSourceId:target?.meta?.artifactKind?null:target?.id,replaceNodeId:target?.meta?.artifactKind==='image-reference'?target.id:null});
+  });
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel();queueViewportSave(); };
   $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
@@ -515,6 +543,20 @@ function showView(view){
   window.scrollTo({top:0,behavior:'auto'});
 }
 
+function renderReferenceInspector(node){
+  const panel=document.getElementById('inspectorContent');
+  if(!panel)return;
+  // Reference cards are records of an image, not freeform text classification.
+  const origin=String(node.meta?.sourceLabel||'designer');
+  const readable=origin.charAt(0).toUpperCase()+origin.slice(1).replaceAll('-', ' ');
+  panel.dataset.inspectorKey=`image-reference:${node.id}:${node.updatedAt||''}`;
+  panel.innerHTML=`<div class="inspector-head"><span class="inspector-type">Image / Reference</span><h3>${escapeHtml(node.label)}</h3><p>Source: ${escapeHtml(readable)}. Image and reasoning remain separately attributable.</p></div>
+    <div class="inspector-section"><h4>Reference information</h4><p>${escapeHtml(node.meta?.sourceReference||'No citation or source details recorded yet.')}</p><div class="inspector-actions"><button type="button" class="primary-button compact" id="editSelectedReference">Edit reference</button><button type="button" class="secondary-button" id="openSelectedReference">Preview</button><button type="button" class="secondary-button" id="addLinkedReference">Add another image</button></div></div>`;
+  panel.querySelector('#editSelectedReference').onclick=()=>openImageReferenceUploader({editNodeId:node.id});
+  panel.querySelector('#openSelectedReference').onclick=()=>openSavedArtifact(node);
+  panel.querySelector('#addLinkedReference').onclick=()=>openImageReferenceUploader();
+}
+
 function renderWorkspace(){
   const state=getState();
   renderBrief(state,{onHotspot:selectHotspot,onEditHotspot:editHotspot,onDeleteHotspot:deleteHotspot,onChunk:selectBriefChunk,onAddChunk:addBriefChunk,onEditChunk:editBriefChunk},{showSuggestions:showHotspotSuggestions,hotspotFilter:hotspotViewMode});
@@ -557,6 +599,7 @@ function renderWorkspace(){
   const wireLegend=document.getElementById('wireLegend');
   if(wireLegend){wireLegend.hidden=!selectedEdgeId;if(!selectedEdgeId)wireLegend.open=false;}
   if(selectedEdgeId) renderConnectionInspector(selectedEdgeId);
+  else if(active?.meta?.artifactKind==='image-reference')renderReferenceInspector(active);
   else if(active) renderNodeInspector(active,state,nodeHandlers());
   else if(workspaceMapMode==='focus' && state.selectedHotspotId){ const h=state.hotspots.find(x=>x.id===state.selectedHotspotId); if(h)renderHotspotInspector(h,state,hotspotHandlers()); }
   else renderEmptyInspector();
@@ -577,7 +620,7 @@ function renderGraphState(){
   });
   renderGraph({...state,nodes:sizedNodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
-    onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node?.meta?.artifactKind)openSavedArtifact(node);else if(node)editNode(node); },
+    onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node?.meta?.artifactKind==='image-reference')openImageReferenceUploader({editNodeId:id});else if(node?.meta?.artifactKind)openSavedArtifact(node);else if(node)editNode(node); },
     onNodePreviewToggle:id=>{const node=getState().nodes.find(n=>n.id===id);if(node?.meta?.artifactKind)openSavedArtifact(node);else showSpatialReadForNode(id);},
     onNodeQuickLink:id=>openNodeQuickLink(id),
     onNodeCaseStudy:id=>showNodeCaseStudy(id),
@@ -1527,7 +1570,9 @@ function openSavedArtifact(node){
   if(!node?.meta?.artifactKind)return;
   if(node.meta.artifactKind==='image-reference'){
     const data=node.meta.imagePng||node.meta.imageData||'';
-    openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(node.label)}</h2><p class="prop-disclosure">${escapeHtml(node.meta.sourceLabel||'Designer reference')} · Reference material; not a system-generated design.</p><div class="reference-large-preview"><img src="${data}" alt="${escapeHtml(node.label)}"></div><p>${escapeHtml(node.meta.sourceReference||'No source description supplied')}</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div></div>`);
+    openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(node.label)}</h2><p class="prop-disclosure">${escapeHtml((node.meta.sourceLabel||'Designer').replace(/^./,c=>c.toUpperCase()))} · Reference material; not a system-generated design.</p><div class="reference-large-preview"><img src="${data}" alt="${escapeHtml(node.label)}"></div><p>${escapeHtml(node.meta.sourceReference||'No source description supplied')}</p><div class="modal-actions"><button type="button" class="primary-button compact" id="editReferenceFromPreview">Edit reference</button><button class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+      m.querySelector('#editReferenceFromPreview').onclick=()=>{closeModal();openImageReferenceUploader({editNodeId:node.id});};
+    }});
     return;
   }
   if(node.meta.artifactKind==='reasoning-digest'){
@@ -1562,10 +1607,10 @@ function propositionComparisonSheet(choices,scopeName){
   win.document.close();win.focus();
 }
 // D2 Visual: reference images are independently attributed, editable in size and exportable.
-function openImageReferenceUploader(){
+function openImageReferenceUploader({initialFile=null,linkedSourceId=null,replaceNodeId=null,editNodeId=null}={}){
  if(!getState().brief){toast('Open a project first.');return;}
- openModal(`<div class="prop-modal"><h2 id="modalTitle">Add Image / Reference</h2><p class="prop-disclosure">Add a sketch, drawing, precedent, observation or your own photograph. This is a source node, not an AI-generated proposition.</p>
- <div class="ref-upload-drop" id="refUploadDrop" tabindex="0">Drop an image here, paste from clipboard, or choose a PNG / JPEG / WebP file.<input type="file" id="refUploadInput" accept="image/png,image/jpeg,image/webp"></div>
+ openModal(`<div class="prop-modal"><h2 id="modalTitle">${editNodeId?'Edit Image / Reference':replaceNodeId?'Replace Image / Reference':'Add Image / Reference'}</h2><p class="prop-disclosure">Add a sketch, drawing, precedent, observation or your own photograph. This is a source node, not an AI-generated proposition.</p>
+ <div class="ref-upload-drop" id="refUploadDrop" tabindex="0">${editNodeId?'Keep the current image or choose a replacement. ':''}Drop an image here, paste from clipboard, or choose a PNG / JPEG / WebP file.<input type="file" id="refUploadInput" accept="image/png,image/jpeg,image/webp"></div>
  <div class="ref-preview" id="refUploadPreview"></div>
  <label>Node title <input id="refUploadTitle" placeholder="e.g. Sketch of a sheltered threshold" maxlength="180"></label>
  <label>Origin <select id="refUploadSource"><option value="designer">Designer work</option><option value="participant">Participant-supplied (with permission)</option><option value="tutor">Tutor / reviewer</option><option value="precedent">Published precedent</option><option value="observation">Observation</option><option value="other">Other recorded source</option></select></label>
@@ -1577,7 +1622,7 @@ function openImageReferenceUploader(){
      if(file.size>15_000_000){toast('Image is too large (maximum 15 MB).');return;}
      const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{
        const canvas=document.createElement('canvas');const k=Math.min(1,900/Math.max(img.width,img.height));canvas.width=Math.max(1,Math.round(img.width*k));canvas.height=Math.max(1,Math.round(img.height*k));
-       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);
+       const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);
        data=canvas.toDataURL('image/jpeg',.72);if(data.length>760000){data=canvas.toDataURL('image/jpeg',.48);}
        if(data.length>760000){toast('Image is too large for reliable local storage. Try a smaller image.');data=null;return;}
        preview.innerHTML='';const display=document.createElement('img');display.src=data;display.alt='Selected reference preview';preview.append(display);
@@ -1591,21 +1636,39 @@ function openImageReferenceUploader(){
    drop.ondrop=e=>{e.preventDefault();drop.classList.remove('dragover');processFile(e.dataTransfer.files[0]);};
    const onPaste=e=>{const file=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'))?.getAsFile();if(file){e.preventDefault();processFile(file);}};
    m.addEventListener('paste',onPaste);
-   save.onclick=()=>{
+   // Dropping or pasting directly on the workspace opens this same review dialog.
+   // Attribution stays user-controlled; no file is inserted without confirmation.
+   if(initialFile)processFile(initialFile);
+   const originalReference=(replaceNodeId||editNodeId)?getState().nodes.find(n=>n.id===(replaceNodeId||editNodeId)&&n.meta?.artifactKind==='image-reference'):null;
+   if(originalReference){
+     if(editNodeId){
+       // Keep the existing binary image until the user explicitly replaces it.
+       data=originalReference.meta?.imagePng||originalReference.meta?.imageData||null;
+       if(data){const img=document.createElement('img');img.src=data;img.alt='Current reference';preview.append(img);save.disabled=false;}
+     }
+     m.querySelector('#refUploadTitle').value=originalReference.label;
+     m.querySelector('#refUploadSource').value=originalReference.meta?.sourceLabel||'designer';
+     m.querySelector('#refUploadCitation').value=originalReference.meta?.sourceReference||'';
+     save.textContent=editNodeId?'Save reference changes':'Replace reference image';
+   }
+   save.onclick=()=>{ 
      if(!data)return;
-     const state=getState(),point=nearVisiblePlacement(),selected=state.nodes.find(n=>n.id===state.activeNodeId&&!n.meta?.artifactKind);
+     const state=getState(),point=nearVisiblePlacement(),selected=state.nodes.find(n=>n.id===(linkedSourceId||state.activeNodeId)&&!n.meta?.artifactKind);
      const provenance=m.querySelector('#refUploadSource').value,citation=m.querySelector('#refUploadCitation').value.trim(),label=m.querySelector('#refUploadTitle').value.trim()||'Untitled image / reference';
      const node=createNode({type:'note',label,x:point.x,y:point.y,branchId:selected?.branchId||state.activeBranchId,
        meta:{artifactKind:'image-reference',imagePng:data,sourceMode:workspaceMapMode,sourceNodeIds:selected?[selected.id]:[],sourceLabel:provenance,sourceReference:citation,
        provenance:provenance==='precedent'?'other':provenance==='participant'?'other':provenance==='observation'?'designer':provenance,
        evidenceKind:provenance==='precedent'?'precedent':provenance==='observation'?'observation':'drawing',generationActivity:'imported',hotspotId:state.selectedHotspotId,
        outputCreatedAt:new Date().toISOString(),nodeSizes:{original:{width:340,height:320}}}});
-     // Verify browser storage capacity before adding a binary record.
-     try{const staged=structuredClone(state);staged.nodes.push(node);if(JSON.stringify(staged).length>3_200_000)throw Error('Project would exceed the safe browser storage budget. Export JSON and use smaller images.');}
+     // Verify browser storage capacity before adding a binary record or replacing one.
+     try{const staged=structuredClone(state);if(originalReference){const idx=staged.nodes.findIndex(n=>n.id===originalReference.id);if(idx>=0)staged.nodes[idx]={...staged.nodes[idx],label,meta:{...staged.nodes[idx].meta,imagePng:data,sourceLabel:provenance,sourceReference:citation}};}else staged.nodes.push(node);if(JSON.stringify(staged).length>3_200_000)throw Error('Project would exceed the safe browser storage budget. Export JSON and use smaller images.');}
      catch(e){toast('Reference not inserted: '+e.message);return;}
-     checkpoint('add image or reference');updateState(st=>{st.nodes.push(node);st.activeNodeId=node.id;
+     checkpoint(originalReference?'replace image or reference':'add image or reference');
+     updateState(st=>{
+       if(originalReference){const existing=st.nodes.find(n=>n.id===originalReference.id);if(existing){existing.label=label;existing.meta={...existing.meta,imagePng:data,sourceLabel:provenance,sourceReference:citation};st.activeNodeId=existing.id;}return;}
+       st.nodes.push(node);st.activeNodeId=node.id;
        if(selected){const edge=createEdge(selected.id,node.id,{status:'provisional'});edge.meta={artifact:true,relation:'references'};st.edges.push(edge);}
-     });focusPathRootId=null;closeModal();renderWorkspace();toast('Image / Reference added. Drag the lower-right corner to resize it.');
+     });focusPathRootId=null;closeModal();renderWorkspace();toast(originalReference?'Reference updated. Existing connections preserved.':'Image / Reference added. Drag the lower-right corner to resize it.');
    };
  }});
 }

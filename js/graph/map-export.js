@@ -123,9 +123,9 @@ function svgSnapshot({surface,edges,projectEdges=[],projectName,viewLabel,framew
   }).join('');
   const cards=nodes.map(n=>{
     if(n.artifactKind){
-      const role=n.artifactKind==='architectural-proposition'?'Architectural Proposition':'Reasoning Digest';
+      const role=n.artifactKind==='image-reference'?'Image / Reference':n.artifactKind==='architectural-proposition'?'Architectural Proposition':'Reasoning Summary';
       const label=wrapText(n.label,n.w-28,'600 13px Arial').slice(0,3);
-      const image=n.imageData?.startsWith('data:image/png;base64,')?`<image x="12" y="66" width="${n.w-24}" height="${Math.max(75,n.h-112)}" preserveAspectRatio="xMidYMid meet" href="${escape(n.imageData)}"/>`:'';
+      const image=/^data:image\/(?:png|jpeg|webp);base64,/.test(n.imageData||'')?`<image x="12" y="66" width="${n.w-24}" height="${Math.max(75,n.h-112)}" preserveAspectRatio="xMidYMid meet" href="${escape(n.imageData)}"/>`:'';
       return `<g transform="translate(${n.x},${n.y})"><rect width="${n.w}" height="${n.h}" rx="12" fill="#1d2730" stroke="#73b5b4" stroke-width="1.5"/>
       <text x="14" y="23" fill="#a5dcda" font-size="12" font-weight="700" font-family="Arial">${escape(role)}</text>
       ${textLines(label,14,43,15,'font-family="Arial" font-size="13" fill="#f4f8f8"')}
