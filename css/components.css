@@ -1123,3 +1123,13 @@ html.tutorial-tour-active{overflow:hidden}
 /* D1.7: remove unlabelled purple stripe above tutorial dialogue. The
    labelled step-progress indicator below its heading remains. */
 .tutorial-popover::before{content:none!important;display:none!important;}
+
+/* D1.9 — Stable, single-layer tutorial spotlight. A single even-odd SVG
+   cutout avoids Chrome compositor flashes from four blurred fixed masks.
+   The painted scrim remains clickable; the clear cutout remains interactive. */
+.tutorial-scrim{position:fixed;inset:0;display:block;width:100vw;height:100vh;
+  overflow:hidden;z-index:1000;pointer-events:none;contain:paint;}
+.tutorial-scrim-path{fill:rgba(17,20,29,.54);fill-rule:evenodd;
+  pointer-events:visiblePainted;cursor:pointer;}
+.tutorial-scrim-outline{fill:none;stroke:rgba(255,255,255,.97);stroke-width:2;
+  pointer-events:none;vector-effect:non-scaling-stroke;}

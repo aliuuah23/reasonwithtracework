@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current code baseline:** D1.8 (19 October 2026). **Status:** consolidated UI/provenance development release; deployed-browser acceptance testing required before freeze.
+**Current code baseline:** D1.9 (19 October 2026). **Status:** consolidated UI/provenance development release; deployed-browser acceptance testing required before freeze.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -15,7 +15,7 @@ TRACEWORK is a browser-based research prototype for making architectural design 
 
 Projects are currently stored **in this browser on this device**. Before clearing browser data or changing computers, **export a JSON backup**. Opening the site on another device does not transfer projects automatically.
 
-## Capabilities in the D1.8 codebase
+## Capabilities in the D1.9 codebase
 
 - Editable brief hotspots; linked thought nodes; optional branches, rejections, connections and undo.
 - TRACEWORK Grammar, Freeform (Low Structure) and six adapted research-framework lenses.
@@ -25,9 +25,11 @@ Projects are currently stored **in this browser on this device**. Before clearin
 - Spatial Reading Studio, curated feature examples, built-project references and linked reading/search resources.
 - Project export/import, combined-project copies, project checks and map export previews.
 
+**D1.9 usability refinement:** Metadata drawer dismissal is intentional and preserves in-progress text selection. The tutorial uses a single non-blurred spotlight layer to reduce intermittent grey redraws, pending live-browser acceptance.
+
 **D1.7 refinement (retained):** The dock keeps a constant height whether empty or showing text-recognition matches; panel tabs sit on their panels’ upper edges; a deliberate click outside Edit Node closes it, but dragging text selection out does not; link preview follows the pointer without animation lag, with destination highlights coloured by the active framework role; tutorial dialogs no longer have an unexplained purple top stripe. D1.6 help, node-body linking and tutorial tracking remain intact.
 
-**Important:** Source-level checks do not establish a green-lit deployed experience. D1.8 browser testing remains necessary, particularly focused arrangements, viewport restore and provenance edits.
+**Important:** Source-level checks do not establish a green-lit deployed experience. D1.9 browser testing remains necessary, particularly focused arrangements, viewport restore and provenance edits.
 
 ## Guides and research
 
@@ -41,7 +43,7 @@ Projects are currently stored **in this browser on this device**. Before clearin
 
 This is a static GitHub Pages website. Keep `index.html`, `about.html`, `css/`, `js/` and `data/` at the repository root. Upload the **contents** of the deployment ZIP with these directory paths intact; do not flatten them into a single folder. Running from `file://` can block browser module and JSON fetching; GitHub Pages or a local HTTP server is required.
 
-D1.7 updates the actual website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
+D1.9 updates the actual website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
 
 ## Current limitations and planned work
 

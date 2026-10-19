@@ -90,8 +90,10 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
   const root=document.createElement('div');
   root.className='tutorial-spotlight-root';
   root.innerHTML=`
-    <div class="tutorial-mask tutorial-mask-top"></div><div class="tutorial-mask tutorial-mask-left"></div><div class="tutorial-mask tutorial-mask-right"></div><div class="tutorial-mask tutorial-mask-bottom"></div>
-    <div class="tutorial-spotlight-ring" aria-hidden="true"></div>
+    <svg class="tutorial-scrim" aria-hidden="true" preserveAspectRatio="none" viewBox="0 0 1 1">
+      <path class="tutorial-scrim-path" fill-rule="evenodd"></path>
+      <rect class="tutorial-scrim-outline" rx="12" ry="12"></rect>
+    </svg>
     <section class="tutorial-popover" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
       <span class="tutorial-popover-caret" aria-hidden="true"></span>
       <div class="tutorial-popover-top"><span class="tutorial-eyebrow">${escapeHtml(eyebrow)}</span><span class="tutorial-step-count"></span><button type="button" class="tutorial-close tutorial-popover-close" aria-label="Close tutorial">×</button></div>
@@ -101,7 +103,7 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     </section>`;
   document.body.appendChild(root);
   document.documentElement.classList.add('tutorial-tour-active');
-  const masks=[...root.querySelectorAll('.tutorial-mask')],ring=root.querySelector('.tutorial-spotlight-ring'),popover=root.querySelector('.tutorial-popover');
+  const scrim=root.querySelector('.tutorial-scrim'), scrimPath=root.querySelector('.tutorial-scrim-path'), outline=root.querySelector('.tutorial-scrim-outline'),popover=root.querySelector('.tutorial-popover');
   const back=root.querySelector('.tutorial-popover-back'),next=root.querySelector('.tutorial-popover-next'),skip=root.querySelector('.tutorial-popover-skip');
   const finish=()=>{removeSpotlight();onFinish?.();};
   const getTarget=step=>{
@@ -132,11 +134,14 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     const top=clamp(rect.top-pad,pad,Math.max(pad,vh-pad-30));
     const bottom=clamp(rect.bottom+pad,top+30,Math.max(top+30,vh-pad));
     const width=Math.max(30,right-left),height=Math.max(30,bottom-top);
-    Object.assign(masks[0].style,{left:'0px',top:'0px',width:'100vw',height:`${Math.max(0,top)}px`});
-    Object.assign(masks[1].style,{left:'0px',top:`${top}px`,width:`${Math.max(0,left)}px`,height:`${height}px`});
-    Object.assign(masks[2].style,{left:`${right}px`,top:`${top}px`,width:`${Math.max(0,vw-right)}px`,height:`${height}px`});
-    Object.assign(masks[3].style,{left:'0px',top:`${bottom}px`,width:'100vw',height:`${Math.max(0,vh-bottom)}px`});
-    Object.assign(ring.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
+    // D1.9: paint the entire dimming layer and its cut-out atomically using
+    // one SVG, rather than four independent blurred compositor layers.
+    // The old layers could momentarily render at different positions and
+    // flash grey across the viewport when a target scrolled or changed.
+    scrim.setAttribute('viewBox',`0 0 ${vw} ${vh}`);
+    scrimPath.setAttribute('d',`M0 0H${vw}V${vh}H0Z M${left} ${top}H${right}V${bottom}H${left}Z`);
+    outline.setAttribute('x',String(left));outline.setAttribute('y',String(top));
+    outline.setAttribute('width',String(width));outline.setAttribute('height',String(height));
     const pw=Math.min(340,vw-24),ph=popover.offsetHeight||240,gap=14;
     let px=right+gap,py=Math.max(12,Math.min(top,vh-ph-12)),side='right';
     if(px+pw>vw-12){px=left-pw-gap;side='left';}
@@ -162,7 +167,7 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
   back.onclick=()=>{if(index>0){index--;render();}};
   next.onclick=()=>{if(index<usable.length-1){index++;render();}else finish();};
   skip.onclick=finish;root.querySelector('.tutorial-popover-close').onclick=finish;
-  masks.forEach(mask=>mask.addEventListener('pointerdown',finish));
+  scrimPath.addEventListener('pointerdown',finish);
   root.addEventListener('pointerdown',event=>{if(event.target===root)finish();});
   // Following the target with a never-ending animation loop forced a layout
   // measurement every frame and made the spotlight lag on slower laptops.

@@ -1,3 +1,10 @@
+## D1.9 — Metadata dismissal and tutorial stability (19 October 2026)
+
+- Kept the D1.8 command bar, panel controls, node links and layouts unchanged after live acceptance.
+- The command-bar metadata drawer closes on an intentional click elsewhere in the workspace; a text-selection drag begun inside the drawer does not cause dismissal.
+- Replaced the tour's four blurred fixed overlays with one cut-out spotlight layer to reduce intermittent grey flashes and screen-spanning redraw artefacts; retained click-outside dismissal and fast target changes.
+- Existing saved projects, reasoning nodes, frameworks and research datasets are unaffected. The intermittent visual artefact still requires confirmation in the deployed browser.
+
 # TRACEWORK — Changelog
 
 This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.8; acceptance testing remains open.**
@@ -51,7 +58,7 @@ This is the short release record. Detailed original notes, including past troubl
 | **B1.8–B1.7** | Text-node/CSS highlighting and correct nested repository deployment. |
 | **Round 2B.1** | Quick/Long Brief filing, naming and source-section handling. |
 
-The archive includes every original TXT note, including versions not individually summarized here. Older test instructions and feature labels sometimes differ from current D1.7 behaviour; use the [current user guide](docs/user-guide.md) for day-to-day usage.
+The archive includes every original TXT note, including versions not individually summarized here. Older test instructions and feature labels sometimes differ from current D1.9 behaviour; use the [current user guide](docs/user-guide.md) for day-to-day usage.
 
 ## Following the current baseline
 

@@ -31,7 +31,7 @@ import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js?v=d1-7-refinement';
 import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-5-closable';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1.8';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1.9';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -265,6 +265,17 @@ function bindGlobalEvents(){
   document.addEventListener('keydown',handleWorkspaceKeydown,{capture:true});
   bindGlobalHelpPopovers();
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest?.('.node-context-menu')) closeNodeContext(); if(!e.target.closest?.('.node-status-menu,.node-status')) document.getElementById('nodeStatusMenu')?.remove(); if(!e.target.closest?.('.node-type-menu,.node-type')) document.getElementById('nodeTypeMenu')?.remove(); });
+  // D1.9: dismiss only the command bar's optional metadata drawer on an
+  // intentional pointer press outside it. A selection drag that STARTS inside
+  // can still finish outside without closing or losing input focus. Never
+  // collapse the drawer in response to typing, framework changes or help.
+  document.addEventListener('pointerdown',event=>{
+    if(event.button !== 0 && event.pointerType === 'mouse') return;
+    const details=els.thoughtDock?.querySelector('.thought-advanced-metadata');
+    if(!details?.open || details.contains(event.target)) return;
+    if(event.target.closest?.('.classification-help-popover')) return;
+    details.open=false;
+  }, {capture:true});
   els.graphViewport.addEventListener('click',e=>{
     if(e.target.closest?.('.graph-node,.trace-edge,.trace-edge-hit,.node-port,button,input,textarea,select,a'))return;
     clearNewNodeHalo(); selectedEdgeId=null; selectedNodeIds.clear();
