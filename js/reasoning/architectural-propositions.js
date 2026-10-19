@@ -349,6 +349,34 @@ function abstractGraphicFor(spec){
   furn+=seat(1.8,4.1,2.0,.51,false)+seat(6.6,5.6,2,.51,false);
   roof+=columns([[1.25,1.55],[8.65,1.45],[1.7,8.25],[8.6,8.4]],3.35);
  }
+ // The speculative spatial layer responds to recorded intentions, rather than
+ // treating a formal family as proof of actual design performance.
+ const movement=(spec.secondaryMoves||[]).some(m=>m.key==='movement');
+ const activity=(spec.secondaryMoves||[]).some(m=>m.key==='social');
+ const kindSpatial=spec.strategy;
+ if(['movement','duration','adaptable'].includes(kindSpatial)||movement){
+   const trace=kind==='ring'?[[1.3,5,.07],[3,8.4,.07],[7.3,8.4,.07],[8.7,5,.07]]:
+     kind==='cluster'?[[1.4,1.8,.07],[3.8,4.5,.07],[6,5.2,.07],[8.6,8.6,.07]]:
+     [[1.1,5,.07],[3.5,5,.07],[6.1,5,.07],[8.9,5,.07]];
+   for(let i=1;i<trace.length;i++)ground+=segment(trace[i-1],trace[i],'#288991',2.9,'stroke-dasharray="7 5"');
+ }
+ if(kindSpatial==='privacy'){
+   wall+=curvingScreen(4.7,5.5,2.4,3.1,-1.7,-.35,2.05,'#94afa7');
+   wall+=curvingScreen(4.7,5.5,3.5,4.0,-1.7,-.6,1.25,'#c6d0bc');
+ }
+ if(kindSpatial==='capacity'||kindSpatial==='adaptable'){
+   for(const [x,y] of [[2.1,2.15],[3.0,6.7],[7.6,3.1],[7.1,7.3]])furn+=prism(x,y,.09,.54,.59,.38,'#b6b08c');
+ }
+ if(kindSpatial==='social'||activity){
+   furn+=arcBench(5.1,5.0,1.3,1.03,.15,2.2);
+   ground+=halo(5,5,.85,.8,.04,'#d3c39f',.55);
+ }
+ if(kindSpatial==='climate'){
+   for(let i=0;i<4;i++)roof+=segment([1+i*2,1.1,3.62],[1+i*2,8.8,3.62],'#5e9c9b',.95,'stroke-dasharray="3 5"');
+ }
+ // Human scale and a translucent site datum are useful, but do not pretend
+ // that approximate geometry proves access, engineering or occupancy.
+ ground+=human(10.2,8.2)+human(-.1,5.2);
  return {shapes:ground+furn+wall+roof,markers,geometry:geometricTrace(spec.strategy)};
 }
 // The orthographic inset and the axonometric draw from the same spatial strategy.
@@ -416,6 +444,28 @@ function aggregateFormPlan(spec){
    shape+=`<path d="${pts.map(([u,v],i)=>`${i?'L':'M'}${p(u,v)}`).join(' ')}" fill="none" stroke="#4c8283" stroke-width="2"/>`;
    for(const [u,v] of [[.21,.78],[.53,.77],[.82,.76]])shape+=dot(u,v);
  }
+ // Secondary abstract analysis: explicitly show how the chosen spatial intent
+ // could redirect occupation, thresholds or movement inside this morphology.
+ const strategy=spec.strategy;
+ const movement=['movement','duration','adaptable'].includes(strategy);
+ if(movement){
+   const a=family==='ribbon'?'M'+p(.15,.5)+' C'+p(.33,.12)+' '+p(.63,.88)+' '+p(.85,.48):'M'+p(.10,.54)+' Q'+p(.45,.35)+' '+p(.92,.6);
+   shape+=`<path d="${a}" fill="none" stroke="#237e8b" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="4 3"/>`;
+   shape+=`<path d="M${p(.86,.55)}L${p(.93,.6)}L${p(.85,.64)}" fill="none" stroke="#237e8b" stroke-width="2"/>`;
+ }
+ if(strategy==='privacy'){
+   for(let i=0;i<3;i++)shape+=`<path d="M${p(.13+i*.065,.17)} Q${p(.28+i*.065,.50)} ${p(.11+i*.065,.84)}" fill="none" stroke="#9b8a64" stroke-width="${2.7-i*.5}" stroke-dasharray="2 2"/>`;
+ }
+ if(strategy==='social'){
+   shape+=`<circle cx="${x+.5*s}" cy="${y+.49*s}" r="${.115*s}" fill="#ddc8a2" stroke="#ab8a65" stroke-width="1.3"/>`;
+   for(let i=0;i<6;i++){const a=i*Math.PI/3;shape+=dot(.5+.20*Math.cos(a),.49+.20*Math.sin(a),2.1);}
+ }
+ if(strategy==='climate'){
+   for(let i=0;i<5;i++)shape+=`<path d="M${p(.1+i*.17,.08)}l${s*.09} ${s*.10}" fill="none" stroke="#5e9c9b" stroke-width="1.4" stroke-linecap="round"/>`;
+ }
+ if(strategy==='capacity'||strategy==='adaptable'){
+   for(let i=0;i<3;i++)for(let j=0;j<3;j++)shape+=dot(.23+i*.26,.28+j*.23,2.2);
+ }
  const title={cluster:'DISTRIBUTED',ring:'CENTRAL VOID',petals:'RADIAL',ribbon:'CONTINUOUS',fold:'FOLDED FIELD'}[family]||'FORM';
  return `<rect x="44" y="150" width="189" height="238" rx="12" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/>
  <text x="58" y="172" font-size="11" font-family="Arial" font-weight="700" letter-spacing=".3" fill="#506974">FORM RELATIONSHIP / PLAN</text>
@@ -423,6 +473,39 @@ function aggregateFormPlan(spec){
  ${shape}
  <circle cx="68" cy="374" r="3.5" fill="#c4a37c"/><text x="78" y="378" font-size="9" font-family="Arial" fill="#617883">potential occupation</text>
  <text x="59" y="402" font-size="9" font-family="Arial" fill="#80969b">Unscaled relationship diagram</text>`;
+}
+// Section through the speculative family, separate from the plan and axonometric.
+// The section is a tectonic suggestion, not a construction drawing.
+function aggregateFormSection(spec){
+ const family=spec.formalVariant||'fold', x=58,y=444, w=159,h=105;
+ const X=u=>x+w*u,Y=v=>y+h*v;
+ const L=(pts,color='#62888a',sw=2,fill='none')=>`<path d="${pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}" stroke="${color}" stroke-width="${sw}" fill="${fill}" stroke-linejoin="round" stroke-linecap="round"/>`;
+ let art=`<rect x="44" y="418" width="189" height="162" rx="11" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/><text x="57" y="437" font-family="Arial" font-size="11" font-weight="700" letter-spacing=".5" fill="#536e77">SPATIAL SECTION</text>`;
+ art+=L([[0,.86],[1,.86]],'#778e88',1.4);
+ if(family==='cluster'){
+   art+=L([[.04,.46],[.23,.38],[.33,.43]],'#5e9590',5)+L([[.44,.27],[.60,.23],[.69,.29]],'#789ca6',5)+L([[.79,.52],[.97,.43]],'#638f88',5);
+   for(const v of [.12,.49,.84])art+=L([[v,.40],[v,.86]],'#7c9d99',1.5);
+ }else if(family==='ring'){
+   art+=L([[.03,.40],[.20,.29],[.36,.35]],'#5e9590',5)+L([[.64,.35],[.80,.29],[.97,.40]],'#5e9590',5);
+   for(const v of [.09,.32,.68,.91])art+=L([[v,.37],[v,.86]],'#7c9d99',1.3);
+   art+=`<text x="${X(.5)}" y="${Y(.62)}" text-anchor="middle" font-size="7" fill="#7b928a" font-family="Arial">open centre</text>`;
+ }else if(family==='petals'){
+   art+=L([[.03,.59],[.24,.27],[.46,.44],[.53,.18],[.74,.42],[.98,.52]],'#58968e',4.2);
+   for(const v of [.16,.49,.88])art+=L([[v,.54],[v,.86]],'#7c9d99',1.4);
+ }else if(family==='ribbon'){
+   art+=`<path d="M${X(.02)} ${Y(.57)} Q${X(.22)} ${Y(.15)} ${X(.43)} ${Y(.41)}T${X(.98)} ${Y(.36)}" fill="none" stroke="#5d9b96" stroke-width="5"/>`;
+   art+=L([[.08,.50],[.08,.86]],'#7c9d99',1.6)+L([[.89,.43],[.89,.86]],'#7c9d99',1.6);
+ }else{
+   art+=L([[.02,.48],[.15,.17],[.31,.51],[.48,.12],[.66,.49],[.83,.17],[.98,.50]],'#5d9791',4.4);
+   for(const v of [.08,.31,.66,.94])art+=L([[v,.49],[v,.86]],'#7c9d99',1.6);
+ }
+ // Occupation datum and human scale, intentionally undimensioned.
+ for(const v of [.26,.72]){
+   art+=L([[v-.045,.79],[v+.045,.79]],'#b59c77',3);
+   art+=`<circle cx="${X(v)}" cy="${Y(.65)}" r="3.3" fill="#70858c"/><path d="M${X(v)} ${Y(.69)}v${h*.12}m0 -${h*.045}l-${w*.025} ${h*.05}m${w*.025} -${h*.05}l${w*.025} ${h*.05}" fill="none" stroke="#70858c" stroke-width="1.7"/>`;
+ }
+ art+=`<text x="57" y="570" font-size="8.6" font-family="Arial" fill="#788d91">Diagrammatic envelope + occupation</text>`;
+ return art;
 }
 function graphicFor(spec){
  if(spec.mode==='aggregate')return abstractGraphicFor(spec);
@@ -553,8 +636,13 @@ export function renderPropositionSVG(spec,{width=1180,height=790}={}){
   <path d="M38 589L742 250" fill="none" stroke="#fff" stroke-width="1" opacity=".5"/>
   <g transform="translate(44,85)">${shapes}${pins}</g>
   ${plan}
+  ${isAggregate?aggregateFormSection(spec):''}
   ${isAggregate?'':register}
-  <text x="47" y="666" font-family="Arial" font-size="11" fill="#526a77">${isAggregate?'ABSTRACT FORM HYPOTHESIS · DISTINCT MORPHOLOGY, NOT A FINISHED BUILDING':'PROGRAMME + SITE STUDY · ROUTES, SHELTER AND OCCUPANCY REQUIRE CHECKING'}</text>
+  ${isAggregate?`<rect x="248" y="601" width="483" height="86" rx="9" fill="#f9fbf9" fill-opacity=".97" stroke="#c9d8d4"/>
+    <text x="263" y="621" font-family="Arial" font-size="10" font-weight="700" letter-spacing=".8" fill="#46636b">SPATIAL LOGIC / WHAT TO INVESTIGATE</text>
+    ${multi((spec.annotations?.[1]?.form||'Form relationships to be evaluated'),263,636,{size:10,max:74,lines:2,line:13,color:'#406675'})}
+    <text x="263" y="676" font-family="Arial" font-size="8.5" fill="#906f4c">Formal hypothesis · access, dimensions and performance untested</text>`:''}
+  <text x="47" y="697" font-family="Arial" font-size="11" fill="#526a77">${isAggregate?'FORM + PLAN + SECTION · SPECULATIVE SPATIAL TRANSLATION':'PROGRAMME + SITE STUDY · ROUTES, SHELTER AND OCCUPANCY REQUIRE CHECKING'}</text>
   <text x="767" y="151" font-family="Arial" font-size="12" font-weight="700" fill="#536e78" letter-spacing=".8">ARCHITECTURAL FEATURES AND REASONING</text>
   ${notes}
   ${checkBand}

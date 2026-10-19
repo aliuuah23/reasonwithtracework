@@ -1,3 +1,10 @@
+# TRACEWORK D2.6 — Workspace Continuity + Developed Aggregate Studies
+
+- Restore each Focus and Aggregate map exactly where the user left it: Original/Arrange status, scroll position, zoom, and focused pathway, independently for each map. Persist both views when saving a project; restore legacy projects safely.
+- Aggregate design studies: add sectional speculation, more detailed formal/occupation overlays, source-sensitive circulation and spatial tactics, plus clearer plan/section/axon reading. Keep assumptions explicitly identified and all geometry undimensioned.
+- Focus studies and accepted D1.9/D2.5 interactions left unchanged.
+- Release candidate: needs browser checks before acceptance.
+
 ## D2.5 — Clarity, adaptive dialogs and source-trace highlight (TEST BUILD, 19 October 2026)
 
 - Removed intermediary Architectural Propositions selection screen. Open directly on **Reasoning Summary**, switch to **Design Studies** within the same dialog.

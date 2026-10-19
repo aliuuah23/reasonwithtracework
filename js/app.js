@@ -1,5 +1,5 @@
 import { auditProject } from './core/project-audit.js';
-import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.5-source-trace-design-tabs';
+import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.6-workspace-persistence-aggregate-detail';
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.5-plain-language';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
@@ -19,7 +19,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d2.5-source-trace-design-tabs';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.6-workspace-persistence-aggregate-detail';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -66,11 +66,33 @@ let aggregateArrangeBlend = 0;
 let focusArrangeMode = false;
 let viewportSaveTimer = 0;
 let viewportRestorePending = null;
+// Separate, reversible canvas positions for each map. UI-only; does not change authored nodes.
+let mapWorkspaceViews = {focus:null,aggregate:null};
+function captureActiveMapView(){
+  const s=getState(), vp=els.graphViewport;
+  return {zoom:canvasZoom,left:vp?.scrollLeft||0,top:vp?.scrollTop||0,
+    hotspotId:s.selectedHotspotId||null,focusRoot:focusPathRootId,
+    arranged:workspaceMapMode==='focus'?focusArrangeMode:aggregateArrangeBlend===100};
+}
+function rememberActiveMapView(){
+  if(!getState().brief||!els.graphViewport)return;
+  mapWorkspaceViews[workspaceMapMode]=captureActiveMapView();
+}
+function applySavedMapView(view){
+  if(!view)return false;
+  canvasZoom=Math.max(.02,Math.min(1.6,Number(view.zoom)||1));
+  updateZoomLabel();
+  viewportRestorePending={left:Math.max(0,Number(view.left)||0),top:Math.max(0,Number(view.top)||0)};
+  delete els.graphViewport.dataset.needsInitialPosition;
+  return true;
+}
 function persistViewport(){
   const state=getState(),vp=els.graphViewport;
   if(!state.brief||!vp||els.app.classList.contains('hidden'))return;
+  rememberActiveMapView();
   const snapshot={zoom:canvasZoom,left:vp.scrollLeft,top:vp.scrollTop,mapMode:workspaceMapMode,
-    hotspotId:state.selectedHotspotId,focusRoot:focusPathRootId,focusArranged:focusArrangeMode,aggregateArranged:workspaceMapMode==='aggregate'&&aggregateArrangeBlend===100};
+    hotspotId:state.selectedHotspotId,focusRoot:focusPathRootId,focusArranged:focusArrangeMode,
+    aggregateArranged:aggregateArrangeBlend===100,workspaceViews:mapWorkspaceViews};
   patchState({uiViewport:snapshot},{silent:true});
   clearTimeout(viewportSaveTimer);
   viewportSaveTimer=setTimeout(()=>saveProject(getState()),320);
@@ -83,16 +105,26 @@ function restoreSavedViewport(project){
   const v=project?.uiViewport;
   if(!v||!Number.isFinite(Number(v.zoom)))return false;
   workspaceMapMode=v.mapMode==='aggregate'?'aggregate':'focus';
-  focusPathRootId=project.nodes?.some(n=>n.id===v.focusRoot)?v.focusRoot:null;
-  focusArrangeMode=Boolean(v.focusArranged);
-  if(v.aggregateArranged&&workspaceMapMode==='aggregate'){
+  mapWorkspaceViews={focus:null,aggregate:null};
+  for(const mode of ['focus','aggregate']){
+    const entry=v.workspaceViews?.[mode];
+    if(entry&&Number.isFinite(Number(entry.zoom)))mapWorkspaceViews[mode]={...entry};
+  }
+  // Backward-compatible restoration for projects saved before D2.6.
+  if(!mapWorkspaceViews[workspaceMapMode])mapWorkspaceViews[workspaceMapMode]={zoom:v.zoom,left:v.left,top:v.top,hotspotId:v.hotspotId,focusRoot:v.focusRoot,arranged:workspaceMapMode==='focus'?v.focusArranged:v.aggregateArranged};
+  const fv=mapWorkspaceViews.focus;
+  focusPathRootId=project.nodes?.some(n=>n.id===(fv?.focusRoot||v.focusRoot))?(fv?.focusRoot||v.focusRoot):null;
+  focusArrangeMode=Boolean(fv?.arranged??v.focusArranged);
+  const arranged=Boolean(mapWorkspaceViews.aggregate?.arranged??v.aggregateArranged);
+  if(arranged){
     const frameworkId=project.frameworkId||'tracework';
     aggregateArrangeSession={frameworkId,before:aggregateOriginalPositions(project),target:frameworkAggregateLayout(project,frameworkId)};
     aggregateArrangeBlend=100;
   }else{aggregateArrangeSession=null;aggregateArrangeBlend=0;}
-  canvasZoom=Math.max(.02,Math.min(1.6,Number(v.zoom)));
-  viewportRestorePending={left:Math.max(0,Number(v.left)||0),top:Math.max(0,Number(v.top)||0)};
-  if(v.hotspotId&&project.hotspots?.some(h=>h.id===v.hotspotId)) patchState({selectedHotspotId:v.hotspotId},{silent:true});
+  const active=mapWorkspaceViews[workspaceMapMode];
+  canvasZoom=Math.max(.02,Math.min(1.6,Number(active.zoom)||1));
+  viewportRestorePending={left:Math.max(0,Number(active.left)||0),top:Math.max(0,Number(active.top)||0)};
+  if(active.hotspotId&&project.hotspots?.some(h=>h.id===active.hotspotId)) patchState({selectedHotspotId:active.hotspotId},{silent:true});
   return true;
 }
 const undoStack = [];
@@ -407,7 +439,7 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
 }
 
 function enterApp(autoSelect=true){
-  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; focusArrangeMode=false; viewportRestorePending=null; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
+  canvasZoom=1; selectedEdgeId=null; selectedNodeIds.clear(); traceIssueNodeIds.clear(); focusPathRootId=null; workspaceMapMode='focus'; focusArrangeMode=false; mapWorkspaceViews={focus:null,aggregate:null}; viewportRestorePending=null; aggregateArrangeSession=null; aggregateArrangeBlend=0; resetAggregateFilters({render:false}); undoStack.length=0; updateUndoButton(); updateZoomLabel();
   const entering=getState();
   if(entering.brief && entering.hotspots?.length){
     const repaired=attachChunksToHotspots(repairHotspotRanges(entering.brief,entering.hotspots),entering.briefChunks||[]);
@@ -2270,6 +2302,7 @@ function handleWorkspaceKeydown(e){
 function captureUndoUI(){
   return {
     workspaceMapMode,
+    mapWorkspaceViews:structuredClone(mapWorkspaceViews),
     aggregateHotspotFilter,
     aggregateChunkFilter,
     aggregateTypeFilter,
@@ -2285,6 +2318,7 @@ function captureUndoUI(){
 }
 function restoreUndoUI(ui={}){
   workspaceMapMode=ui.workspaceMapMode==='aggregate'?'aggregate':'focus';
+  mapWorkspaceViews=ui.mapWorkspaceViews?structuredClone(ui.mapWorkspaceViews):{focus:null,aggregate:null};
   aggregateHotspotFilter=ui.aggregateHotspotFilter||'all';
   aggregateChunkFilter=ui.aggregateChunkFilter||'all';
   aggregateTypeFilter=ui.aggregateTypeFilter||'all';
@@ -2888,28 +2922,45 @@ function toggleFrameworkLock(){
 
 
 function setWorkspaceMapMode(mode='focus'){
-  persistViewport();
   const next=mode==='aggregate'?'aggregate':'focus';
+  if(next===workspaceMapMode)return;
+  // Capture the outgoing canvas *before* changing its layout or viewport.
+  rememberActiveMapView();
+  const saved=mapWorkspaceViews[next];
   if(next==='focus'){
     const state=getState();
-    let hotspotId=state.selectedHotspotId;
-    const active=state.nodes.find(n=>n.id===state.activeNodeId);
-    if(active?.meta?.hotspotId) hotspotId=active.meta.hotspotId;
-    if(!hotspotId){
-      hotspotId=state.nodes.find(n=>n.meta?.hotspotId)?.meta?.hotspotId||state.hotspots?.[0]?.id||null;
+    let hotspotId=saved?.hotspotId;
+    if(!hotspotId||!state.hotspots.some(h=>h.id===hotspotId)){
+      const active=state.nodes.find(n=>n.id===state.activeNodeId);
+      hotspotId=active?.meta?.hotspotId||state.selectedHotspotId||state.nodes.find(n=>n.meta?.hotspotId)?.meta?.hotspotId||state.hotspots?.[0]?.id||null;
     }
-    if(!hotspotId){ toast('Choose a hotspot first to open a focus map.'); return; }
-    patchState({selectedHotspotId:hotspotId,activeNodeId:active?.meta?.hotspotId===hotspotId?active.id:null},{silent:true});
+    if(!hotspotId){toast('Choose a hotspot first to open a focus map.');return;}
+    patchState({selectedHotspotId:hotspotId},{silent:true});
   }
-  workspaceMapMode=next;focusArrangeMode=false;
-  focusPathRootId=null; selectedEdgeId=null; traceIssueNodeIds.clear(); selectedNodeIds.clear();
-  canvasZoom=1; updateZoomLabel();
-  if(els.graphViewport) els.graphViewport.dataset.needsInitialPosition='1';
+  workspaceMapMode=next;
+  selectedEdgeId=null;traceIssueNodeIds.clear();selectedNodeIds.clear();
+  if(saved && next==='focus'){
+    focusPathRootId=getState().nodes.some(n=>n.id===saved.focusRoot)?saved.focusRoot:null;
+    focusArrangeMode=Boolean(saved.arranged);
+  }
+  if(saved && next==='aggregate'){
+    aggregateArrangeBlend=saved.arranged?100:0;
+    if(saved.arranged && !aggregateArrangeSession){
+      const state=getState(),frameworkId=state.frameworkId||'tracework';
+      aggregateArrangeSession={frameworkId,before:aggregateOriginalPositions(state),target:frameworkAggregateLayout(state,frameworkId)};
+    }
+  }
+  const restored=applySavedMapView(saved);
+  if(!restored){
+    canvasZoom=1;updateZoomLabel();
+    if(els.graphViewport)els.graphViewport.dataset.needsInitialPosition='1';
+  }
   renderWorkspace();
-  if(next==='aggregate') {
-    setTimeout(()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel(); },50);
-    toast('Aggregate map · Original preserves your source layout; Arrange provides an independent framework view.');
+  if(!restored && next==='aggregate'){
+    setTimeout(()=>{if(workspaceMapMode!==next)return;canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface);updateZoomLabel();queueViewportSave();},50);
   }
+  // Save both per-map views, not just the currently selected mode.
+  setTimeout(()=>queueViewportSave(),80);
 }
 
 function updateMapModeControls(state){
