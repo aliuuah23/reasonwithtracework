@@ -92,3 +92,36 @@ export function exportProject(state){
   a.download = `tracework-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
+
+// D2.16 one-time clean installation. Called before project restore or shelf rendering.
+// Clear only TRACEWORK-owned browser storage, never data belonging to other sites/apps.
+// A release marker prevents future site reloads from deleting NEW projects.
+const CLEAN_RELEASE_MARKER='tracework:d2.16-clean-slate-applied';
+export function applyCleanSlateReleaseOnce(){
+  try{
+    if(localStorage.getItem(CLEAN_RELEASE_MARKER)==='1')return {firstRun:false,cleared:0};
+    const owned=k=>/^tracework(?:[.:\-]|$)/i.test(String(k||''));
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(owned(k))keys.push(k);
+    }
+    keys.forEach(k=>localStorage.removeItem(k));
+    let sessionCleared=0;
+    try{
+      const sessionKeys=[];
+      for(let i=0;i<sessionStorage.length;i++){
+        const k=sessionStorage.key(i);
+        if(owned(k))sessionKeys.push(k);
+      }
+      sessionKeys.forEach(k=>sessionStorage.removeItem(k));
+      sessionCleared=sessionKeys.length;
+    }catch(error){console.warn('TRACEWORK could not reset optional model session data.',error);}
+    localStorage.setItem(CLEAN_RELEASE_MARKER,'1');
+    return {firstRun:true,cleared:keys.length+sessionCleared};
+  }catch(error){
+    // The browser may disallow storage access; do not crash first use or erase unrelated keys.
+    console.warn('TRACEWORK clean installation could not access browser storage.',error);
+    return {firstRun:false,cleared:0,error:true};
+  }
+}

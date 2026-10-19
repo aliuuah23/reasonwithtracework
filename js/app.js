@@ -4,7 +4,7 @@ import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderProp
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.13-framework-prompts';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.13-image-export';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
-import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
+import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject, applyCleanSlateReleaseOnce } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d2.2';
 import { createNode, createEdge } from './core/trace-model.js';
@@ -159,6 +159,9 @@ function togglePanelVisibility(side){
 
 
 async function init(){
+  // D2.16 clean-slate deployment requested by the designer. Apply ONCE per browser,
+  // before reading saved projects, preferences or tutorial state. Never again on refresh.
+  applyCleanSlateReleaseOnce();
   cacheEls();
   // Optional libraries are nonfatal: a missing reference file must never disable navigation.
   [ontology,pathways,caseStudies,pilotEvidence] = await Promise.all([
@@ -238,8 +241,8 @@ function bindGlobalEvents(){
   $('#toggleInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
   $('#collapseSourcePanel')?.addEventListener('click',()=>togglePanelVisibility('source'));
   $('#collapseInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
-  $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); els.briefLanding.focus(); };
-  $('#restoreTestExamplesButton').onclick=restoreTestExamples;
+  // D2.16: example fixtures removed from the published clean-slate build.
+  // Test example buttons are intentionally absent in the clean-slate release.
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
   els.briefFileInput?.addEventListener('change',handleBriefFileUpload);
   els.briefLanding.addEventListener('input',()=>{ if(landingBriefMode==='document'){ pendingBriefChunks=chunkBrief(els.briefLanding.value); pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); } });
@@ -1325,7 +1328,7 @@ function renderDiscussionBlank(){
 async function renderPathwayCards(query=''){
   const search=$('#pathwaySearch'); if(search){search.disabled=false;search.placeholder='Search a concept, e.g. flexibility';search.closest('.search-field')?.classList.remove('hidden');}
   const items=await searchPathways(query); const root=$('#pathwayGrid');
-  root.innerHTML=items.length?items.map(pathCard).join(''):'<div class="empty-state-card">No starter pathways match that search.</div>';
+  root.innerHTML=items.length?items.map(pathCard).join(''):'<div class="empty-state-card">No sample pathways are preloaded. Begin a trace to develop your own reasoning routes.</div>';
   root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(items.find(p=>p.id===b.dataset.inspectPath)));
   root.querySelectorAll('[data-use-path]').forEach(b=>b.onclick=()=>usePathway(items.find(p=>p.id===b.dataset.usePath)));
 }
@@ -1801,7 +1804,7 @@ function confirmLeaveForAbout(){
 }
 
 function confirmResetLocalData(){
-  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. It also resets tutorial progress on this browser. Examples are available later through Try long + short examples; nothing will be added automatically.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
+  openModal(`<h2 id="modalTitle">Reset local TRACEWORK data?</h2><p>This removes traces saved in this browser and clears the current workspace. This cannot be undone. It also resets tutorial progress on this browser. No examples will be restored automatically. Existing traces should be exported to JSON before resetting.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="danger-button" id="confirmResetData">Reset local data</button></div>`,{onOpen:m=>m.querySelector('#confirmResetData').onclick=()=>{
     const ok=clearAllProjects();
     if(!ok){toast('Could not clear local data.');return;}
     resetTutorialProgress();

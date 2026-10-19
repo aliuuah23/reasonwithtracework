@@ -1,3 +1,11 @@
+## D2.16 — Final Clean-Slate Release / D2 Feature Freeze
+
+- One-time browser-local reset of TRACEWORK projects, active trace, tutorial state, panel preferences and optional model endpoint session. A stored marker ensures that **new projects are not removed on subsequent loads**.
+- Exclude bundled short/long test projects and demo brief; remove Try an Example controls and clear illustrative Pathway Bank starter paths.
+- Preserve built-in research/source data, reasoning/framework intelligence, architectural/visual node tools, exports, provenance and all accepted D2.15 behaviour; no refactoring of interaction logic.
+- All existing TRACEWORK projects stored in the same browser will be deleted on its first visit to D2.16; users must export JSON backups before deploying/opening the release.
+- Browser testing required. An optional secured backend is still required for genuine generative image output; offline diagrams remain procedural.
+
 ## D2.15 — Half-screen composer and visual-node alignment (testing candidate)
 
 - Reflow Image / Reference + Add as Note + Add to Field onto their own row at compressed central canvas widths; keep full-width command bar styling unchanged.
