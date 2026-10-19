@@ -126,13 +126,15 @@ export async function renderNodeInspector(node,state,handlers){
     ?`${state?.projectId||'project'}:hotspot:${node.meta.hotspotId}:${state?.frameworkId||'tracework'}`
     :key;
   if(node.type==='note'){
+    const alternativeFramework=getFramework(state?.frameworkId||'freeform');
+    const alternativeRole=alternativeFramework.id!=='freeform'&&alternativeFramework.id!=='tracework'?frameworkRoleForNode(node,alternativeFramework.id):null;
     const suggestion=node.meta?.suggestedType||'interpretation';
     const cases=await findCaseStudies({text:node.label,type:suggestion});
     if(!shouldRenderInspector(root,key,request,draftKey))return;
     root.innerHTML=`
       <div class="inspector-head" style="--node-color:${colors.note}"><span class="inspector-type"><i></i>Loose note</span><h3>${esc(node.label)}</h3><p>Unclassified on purpose. Keep it loose, or convert it when its role becomes clearer.</p></div>
-      <div class="inspector-section"><h4>TRACEWORK suggestion</h4><span class="classification-chip" style="--node-color:${colors[suggestion]||colors.note}"><i></i>${esc(typeLabels[suggestion]||suggestion)}</span><p style="color:var(--muted);font-size:11px;line-height:1.5;margin:9px 0 0">${esc(node.meta?.classificationReason||'The wording resembles this reasoning role.')}</p><div class="inspector-actions"><button class="primary-button compact" id="convertNote">Convert to ${esc(typeLabels[suggestion]||suggestion)}</button></div></div>
-      ${roleExplanationMarkup(node,null,null)}
+      <div class="inspector-section"><h4>Optional classification</h4><span class="classification-chip" style="--node-color:${colors[suggestion]||colors.note}"><i></i>${esc(typeLabels[suggestion]||suggestion)}</span><p style="color:var(--muted);font-size:11px;line-height:1.5;margin:9px 0 0">${esc(node.meta?.classificationReason||'The wording resembles this reasoning role.')}</p><div class="inspector-actions"><button class="primary-button compact" id="convertNote">Convert to ${esc(typeLabels[suggestion]||suggestion)}</button></div></div>
+      ${roleExplanationMarkup(node,alternativeFramework,alternativeRole,state)}
       ${spatialMiniMarkup(node.label,'note')}
       ${operationalMarkup(node.label,'note','Freeform')}
       ${caseStudyMarkup(cases)}
@@ -322,16 +324,29 @@ function bindNext(root,node,handlers){
   });
   root.querySelector('#addNext')?.addEventListener('click',()=>{ const area=root.querySelector('#nextText'); const text=area?.value.trim(); const validation=root.querySelector('#nextValidation'); if(!text){ if(validation)validation.textContent='Write the reasoning you want to turn into a node.'; area?.focus(); return; } if(validation)validation.textContent=''; handlers.onNext(node,text,{sourceKind,tags}); });
 }
-function roleExplanationMarkup(node,framework=null,frameworkRole=null){
+function roleExplanationMarkup(node,framework=null,frameworkRole=null,state=null){
   const role=nodeGuidance[node.type]||nodeGuidance.note;
   const detail=roleClarifications[node.type]||roleClarifications.note;
   const activeLens=framework && !['tracework','freeform'].includes(framework.id) && frameworkRole;
   const origin=provenanceLabel(inferLegacyProvenance(node));
   const evidence=evidenceLabel(inferredEvidenceKind(node));
+  const connected=(state?.edges||[]).filter(e=>e.source===node.id||e.target===node.id);
+  const associated=(state?.nodes||[]);
+  const linked=connected.map(e=>{
+    const direction=e.target===node.id?'incoming':'outgoing';
+    const other=associated.find(n=>n.id===(direction==='incoming'?e.source:e.target));
+    if(!other)return null;
+    const otherReading=frameworkRoleForNode(other,framework.id);
+    const description=direction==='incoming'?'This thought is linked from':'This thought is linked to';
+    return `<li><strong>${esc(description)} ${esc(otherReading?.label||typeLabels[other.type]||other.type)}:</strong> “${esc(other.label)}” <span class="lens-connection-question">${direction==='incoming'?'Does that earlier thought justify this reading?':'What could this thought reasonably lead to?'}</span></li>`;
+  }).filter(Boolean).slice(0,4);
+  const guide=activeLens?frameworkGuidance(framework.id,frameworkRole?.id,{sourceText:node.label}):null;
+  const backward=guide?.backward?.question;
+  const forward=guide?.forward?.question||guide?.question;
   const lens=activeLens
-    ? `<div class="active-framework-explanation"><strong>${esc(framework.label)} · Current analytical reading</strong><p>${esc(frameworkRole.description||'The selected framework interprets this thought in its own terms.')}</p><small>This is an inferred lens unless the role has been explicitly set. It does not establish the method originally used.</small></div>` : '';
+    ? `<div class="active-framework-explanation"><strong>${esc(framework.label)} · ${esc(frameworkRole.label)}</strong><p><strong>This statement:</strong> “${esc(node.label)}”</p><p><strong>How this framework reads it:</strong> ${esc(frameworkRole.description||'This is one possible analytical role for the thought.')}</p><div class="lens-connection-section"><strong>How to connect it in this framework</strong>${linked.length?`<ul>${linked.join('')}</ul>`:'<p>No connections recorded for this thought. A connection may be added if another thought supports, responds to, or tests it.</p>'}${backward?`<p><strong>Look backward:</strong> ${esc(backward)}</p>`:''}${forward?`<p><strong>Look forward:</strong> ${esc(forward)}</p>`:''}</div><small>${node.meta?.frameworkRoles?.[framework.id]?'This reading was explicitly selected within this framework.':'This framework role is inferred from the wording; it is not proof of the method originally used.'}</small></div>` : '';
   return `<details class="inspector-section trace-explain" open><summary>Explain This · ${esc(activeLens?frameworkRole.label:role.title)}</summary>
-    <div class="trace-explain-body">${activeLens ? `${lens}<details class="base-role-details"><summary>Underlying TRACEWORK classification · ${esc(role.title)}</summary><p><strong>Recorded category:</strong> ${esc(role.use)}</p><p><strong>Example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p></details>` : `<p><strong>Role:</strong> ${esc(role.use)}</p><p><strong>When useful:</strong> ${esc(role.when)}</p><p><strong>For example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>`}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
+    <div class="trace-explain-body">${activeLens ? `${lens}<details class="base-role-details"><summary>Recorded category and provenance · ${esc(role.title)}</summary><p><strong>Recorded category:</strong> ${esc(role.use)}</p><p><strong>Example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p></details>` : `<p><strong>Role:</strong> ${esc(role.use)}</p><p><strong>When useful:</strong> ${esc(role.when)}</p><p><strong>For example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>`}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
     ${node.meta?.sourceReference?`<p><strong>Source reference:</strong> ${esc(node.meta.sourceReference)}</p>`:''}
     <p class="trace-provenance-note">Provenance describes where this assertion entered the trace, not whether it is true. If the basis is missing, edit the node to record it.</p></div>
   </details>`;

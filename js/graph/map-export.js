@@ -38,7 +38,9 @@ function nodeData(root){
     return {id:el.dataset.id||'',type:el.dataset.type||'note',label,role,status,
       x:el.offsetLeft,y:el.offsetTop,w:Math.max(210,el.offsetWidth||230),
       h:Math.max(92,el.offsetHeight||92,34+wrapText(role,el.offsetWidth-34,'700 11px Arial').length*13+wrapText(label,el.offsetWidth-30,'600 13px Arial').length*19+27),rejected:el.classList.contains('rejected'),
-      selected:el.classList.contains('selected'),locked:el.classList.contains('locked')};
+      selected:el.classList.contains('selected'),locked:el.classList.contains('locked'),
+      artifactKind:el.dataset.artifact||'',imageData:el.querySelector('.node-artifact-image')?.getAttribute('src')||'',
+      excerpt:el.querySelector('.node-artifact-excerpt')?.textContent||''};
   });
 }
 // Presentation-only layout. The editor's node coordinates are NEVER modified.
@@ -120,6 +122,15 @@ function svgSnapshot({surface,edges,projectEdges=[],projectName,viewLabel,framew
     return `<path d="${escape(d)}" fill="none" stroke="${escape(st.stroke&&st.stroke!=='none'?st.stroke:'#798293')}" stroke-width="${width}" opacity="${opacity}"${st.strokeDasharray&&st.strokeDasharray!=='none'?` stroke-dasharray="${escape(st.strokeDasharray)}"`:''}/>`;
   }).join('');
   const cards=nodes.map(n=>{
+    if(n.artifactKind){
+      const role=n.artifactKind==='architectural-proposition'?'Architectural Proposition':'Reasoning Digest';
+      const label=wrapText(n.label,n.w-28,'600 13px Arial').slice(0,3);
+      const image=n.imageData?.startsWith('data:image/png;base64,')?`<image x="12" y="66" width="${n.w-24}" height="${Math.max(75,n.h-112)}" preserveAspectRatio="xMidYMid meet" href="${escape(n.imageData)}"/>`:'';
+      return `<g transform="translate(${n.x},${n.y})"><rect width="${n.w}" height="${n.h}" rx="12" fill="#1d2730" stroke="#73b5b4" stroke-width="1.5"/>
+      <text x="14" y="23" fill="#a5dcda" font-size="12" font-weight="700" font-family="Arial">${escape(role)}</text>
+      ${textLines(label,14,43,15,'font-family="Arial" font-size="13" fill="#f4f8f8"')}
+      ${image||textLines(wrapText(n.excerpt||'Recorded reasoning digest',n.w-26,'12px Arial').slice(0,7),14,92,18,'font-family="Arial" font-size="12" fill="#c5d8dc"')}</g>`;
+    }
     const c=TYPES[n.type]||TYPES.note;
     const label=wrapText(n.label,n.w-30,'600 13px Arial');
     const role=wrapText(n.role,n.w-34,'700 11px Arial');

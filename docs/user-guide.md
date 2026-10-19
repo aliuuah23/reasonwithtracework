@@ -62,3 +62,7 @@ In **Freeform**, writing a new thought creates an unclassified note unless the u
 ## 8. Still planned
 
 Image/Reference nodes with paste or upload, resizing, appropriate image storage and image-aware exports are planned for D2 Visual. D3 remains the full-system verification and final website freeze.
+
+### Architectural Propositions (D2.2)
+
+Choose Focus Path, Focus Map or Aggregate Map, then open **Architectural Propositions** beside Reasoning Tools. Generate a Markdown Digest or an annotated architectural axonometric. Aggregate compares up to three trace-supported branches; fewer are shown when fewer exist. Click an output to preview, download SVG, print the rationale sheet or insert as a dark source-linked workspace node. Double-click an inserted node to reopen it. Export JSON to protect image assets. The illustrations are tentative spatial interpretations and require a designer to verify geometry, programme, dimensions, capacity and access.

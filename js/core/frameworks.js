@@ -171,7 +171,16 @@ export function canonicalTypeForFrameworkRole(frameworkId,roleId,fallback='inter
 
 export function frameworkRoleForNode(node,frameworkId='tracework'){
   if(!node)return null;
-  if(node.type==='note')return {id:'note',label:'Note',color:'#8d93a0',canonicalType:'note',description:'An intentionally unclassified thought.'};
+  if(node.type==='note'){
+    // Freeform notes remain unclassified in the recorded data. An alternative lens
+    // may suggest a *visible analytical reading* of that wording without converting it.
+    if(frameworkId!=='tracework'&&frameworkId!=='freeform'){
+      const stored=node.meta?.frameworkRoles?.[frameworkId];
+      const category=(stored&&getFrameworkCategory(frameworkId,stored)) || classifyFrameworkThought(node.label,frameworkId).category;
+      if(category)return {...category,color:categoryColor(frameworkId,category.id),inferred:!stored,underlyingUnclassified:true};
+    }
+    return {id:'note',label:'Unclassified Note',color:'#8d93a0',canonicalType:'note',description:'An intentionally unclassified thought.'};
+  }
   if(frameworkId==='tracework'){
     const c=getFrameworkCategory('tracework',node.type);
     return c?{...c,color:PALETTE[Math.max(0,frameworkCategories('tracework').indexOf(c))]}:{id:node.type,label:node.type,color:'#8d93a0',canonicalType:node.type};

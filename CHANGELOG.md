@@ -1,3 +1,12 @@
+## D2.2 Architectural Propositions — 19 October 2026
+
+- Added **Architectural Propositions** to Focus Path, Focus Map and Aggregate Map. Rule-based architectural axonometrics display formed structure, canopy, circulation, seating and relevant partitions rather than Spatial Studio keyword cards.
+- Added three-branch Aggregate comparison grounded in actual alternatives, with disclosed trace-completeness ranking; no fabricated design-quality ranking or participant results.
+- Added per-view Markdown Digests and a printable/exportable Architectural Proposition Sheet with numbered feature-to-reasoning annotations.
+- Added persistent, movable workspace output nodes for visuals and digests, with source node IDs, system attribution, browser-local raster assets, JSON backups and image-aware map export.
+- Kept the previously coded contextual frameworks and D1.9 accepted interaction baseline; added workspace tutorial step.
+- Scope limitation: deterministic architectural concept models, not unrestricted generative rendering, certified geometry or measured performance.
+
 ## D2.1 — Framework readings and accessible tools (19 October 2026)
 - Put Reasoning Tools beside the trace title so Start Me Off, What Next, Compare Structure and Decision Digest are easy to find.
 - Made the inspector’s Explain This section lead with the active literature framework; retained the stored TRACEWORK category in a separately collapsed reference.
@@ -13,6 +22,16 @@
 - Existing saved projects, reasoning nodes, frameworks and research datasets are unaffected. The intermittent visual artefact still requires confirmation in the deployed browser.
 
 # TRACEWORK — Changelog
+
+## D2.2 — Framework-specific guidance and Decision Brief (19 October 2026)
+
+- Explain This now explains the selected node through its active framework, using the statement, actual linked nodes and framework questions. Underlying categories remain secondary, optional historical metadata.
+- Separated brief-first Start Me Off from selected-node What Next, using disabled states and distinct complete, editable example sentences. No suggestions are automatically saved as nodes.
+- Inferred literature-lens readings are now available for genuinely unclassified Freeform notes without changing their recorded type.
+- Replaced the Markdown-first digest view with a readable Decision Brief, including print or Save PDF and copy, while retaining Markdown as an optional export.
+- Updated the workspace tutorial and removed the decorative icon from Reasoning Tools. Preserved D1.9 interaction baseline and example data.
+
+
 
 This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current development release: D2.0; accepted usability baseline: D1.9.**
 

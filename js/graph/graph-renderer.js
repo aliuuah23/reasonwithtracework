@@ -38,7 +38,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   els.surface.dataset.framework=frameworkId;
   els.svg.setAttribute('viewBox',`0 0 ${size.width} ${size.height}`);
   const issueSet=new Set(issueNodeIds||[]);
-  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId)).join('');
+  els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId,showNodeTypes)).join('');
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
   // Fit should measure the *rendered* cards. Long labels and expanded previews
   // can exceed their nominal 112px height, especially in dense Aggregate maps.
@@ -236,7 +236,21 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   bindConnectionPorts({surface:els.surface,svg:els.svg,nodesRoot:els.nodes,positions,nodesById,edges,onConnect,canConnect,getScale,nodeAnchor});
 }
 
-function nodeMarkup(n,selected,issue,frameworkId='tracework'){
+function artifactNodeMarkup(n,selected,issue){
+  const kind=n.meta?.artifactKind;
+  const visual=kind==='architectural-proposition';
+  const title=visual?'Architectural Proposition':'Reasoning Digest';
+  const img=n.meta?.imagePng||'';
+  const safeImage=img.startsWith('data:image/png;base64,')?img:'';
+  const preview=visual&&safeImage?`<img class="node-artifact-image" src="${safeImage}" alt="Annotated architectural axonometric · ${escapeHtml(n.label)}" draggable="false">`:
+    `<p class="node-artifact-excerpt">${escapeHtml((n.meta?.markdownDigest||'').replace(/^#+\s*/gm,'').slice(0,220))}</p>`;
+  return `<article class="graph-node graph-artifact ${selected?'selected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d">
+  <button class="node-port port-in" type="button" aria-label="Connect supporting reasoning"></button><button class="node-port port-out" type="button" aria-label="Connect this output"></button>
+  <div class="node-accent"></div><div class="node-body"><div class="node-type"><i></i>${title}</div><div class="node-label">${escapeHtml(n.label)}</div>${preview}
+  <div class="node-foot"><span class="node-provenance">System-generated · ${escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${visual?'Open proposition ↗':'Read digest ↗'}</button></div></div></article>`;
+}
+function nodeMarkup(n,selected,issue,frameworkId='tracework',showNodeTypes=true){
+  if(n.meta?.artifactKind) return artifactNodeMarkup(n,selected,issue);
   const locked=Boolean(n.meta?.locked);
   const grouped=Boolean(n.meta?.groupId);
   const meta=n.type==='note'?'Loose note':n.meta?.provisional?'Provisional':n.status==='rejected'?'Rejected':'Active';
@@ -271,9 +285,9 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework'){
   const provenanceChip=`<span class="node-provenance" title="Attribution${name?' · '+escapeHtml(name):''}">${escapeHtml(provenance)}${name?' · '+escapeHtml(name):''}</span>`;
   const activityChip=activityLabel?`<span class="node-provenance" title="Generation Activity${n.meta?.activityDetails?' · '+escapeHtml(n.meta.activityDetails):''}">${escapeHtml(activityLabel)}</span>`:'';
   const recordChip=recordLabel?`<span class="node-provenance" title="Supporting Record${n.meta?.recordTitle?' · '+escapeHtml(n.meta.recordTitle):''}">${escapeHtml(recordLabel)}</span>`:'';
-  return `<article class="graph-node ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor}">
+  return `<article class="graph-node ${n.type==='note' && frameworkRole?.underlyingUnclassified && showNodeTypes?'inferred-reading':''} ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor}">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
-      <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}</div>
+      <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}${n.type==='note'&&frameworkRole?.underlyingUnclassified?' · inferred':''}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
       <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose a second node and preview the relationship" aria-label="Connect this reasoning node to another thought">↗ Connect to…</button><button type="button" class="node-quick-action node-quick-case" title="See separately listed built-project references in the right inspector; feature examples are in Spatial read">⌕ Case study</button></div>

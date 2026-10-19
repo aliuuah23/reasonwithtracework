@@ -336,3 +336,20 @@
   transition:none!important;animation:none!important;filter:none!important;
   stroke-width:2.7!important;stroke-dasharray:5 4!important;
 }
+
+/* D2.2: a Freeform note may display an inferred literature-lens role, without changing its stored type. */
+.graph-node[data-type="note"].inferred-reading{background:var(--surface);border-style:solid;border-color:var(--node-color)}
+.graph-node[data-type="note"].inferred-reading .node-accent{background:var(--node-color)}
+
+/* Architectural proposition and reasoning-digest outputs: source-linked workspace objects. */
+.graph-node.graph-artifact{width:340px;background:#1d2730;color:#f0f5f5;border-color:#354f5b;border-radius:15px;min-height:165px}
+.graph-node.graph-artifact:hover{border-color:#75afad}
+.graph-node.graph-artifact .node-type{color:#9ed4cf}
+.graph-node.graph-artifact .node-label{color:#ffffff;font-size:13px;line-height:1.4}
+.graph-node.graph-artifact .node-foot{flex-wrap:wrap;gap:8px;color:#b5c9cf}
+.graph-node.graph-artifact .node-provenance{color:#c0d3d6}
+.graph-node.graph-artifact .node-preview-toggle{color:#a9e4e2}
+.graph-node.graph-artifact .node-artifact-image{display:block;width:100%;height:auto;aspect-ratio:1080/760;object-fit:contain;margin:11px 0 7px;border-radius:9px;background:#f5f7f7;pointer-events:none}
+.graph-node.graph-artifact .node-artifact-excerpt{color:#bfd0d1;font-size:11px;line-height:1.55;white-space:pre-wrap;max-height:125px;overflow:hidden;margin:10px 0}
+.graph-node.graph-artifact .node-accent{background:#74b5b2}
+.graph-node.graph-artifact .node-port{background:#72bcba}

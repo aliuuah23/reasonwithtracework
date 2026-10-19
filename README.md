@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current development release:** D2.1 (19 October 2026). **Accepted usability baseline:** D1.9; D2.0 live-browser verification pending.
+**Current development release:** D2.2 Architectural Propositions (19 October 2026). **Accepted usability baseline:** D1.9; D2.2 live-browser verification pending.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -41,7 +41,7 @@ Projects are currently stored **in this browser on this device**. Before clearin
 
 This is a static GitHub Pages website. Keep `index.html`, `about.html`, `css/`, `js/` and `data/` at the repository root. Upload the **contents** of the deployment ZIP with these directory paths intact; do not flatten them into a single folder. Running from `file://` can block browser module and JSON fetching; GitHub Pages or a local HTTP server is required.
 
-D2.0 updates the website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
+D2.2 updates the website code and its existing documentation; no new root-level change-note files are created. Historical notes remain preserved under `docs/archive/`.
 
 ## Current limitations and planned work
 
@@ -54,3 +54,16 @@ D2.0 updates the website code and its existing documentation; no new root-level 
 For historic details see [archived deployment notes](docs/archive/INDEX.md).
 
 D2.1: Find Reasoning Tools beside the trace title. In a literature framework, the inspector and Edit Node lead with its active reading; the underlying TRACEWORK classification remains retained, separately accessible.
+
+
+### D2.2 Reasoning Tools
+
+With no thought selected, **Start Me Off** suggests complete editable sentences from the source language. Select a thought to enable **What Next** for direct development of that thought. **Compare Structure** shows analytical readings without altering historical roles; **Decision Brief** provides a print-ready summary for review. Suggestions are not validated claims and are not saved without an explicit user action. Unclassified Freeform notes can receive optional inferred labels in a literature framework while remaining stored as notes.
+
+### D2.2 Architectural Propositions — formed design outputs
+
+From **Focus Path**, **Focus Map**, or **Aggregate Map**, open **Architectural Propositions** beside Reasoning Tools. Two parallel outputs are available: (a) a scope-specific, editable and downloadable **Markdown Digest**, which can be inserted into the canvas as a digest node; (b) a **formed architectural axonometric proposition** with canopy, columns, circulation, programme/occupation and screens where the recorded reasoning supports them. Aggregate mode compares up to three documented branches, ranked by trace completeness, not supposed architectural quality. The system does not invent missing participant branches.
+
+A visual proposition can be previewed, exported as SVG, printed as an **Architectural Proposition Sheet**, downloaded as a Markdown rationale and returned to the workspace as a dark, source-linked **Architectural Proposition Node**. These embedded assets are included in project JSON backups and map image/vector exports where supported. Browser-local storage is limited: the system checks a conservative budget, and users should export a JSON backup before storing many image nodes. User upload/paste and drag-resizing follow in D2 Visual.
+
+**Interpretive boundary:** This is local deterministic procedural axonometry, not AI image generation, full building design or BIM. Forms are diagrammatic architectural schemes, not dimensionally verified proposals, and structural, accessibility, climate and seat-count claims must be independently tested. The system explicitly differentiates linked recorded thoughts from inferred forms and visual assumptions.

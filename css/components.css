@@ -1164,3 +1164,61 @@ html.tutorial-tour-active{overflow:hidden}
 .d2-role-editor-note{margin:6px 0 0;font-size:11px;color:#65687a;line-height:1.45}
 @media(max-width:1280px){.d2-prominent-tools-button{min-height:30px;padding:6px 10px;font-size:11px}}
 @media(max-width:560px){.d2-prominent-tools-button{flex:1 1 100%}}
+
+
+/* D2.2: distinct first-step and downstream guidance, with complete editable examples. */
+.d2-tab:disabled{opacity:.38;cursor:not-allowed;background:#f3f4f8;color:#747b89}
+.d2-mode-note{font-size:11px;color:#666b80;margin:-2px 0 12px;line-height:1.45}
+.d2-draft-label{font-size:10px;letter-spacing:.055em;text-transform:uppercase;font-weight:750;color:#5853ab}
+.d2-prompt-card .d2-example{font-size:13px;line-height:1.55;padding:12px;border-radius:8px;background:#f5f4ff;color:#24243d;border:1px solid #dedcfa}
+.d2-prompt-card .d2-question{color:#62677a;font-size:12px}
+.d2-advanced-export{margin-top:10px;font-size:12px;border-top:1px solid var(--border);padding-top:10px}
+.d2-advanced-export summary{cursor:pointer;color:#666a7e;font-weight:700}
+.d2-advanced-export p{color:#717588}
+/* Readable one-page summary; printing uses a separate clean A4 stylesheet. */
+.decision-brief-sheet{background:#fff;border:1px solid #dfe0e9;border-radius:12px;padding:clamp(14px,2.6vw,23px);color:#20222d;margin:12px 0;max-width:100%;box-sizing:border-box}
+.db-kicker{font-size:10px;font-weight:800;letter-spacing:.095em;text-transform:uppercase;color:#605ac0}
+.decision-brief-sheet h2{font-size:21px;line-height:1.2;margin:8px 0 6px}
+.db-project{font-size:13px;font-weight:650}
+.db-caution{font-size:11px;color:#707486;line-height:1.55}
+.db-stats{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0}
+.db-stats span{padding:8px 10px;border:1px solid #e2e3eb;border-radius:8px;font-size:10px;flex:1 1 90px}
+.db-stats b{font-size:17px;display:block}
+.db-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.db-section h3{font-size:12px;border-bottom:1px solid #e1e2e8;padding:0 0 6px;margin:0 0 8px}
+.db-section ol{padding-left:20px;margin:0}.db-section li{font-size:12px;line-height:1.5;margin:0 0 8px;overflow-wrap:anywhere}
+.db-section li small{display:block;color:#777b89;font-size:10px;margin-top:2px}
+.db-section .db-empty,.db-review p{font-size:11px;line-height:1.5;color:#747887}
+.db-review{margin-top:16px}
+.active-framework-explanation .lens-connection-section{border-top:1px solid #e1dff8;margin-top:10px;padding-top:10px}
+.lens-connection-section strong{font-size:12px}
+.lens-connection-section ul{padding-left:17px;margin:8px 0}
+.lens-connection-section li{margin-bottom:10px;font-size:12px;line-height:1.5}
+.lens-connection-section p{font-size:12px;line-height:1.5}
+.lens-connection-question{display:block;color:#5b5c83;margin-top:3px}
+@media(max-width:740px){.db-columns{grid-template-columns:1fr}.decision-brief-sheet h2{font-size:19px}}
+
+/* D2.2 architectural payoff: formed options in each workspace map view. */
+.proposition-button{border-color:#a0bfc0!important;color:#23596a!important;background:#f0f8f7!important;font-weight:750!important}
+.prop-modal{width:min(1040px,calc(100vw - 66px));max-width:100%;box-sizing:border-box}
+.prop-modal h2{font-size:19px;line-height:1.25;margin:0 0 9px}
+.prop-modal p{font-size:12px;line-height:1.55}
+.prop-disclosure{color:#667986;font-size:11px!important}
+.prop-actions,.prop-inline-actions{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0}
+.prop-option-list{max-height:min(65vh,680px);overflow:auto}
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.prop-option{padding:12px;border:1px solid #d7e2e4;border-radius:13px;background:#fbfcfc}
+.prop-option h3{font-size:14px;margin:7px 0 2px}
+.prop-option p{font-size:11px;color:#607580}
+.prop-thumb{border-radius:9px;overflow:hidden;background:#f1f5f5}
+.prop-thumb svg{display:block;width:100%;height:auto}
+.prop-render{background:#eff3f3;border:1px solid #d7e2e4;border-radius:12px;overflow:auto;max-height:58vh}
+.prop-render svg{display:block;width:100%;height:auto;min-width:490px}
+.prop-annotation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 15px;padding:9px 0}
+.prop-annotation-list p{margin:0;font-size:11px}
+.prop-markdown{white-space:pre-wrap;max-height:330px;overflow:auto;border:1px solid #dce4e6;border-radius:10px;padding:15px;background:#fafbfd;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#263e4d}
+@media(max-width:700px){.prop-modal{width:min(100%,calc(100vw - 56px))}.prop-annotation-list{grid-template-columns:1fr}}
+
+.modal:has(.prop-modal){box-sizing:border-box;width:min(1120px,calc(100vw - 30px));max-width:100%;max-height:94vh;padding:clamp(12px,1.6vw,22px)}
+.modal .prop-modal{width:100%;min-width:0}
+@media(max-width:760px){.modal:has(.prop-modal){width:calc(100vw - 20px);padding:12px}.prop-grid{grid-template-columns:1fr}.prop-modal .modal-actions{flex-wrap:wrap}}

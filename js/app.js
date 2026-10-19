@@ -1,10 +1,11 @@
 import { auditProject } from './core/project-audit.js';
-import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest } from './reasoning/framework-intelligence.js?v=d2.0';
-import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d1-wire-semantics';
+import { supportedOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.2-proposition';
+import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.2';
+import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
-import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d2.1';
+import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d2.2';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
 import { evidenceKinds, generationActivities, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-6-labels';
@@ -18,7 +19,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d1-7-refinement';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.2-architecture';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -27,12 +28,12 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d2.1';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d2.2';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js?v=d1-7-refinement';
 import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-5-closable';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1.9';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d2.2-architecture';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -225,7 +226,8 @@ function bindGlobalEvents(){
   if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderWorkspace(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
-  $('#reasoningToolsButton').onclick=()=>openReasoningTools('start');
+  $('#reasoningToolsButton').onclick=()=>openReasoningTools();
+  $('#architecturalPropositionButton').onclick=()=>openArchitecturalPropositions();
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel();queueViewportSave(); };
   $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
@@ -527,8 +529,8 @@ function renderGraphState(){
   els.graphSurface?.classList.toggle('aggregate-map',workspaceMapMode==='aggregate');
   renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
-    onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node)editNode(node); },
-    onNodePreviewToggle:id=>showSpatialReadForNode(id),
+    onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node?.meta?.artifactKind)openSavedArtifact(node);else if(node)editNode(node); },
+    onNodePreviewToggle:id=>{const node=getState().nodes.find(n=>n.id===id);if(node?.meta?.artifactKind)openSavedArtifact(node);else showSpatialReadForNode(id);},
     onNodeQuickLink:id=>openNodeQuickLink(id),
     onNodeCaseStudy:id=>showNodeCaseStudy(id),
     onEdgeClick:id=>selectEdge(id),
@@ -1273,14 +1275,19 @@ function openCompare(){
 
 // D2 — user-driven reasoning aids, reading lenses and evidence-aware decision digest.
 // Opening these tools never mutates nodes, edges, framework selections or author attribution.
-function openReasoningTools(initialTab='start'){
+function openReasoningTools(initialTab=null){
   if(!getState().brief){toast('Open a project to use reasoning tools.');return;}
   let tab=initialTab;
   const currentState=()=>getState();
-  const activeNode=()=>currentState().nodes.find(n=>n.id===currentState().activeNodeId)||null;
+  // Selecting a source hotspot automatically selects its Input node. That is still
+  // a brief-first context: Start Me Off must remain accessible until a developed
+  // reasoning node (not the automatically selected Input) is chosen.
+  const activeNode=()=>currentState().nodes.find(n=>n.id===currentState().activeNodeId && n.type!=='input')||null;
   const selectedHotspot=()=>currentState().hotspots?.find(h=>h.id===currentState().selectedHotspotId)||null;
+  // The selected node defines the next-step mode; no selected node means brief-first guidance.
+  tab=activeNode()?'next':'start';
   const options=()=>['tracework','freeform','requirements','fivewhys','laddering','framing','reflective','semantics'].map(id=>`<option value="${id}">${escapeHtml(getFramework(id).label)}</option>`).join('');
-  const header=()=>`<div class="d2-tabs" role="tablist" aria-label="Reasoning tools">${[['start','Start Me Off'],['next','What Next'],['structure','Compare Structure'],['digest','Decision Digest']].map(([id,label])=>`<button type="button" class="d2-tab ${tab===id?'active':''}" data-d2-tab="${id}" role="tab" aria-selected="${tab===id}">${label}</button>`).join('')}</div><div id="d2Content" class="d2-content"></div>`;
+  const header=()=>`<div class="d2-tabs" role="tablist" aria-label="Reasoning tools">${[['start','Start Me Off'],['next','What Next'],['structure','Compare Structure'],['digest','Decision Brief']].map(([id,label])=>{const disabled=(id==='start'&&activeNode())||(id==='next'&&!activeNode());return `<button type="button" class="d2-tab ${tab===id?'active':''}" data-d2-tab="${id}" role="tab" aria-selected="${tab===id}" ${disabled?'disabled':''} title="${id==='start'?'Available when no thought is selected':id==='next'?'Select a thought to develop it':'Compare or summarise recorded reasoning'}">${label}</button>`;}).join('')}</div><div class="d2-mode-note">${activeNode()?'A thought is selected. What Next develops that specific thought; deselect it on the canvas to use Start Me Off.':'No thought selected. Start Me Off reads the brief; select a node to use What Next.'}</div><div id="d2Content" class="d2-content"></div>`;
   openModal(`<div class="d2-dialog"><h2 id="modalTitle">Reasoning Tools</h2><p>Optional prompts and analytical readings. Your recorded trace stays unchanged until you explicitly add or edit something.</p>${header()}<div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{
     onOpen:m=>{
       const content=m.querySelector('#d2Content');
@@ -1300,13 +1307,13 @@ function openReasoningTools(initialTab='start'){
         els.freeThoughtInput.focus();
         toast('Draft added to the command line. Revise it before saving; no node was created.');
       };
-      const makePrompts=(items)=>`<div class="d2-prompt-list">${items.map((item,i)=>`<article class="d2-prompt-card"><div class="d2-prompt-top"><strong>${i+1}. ${escapeHtml(item.heading)}</strong><span>${escapeHtml(typeLabels[item.role]||item.role||'Freeform')}</span></div><p>${escapeHtml(item.question)}</p><div class="d2-why">${escapeHtml(item.why)}</div><button type="button" class="secondary-button compact" data-d2-draft="${i}">${item.draft?'Use editable starting phrase →':'Write my own response →'}</button></article>`).join('')}</div>`;
+      const makePrompts=(items)=>`<div class="d2-prompt-list">${items.map((item,i)=>`<article class="d2-prompt-card"><div class="d2-prompt-top"><strong>${i+1}. ${escapeHtml(item.heading)}</strong><span>${escapeHtml(typeLabels[item.role]||item.role||'Freeform')}</span></div><p class="d2-question">${escapeHtml(item.question)}</p><div class="d2-draft-label">Complete example · editable</div><p class="d2-example">${escapeHtml(item.draft)}</p><div class="d2-why">${escapeHtml(item.why)}</div><button type="button" class="secondary-button compact" data-d2-draft="${i}">Use this editable sentence →</button></article>`).join('')}</div>`;
       function draw(){
         const state=currentState(),node=activeNode();
         if(tab==='start'||tab==='next'){
           const start=tab==='start';const items=start?startSuggestions(state,selectedHotspot()):nextSuggestions(state,node,selectedHotspot());
           const context=node&&!start?`Selected thought: <strong>${escapeHtml(node.label)}</strong>`:`Selected brief language: <strong>${escapeHtml(selectedHotspot()?.text||state.brief?.slice(0,90)||'Project brief')}</strong>`;
-          content.innerHTML=`<p class="d2-context">${context}</p><p class="d2-intro">These questions respond to the current wording and trace context. They are suggestions, not prescribed stages or verified design conclusions.</p>${makePrompts(items)}`;
+          content.innerHTML=`<p class="d2-context">${context}</p><p class="d2-intro">${start?'Start with the selected brief language.':'Develop or test this selected thought.'} The complete example sentence is an editable proposal, not an answer or a verified fact. Selecting it does not save a node.</p>${makePrompts(items)}`;
           content.querySelectorAll('[data-d2-draft]').forEach(b=>b.onclick=()=>{const item=items[Number(b.dataset.d2Draft)];draftToComposer(item?.draft,item?.role);});
           return;
         }
@@ -1323,15 +1330,157 @@ function openReasoningTools(initialTab='start'){
           }
           a.onchange=refresh;b.onchange=refresh;refresh();return;
         }
-        const digest=decisionDigest(state);
-        content.innerHTML=`<p class="d2-intro">A factual summary of what your trace currently records. Rejected options are retained; missing links are questions to review, not automated verdicts.</p><div class="d2-digest-stats"><span><strong>${digest.nodes.length}</strong> thoughts</span><span><strong>${digest.choices.length}</strong> spatial propositions</span><span><strong>${digest.evaluations.length}</strong> evaluations</span><span><strong>${digest.withRecords.length}</strong> supported records</span></div><pre class="d2-digest-text" id="d2DigestText"></pre><div class="d2-export-row"><button type="button" class="primary-button compact" id="d2CopyDigest">Copy Digest</button><button type="button" class="secondary-button compact" id="d2DownloadDigest">Download Markdown</button></div>`;
-        content.querySelector('#d2DigestText').textContent=digest.markdown;
-        content.querySelector('#d2CopyDigest').onclick=async()=>{try{await navigator.clipboard.writeText(digest.markdown);toast('Decision Digest copied.');}catch(_){const ta=document.createElement('textarea');ta.value=digest.markdown;document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();toast(ok?'Decision Digest copied.':'Copy unavailable; use Download Markdown.');}};
+        const brief=decisionBrief(state),digest=brief.digest;
+        content.innerHTML=`<p class="d2-intro">A readable, print-ready takeaway from the <strong>recorded</strong> trace. This is a snapshot, not an automatic design verdict. Rejected paths are retained and clearly labelled.</p>${brief.html}<div class="d2-export-row"><button type="button" class="primary-button compact" id="d2PrintBrief">Print or Save PDF</button><button type="button" class="secondary-button compact" id="d2CopyBrief">Copy Summary</button></div><details class="d2-advanced-export"><summary>Additional export: Markdown</summary><p>Download structured text for your notes or report draft.</p><button type="button" class="secondary-button compact" id="d2DownloadDigest">Download Markdown</button></details>`;
+        content.querySelector('#d2CopyBrief').onclick=async()=>{try{await navigator.clipboard.writeText(brief.plainText);toast('Decision Brief copied.');}catch(_){const ta=document.createElement('textarea');ta.value=brief.plainText;document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();toast(ok?'Decision Brief copied.':'Copy unavailable; use Print or Save PDF.');}};
+        content.querySelector('#d2PrintBrief').onclick=()=>{
+          const windowRef=window.open('','_blank');
+          if(!windowRef){toast('Browser blocked the print tab. Allow pop-ups for this site and try again.');return;}
+          const sheetCSS=Array.from(document.styleSheets).find(s=>s.href?.includes('components.css'));
+          const style=`body{margin:0;background:#f2f3f7;font:14px/1.5 system-ui,sans-serif;color:#161923}.decision-brief-sheet{max-width:850px;margin:24px auto;padding:32px;background:white;box-shadow:0 5px 30px #0001}.db-kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#625cc1}.db-project{font-size:16px;font-weight:700}.db-caution{color:#636778}.db-stats{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.db-stats span{border:1px solid #ddd;padding:8px;border-radius:7px}.db-stats b{font-size:18px}.db-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}.db-section{break-inside:avoid}.db-section h3{font-size:13px;border-bottom:1px solid #ddd;padding-bottom:5px}.db-section ol{padding-left:20px}.db-section li{margin:8px 0}.db-section li small{display:block;color:#767987}.db-review{margin-top:20px}.print-button{display:block;margin:18px auto;padding:12px 20px;border:0;border-radius:8px;background:#5751bf;color:white;cursor:pointer}@page{size:A4;margin:15mm}@media print{body{background:white}.print-button{display:none}.decision-brief-sheet{margin:0;padding:0;box-shadow:none;max-width:none}}@media(max-width:650px){.db-columns{grid-template-columns:1fr}}`;
+          windowRef.document.write(`<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>TRACEWORK — Decision Brief</title><style>${style}</style></head><body><button class="print-button" onclick="window.print()">Print or Save PDF</button>${brief.html}</body></html>`);
+          windowRef.document.close();windowRef.focus();
+        };
         content.querySelector('#d2DownloadDigest').onclick=()=>{const blob=new Blob([digest.markdown],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='TRACEWORK-Decision-Digest.md';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);};
       }
       bindTabs();draw();
     }
   });
+}
+
+
+// D2.2 architectural payoff — optional visual propositions grounded in selected reasoning.
+// This is parametric architectural axonometry, not a model-rendering API or certified design.
+function propositionContext(){
+  const state=getState();
+  const base=workspaceTrace(state);
+  const visible=focusPathRootId?focusTraceAround(base,focusPathRootId):base;
+  const mode=workspaceMapMode==='aggregate'?'aggregate':focusPathRootId?'focus-path':'focus-map';
+  return {state,visible,mode};
+}
+function fileDownload(text,name,mime){
+  const blob=new Blob([text],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+function scopedDigest(ctx){
+  const nodes=ctx.visible.nodes.filter(n=>!n.meta?.artifactKind),edges=ctx.visible.edges;
+  const ids=new Set(nodes.map(n=>n.id));
+  const typeGroup={input:'Source language',interpretation:'Interpretations',grounding:'Reasoning and evidence',consequence:'Spatial propositions',evaluation:'Evaluation and trade-offs',goal:'Goals',note:'Unclassified thoughts'};
+  let out=`# TRACEWORK — ${ctx.mode.replaceAll('-',' ')} reasoning digest\n\nProject: ${ctx.state.projectName||'Untitled'}\nFramework: ${getFramework(ctx.state.frameworkId||'tracework').label}\n\nThis is a snapshot of recorded reasoning. Framework interpretations and unresolved questions are not verified design claims.\n\n`;
+  for(const [type,heading] of Object.entries(typeGroup)){
+    const rows=nodes.filter(n=>n.type===type);if(!rows.length)continue;
+    out+=`## ${heading}\n${rows.map(n=>`- ${n.status==='rejected'?'[Rejected] ':n.meta?.provisional?'[Provisional] ':''}${n.label} (ID: ${n.id}; attribution: ${n.meta?.provenance||'unspecified'})`).join('\n')}\n\n`;
+  }
+  out+=`## Recorded connections\n${edges.filter(e=>ids.has(e.source)&&ids.has(e.target)).map(e=>{
+    const a=nodes.find(n=>n.id===e.source),b=nodes.find(n=>n.id===e.target);
+    return `- ${a?.label||e.source} → ${b?.label||e.target} [${e.status||'active'}]`;
+  }).join('\n')||'None'}\n\n## Limitations\nNo architectural merit or validity is inferred from the presence of a connection.\n`;
+  return out;
+}
+function safeSvgPreview(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
+async function pngForVisual(svg){
+  // Raster thumbnail is embedded into project JSON, so the output survives reopening
+  // and the existing vector-map export can include it without network requests.
+  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
+  try{
+    const img=new Image();
+    await new Promise((yes,no)=>{img.onload=yes;img.onerror=()=>no(Error('Proposition could not be rendered.'));img.src=url;});
+    const canvas=document.createElement('canvas');canvas.width=840;canvas.height=591;
+    const ctx=canvas.getContext('2d');if(!ctx)throw Error('No canvas context.');
+    ctx.fillStyle='#f5f7f7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    const data=canvas.toDataURL('image/png');
+    if(data.length>800000)throw Error('Image too large for safe project storage. Please export the sheet instead.');
+    return data;
+  } finally{URL.revokeObjectURL(url);}
+}
+function nearVisiblePlacement(){
+  const visible=propositionContext().visible.nodes;
+  const right=Math.max(70,...visible.map(n=>(Number(n.x)||0)+260));
+  const minY=Math.min(150,...visible.map(n=>Number(n.y)||150));
+  return {x:Math.max(120,right+115),y:Math.max(70,minY)};
+}
+async function insertOutputNode(kind,{spec=null,markdown='',svg='',title=null}={}){
+  const ctx=propositionContext();
+  const sourceIds=kind==='architectural-proposition'?spec.sourceIds:ctx.visible.nodes.filter(n=>!n.meta?.artifactKind).map(n=>n.id);
+  const label=title||spec?.title||`${ctx.mode.replaceAll('-',' ')} · Reasoning Digest`;
+  let png=null;
+  if(svg){try{png=await pngForVisual(svg);}catch(e){toast('Cannot embed visual: '+e.message);return;}}
+  const point=nearVisiblePlacement();
+  const matchingSources=ctx.state.nodes.filter(n=>sourceIds.includes(n.id));
+  const src=matchingSources.find(n=>n.type==='consequence')||matchingSources[matchingSources.length-1];
+  // Preflight browser-local storage capacity before we touch a real project.
+  const newNode=createNode({type:'note',label,branchId:src?.branchId||ctx.state.activeBranchId,
+    x:point.x,y:point.y,meta:{artifactKind:kind,sourceMode:ctx.mode,sourceNodeIds:sourceIds,
+      imagePng:png,visualSvg:svg||null,propositionSpec:spec||null,markdownDigest:markdown,
+      provenance:'system',generationActivity:'generated',evidenceKind:'suggestion',
+      hotspotId:ctx.state.selectedHotspotId,outputCreatedAt:new Date().toISOString()}});
+  let proposed;
+  try{proposed=structuredClone(ctx.state);proposed.nodes.push(newNode);
+    if(src){const edge=createEdge(src.id,newNode.id,{status:'provisional'});edge.meta={artifact:true,relation:kind==='architectural-proposition'?'visualises':'summarises'};proposed.edges.push(edge);}
+    const oldBank=localStorage.getItem('tracework.projects.v3')||'';
+    const bank=JSON.parse(oldBank||'{}');bank[ctx.state.projectId]=proposed;
+    const serialized=JSON.stringify(bank);
+    if(serialized.length>3800000)throw Error('Project storage is nearing its browser limit. Export a JSON backup before adding further images.');
+    const key='tracework-proposition-write-check';localStorage.setItem(key,serialized.slice(0,1000));localStorage.removeItem(key);
+  }catch(e){toast('Output not inserted: '+e.message);return;}
+  checkpoint('insert reasoning output');
+  updateState(st=>{st.nodes.push(newNode);if(src){const edge=createEdge(src.id,newNode.id,{status:'provisional'});edge.meta={artifact:true,relation:kind==='architectural-proposition'?'visualises':'summarises'};st.edges.push(edge);}st.activeNodeId=newNode.id;});
+  focusPathRootId=null;
+  // An output has no user interpretation provenance; the visual link is a generated relation.
+  closeModal();renderWorkspace();
+  setTimeout(()=>{const element=els.graphNodes.querySelector(`[data-id="${CSS.escape(newNode.id)}"]`);if(element)focusNode(els.graphViewport,element,canvasZoom);},100);
+  toast(kind==='reasoning-digest'?'Digest inserted into the workspace.':'Architectural proposition inserted into the workspace.');
+}
+function openSavedArtifact(node){
+  if(!node?.meta?.artifactKind)return;
+  if(node.meta.artifactKind==='reasoning-digest'){
+    const md=node.meta.markdownDigest||'';
+    openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(node.label)}</h2><div class="prop-markdown">${escapeHtml(md)}</div><div class="modal-actions"><button type="button" class="secondary-button" id="artifactMdExport">Download Markdown</button><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>m.querySelector('#artifactMdExport').onclick=()=>fileDownload(md,'TRACEWORK-Reasoning-Digest.md','text/markdown')});return;
+  }
+  const svg=node.meta.visualSvg||'';
+  const spec=node.meta.propositionSpec;
+  openPropositionPreview(spec,svg,{saved:true});
+}
+function propositionPrintSheet(spec,svg){
+  const win=window.open('','_blank');if(!win){toast('Allow pop-ups to print the proposition sheet.');return;}
+  const annotations=(spec.annotations||[]).map(a=>`<li><strong>${escapeHtml(a.heading)}</strong> — ${escapeHtml(a.form)}<br><small>${a.grounded?'Recorded thought: '+escapeHtml(a.sourceText):'Visual assumption — not directly stated'}</small></li>`).join('');
+  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>TRACEWORK — Architectural Proposition Sheet</title><style>@page{size:A3 landscape;margin:12mm}body{font:14px/1.5 Arial,sans-serif;color:#23394b;margin:20px;background:#fff}header{display:flex;justify-content:space-between;border-bottom:1px solid #cdd8dc;margin-bottom:12px}h1{font-size:23px;margin:3px 0}main{display:grid;grid-template-columns:1.55fr 1fr;gap:20px}main svg{width:100%;height:auto}ol{padding-left:20px}li{margin:12px 0}small{color:#677581}.sub{color:#526d7d}button{padding:10px 15px;background:#23445a;border:none;color:#fff}@media print{button{display:none}body{margin:0}}@media(max-width:700px){main{display:block}}</style></head><body><header><div><p class="sub">TRACEWORK · ARCHITECTURAL PROPOSITION SHEET</p><h1>${escapeHtml(spec.title)}</h1></div><button onclick="print()">Print / Save PDF</button></header><main><div>${svg}</div><div><h2>Reasoning-to-form annotations</h2><ol>${annotations}</ol><p class="sub">${escapeHtml(spec.note)}</p><p class="sub">TRACEWORK produces an illustrative architectural interpretation, not a verified design or original participant drawing.</p></div></main></body></html>`;
+  win.document.write(doc);win.document.close();win.focus();
+}
+function openPropositionPreview(spec,svg,{saved=false}={}){
+  if(!spec||!svg){toast('This output has no visual data.');return;}
+  const sourceInfo=`${spec.recordedClaims} linked feature${spec.recordedClaims===1?'':'s'} · ${spec.assumptions.length} disclosed visual assumption${spec.assumptions.length===1?'':'s'}`;
+  openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(spec.title)}</h2><p class="prop-disclosure">${escapeHtml(sourceInfo)} · Exploratory axonometric, not to scale or structurally verified.</p><div class="prop-render" id="propRender"></div><div class="prop-annotation-list">${spec.annotations.map(a=>`<p><strong>${escapeHtml(a.heading)}:</strong> ${escapeHtml(a.grounded?a.sourceText:'Added as a visual assumption — '+a.form)}</p>`).join('')}</div><div class="modal-actions"><button type="button" class="secondary-button" id="propSaveSvg">Save SVG</button><button type="button" class="secondary-button" id="propPrint">Print rationale sheet</button><button type="button" class="secondary-button" id="propMarkdown">Markdown</button>${saved?'':`<button type="button" class="primary-button compact" id="propInsert">Insert as image node</button>`}<button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+    m.querySelector('#propRender').innerHTML=svg;
+    m.querySelector('#propSaveSvg').onclick=()=>fileDownload(svg,'TRACEWORK-Architectural-Proposition.svg','image/svg+xml;charset=utf-8');
+    m.querySelector('#propPrint').onclick=()=>propositionPrintSheet(spec,svg);
+    m.querySelector('#propMarkdown').onclick=()=>fileDownload(propositionMarkdown(spec),'TRACEWORK-Proposition-Rationale.md','text/markdown');
+    const insert=m.querySelector('#propInsert');if(insert)insert.onclick=()=>insertOutputNode('architectural-proposition',{spec,svg,markdown:propositionMarkdown(spec)});
+  }});
+}
+function openArchitecturalPropositions(){
+  if(!getState().brief){toast('Open a project first.');return;}
+  const ctx=propositionContext(),modeName=ctx.mode==='focus-path'?'Focus Path':ctx.mode==='focus-map'?'Focus Map':'Aggregate Map';
+  const count=ctx.visible.nodes.filter(n=>!n.meta?.artifactKind).length;
+  if(!count){toast('Select and develop a reasoning trace before generating an architectural proposition.');return;}
+  const options=ctx.mode==='aggregate'?supportedOptions(ctx.state,ctx.visible,3):[null];
+  const selectedOptions=options.length?options:[null];
+  const modeNote=ctx.mode==='aggregate'?'Compares up to three documented branches, ranked by reasoning coverage and supporting steps—not architectural quality.':'Reads the visible reasoning; unrecorded architectural decisions are labelled assumptions.';
+  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p>${escapeHtml(modeNote)}</p><p class="prop-disclosure">Full formed concept axonometrics with structure, enclosure, seating and circulation. Rule-based proposals for architectural reflection, not photorealistic AI renders or construction documents.</p><div class="prop-actions"><button type="button" class="secondary-button" id="propGenerateMd">Generate Markdown Digest</button><button type="button" class="primary-button compact" id="propGenerateVisual">${ctx.mode==='aggregate'?'Generate Up to 3 Architectural Propositions':'Generate Architectural Proposition'}</button></div><div id="propOutput" class="prop-option-list"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+    const output=m.querySelector('#propOutput');
+    m.querySelector('#propGenerateMd').onclick=()=>{
+      const markdown=scopedDigest(ctx);
+      output.innerHTML=`<section class="prop-digest-preview"><h3>${escapeHtml(modeName)} · Markdown Digest</h3><div class="prop-markdown">${escapeHtml(markdown)}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propMdSave">Download Markdown</button><button type="button" class="primary-button compact" id="propMdInsert">Insert digest into workspace</button></div></section>`;
+      output.querySelector('#propMdSave').onclick=()=>fileDownload(markdown,`TRACEWORK-${ctx.mode}-Digest.md`,'text/markdown');
+      output.querySelector('#propMdInsert').onclick=()=>insertOutputNode('reasoning-digest',{markdown,title:`${modeName} · Reasoning Digest`});
+    };
+    m.querySelector('#propGenerateVisual').onclick=()=>{
+      const choices=selectedOptions.map((opt,i)=>({spec:makePropositionSpec({state:ctx.state,scoped:ctx.visible,mode:ctx.mode,option:opt,ordinal:i+1})}));
+      for(const x of choices)x.svg=renderPropositionSVG(x.spec);
+      output.innerHTML=`<p class="prop-disclosure">${choices.length} supported option${choices.length===1?'':'s'}. ${ctx.mode==='aggregate'&&choices.length<3?'Fewer than three distinct recorded branches are available. Add further alternatives to compare more.':''}</p><div class="prop-grid">${choices.map((x,i)=>`<article class="prop-option"><div class="prop-thumb" data-visual-index="${i}"></div><h3>${escapeHtml(x.spec.title)}</h3><p>${x.spec.recordedClaims} recorded links · ${x.spec.assumptions.length} visual assumptions</p><button type="button" class="primary-button compact" data-prop-index="${i}">Preview and insert →</button></article>`).join('')}</div>`;
+      choices.forEach((x,i)=>{output.querySelector(`[data-visual-index="${i}"]`).innerHTML=x.svg;output.querySelector(`[data-prop-index="${i}"]`).onclick=()=>openPropositionPreview(x.spec,x.svg);});
+    };
+  }});
 }
 
 function confirmRejectBranch(branchId,node){
@@ -2472,8 +2621,8 @@ function inspectCaseStudy(id){
 
 function traceIssues(state=getState()){
   const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state);
-  const activeNodes=scoped.nodes.filter(n=>n.status!=='rejected');
-  const activeEdges=scoped.edges.filter(e=>e.status!=='rejected');
+  const activeNodes=scoped.nodes.filter(n=>n.status!=='rejected'&&!n.meta?.artifactKind);
+  const activeEdges=scoped.edges.filter(e=>e.status!=='rejected'&&!e.meta?.artifact);
   const degree=id=>activeEdges.filter(e=>e.source===id||e.target===id).length;
   const outgoing=id=>activeEdges.filter(e=>e.source===id);
   const issues=[];
