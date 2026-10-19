@@ -353,3 +353,14 @@
 .graph-node.graph-artifact .node-artifact-excerpt{color:#bfd0d1;font-size:11px;line-height:1.55;white-space:pre-wrap;max-height:125px;overflow:hidden;margin:10px 0}
 .graph-node.graph-artifact .node-accent{background:#74b5b2}
 .graph-node.graph-artifact .node-port{background:#72bcba}
+
+/* D2.8 · selected form-node emphasis */
+.graph-node.graph-artifact.selected {
+  box-shadow:0 0 0 10px color-mix(in srgb,var(--node-color) 22%,transparent),0 0 0 18px rgba(91,154,157,.16),0 16px 34px rgba(34,40,61,.16);
+  border-color:color-mix(in srgb,var(--node-color) 88%,var(--border));
+}
+.graph-node.graph-artifact.selected::after {
+  content:""; position:absolute; inset:-12px; border-radius:20px; pointer-events:none;
+  border:2px solid color-mix(in srgb,var(--node-color) 46%,transparent);
+  box-shadow:0 0 0 8px color-mix(in srgb,var(--node-color) 12%,transparent);
+}
