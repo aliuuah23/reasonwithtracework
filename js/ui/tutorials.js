@@ -124,7 +124,13 @@ function openSpotlightTour({eyebrow='TUTORIAL',title='TRACEWORK guide',steps=[],
     const offscreen=rect.bottom<0||rect.top>vh||rect.right<0||rect.left>vw;
     if(target && offscreen){target.scrollIntoView({block:'center',inline:'center',behavior:'instant'});rect=target.getBoundingClientRect();}
     rect=target?.getBoundingClientRect?.()||rect;
-    const left=Math.max(pad,rect.left-pad),right=Math.min(vw-pad,rect.right+pad),top=Math.max(pad,rect.top-pad),bottom=Math.min(vh-pad,rect.bottom+pad);
+    // Only spotlight the visible portion. Unclamped off-screen rectangles
+    // previously produced long horizontal/vertical ghost lines on step changes.
+    const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+    const left=clamp(rect.left-pad,pad,Math.max(pad,vw-pad-30));
+    const right=clamp(rect.right+pad,left+30,Math.max(left+30,vw-pad));
+    const top=clamp(rect.top-pad,pad,Math.max(pad,vh-pad-30));
+    const bottom=clamp(rect.bottom+pad,top+30,Math.max(top+30,vh-pad));
     const width=Math.max(30,right-left),height=Math.max(30,bottom-top);
     Object.assign(masks[0].style,{left:'0px',top:'0px',width:'100vw',height:`${Math.max(0,top)}px`});
     Object.assign(masks[1].style,{left:'0px',top:`${top}px`,width:`${Math.max(0,left)}px`,height:`${height}px`});

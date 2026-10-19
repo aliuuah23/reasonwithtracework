@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="css/layout.css?v=c2.1">
   <link rel="stylesheet" href="css/components.css?v=d1-7-refinement">
   <link rel="stylesheet" href="css/graph.css?v=d1-7-refinement">
-  <link rel="stylesheet" href="css/responsive.css?v=d1-7-refinement">
+  <link rel="stylesheet" href="css/responsive.css?v=d1.8">
 </head>
 <body>
   <header class="topbar">
@@ -84,7 +84,7 @@
               <span class="panel-kicker">01 · Source</span>
               <h2>Your brief</h2>
             </div>
-            <button class="icon-button small" id="editBriefButton" title="Edit brief" aria-label="Edit brief">✎</button>
+            <div class="source-panel-actions"><button class="icon-button small" id="editBriefButton" title="Edit brief" aria-label="Edit brief">✎</button><button type="button" class="panel-inline-collapse" id="collapseSourcePanel" aria-controls="sourcePanel" aria-expanded="true" title="Collapse Brief panel" aria-label="Collapse Brief panel"><span aria-hidden="true">◧</span></button></div>
           </div>
 
           <div id="briefEditorWrap" class="brief-editor-wrap hidden">
@@ -236,7 +236,7 @@
                 </select>
               </div>
               <details class="thought-advanced-metadata"><summary>Attribution · Activity · Supporting Record (Optional)</summary>
-              <div class="thought-metadata-grid">
+              <div class="thought-metadata-body"><div class="thought-metadata-grid">
                 <label class="thought-provenance" title="Who or what is responsible for this thought?">
                   <span>Attribution <button type="button" class="thought-help-button" data-help="Who or what contributed this thought, such as you, a colleague or software?" aria-label="Explain attribution">?</button></span>
                   <select id="thoughtProvenanceSelect" aria-label="Thought attribution">
@@ -269,7 +269,7 @@
               <input id="thoughtActivityDetails" class="thought-optional-field" type="text" maxlength="180" placeholder="Optional: activity details or method" aria-label="Optional generation activity details">
               <input id="thoughtRecordTitle" class="thought-optional-field" type="text" maxlength="180" placeholder="Optional: supporting record name or drawing title" aria-label="Optional supporting record title">
               <input id="thoughtSourceReference" class="thought-optional-field" type="text" maxlength="500" placeholder="Optional: source reference, URL or document location" aria-label="Optional source citation">
-              </details>
+              </div></details>
               <div class="thought-reason" id="thoughtReason">Start typing to see a suggestion.</div>
               <div class="thought-matches" id="thoughtMatches"></div>
               <div class="thought-clarifier">Hover any match to see what the role means and which wording cues triggered it. Match strengths are independent fits, not probabilities.</div>
@@ -305,6 +305,7 @@
         </section>
 
         <aside class="inspector-panel panel" id="inspectorPanel">
+          <div class="inspector-panel-actions"><button type="button" class="panel-inline-collapse" id="collapseInspectorPanel" aria-controls="inspectorPanel" aria-expanded="true" title="Collapse Guidance panel" aria-label="Collapse Guidance panel"><span aria-hidden="true">◨</span></button></div>
           <div id="inspectorContent"></div>
         </aside>
       </div>
@@ -376,6 +377,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=d1-7-refinement"></script>
+  <script type="module" src="js/app.js?v=d1.8"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current code baseline:** D1.7 (18 October 2026). **Status:** consolidated UI/provenance development release; deployed-browser acceptance testing required before freeze.
+**Current code baseline:** D1.8 (19 October 2026). **Status:** consolidated UI/provenance development release; deployed-browser acceptance testing required before freeze.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -15,7 +15,7 @@ TRACEWORK is a browser-based research prototype for making architectural design 
 
 Projects are currently stored **in this browser on this device**. Before clearing browser data or changing computers, **export a JSON backup**. Opening the site on another device does not transfer projects automatically.
 
-## Capabilities in the D1.7 codebase
+## Capabilities in the D1.8 codebase
 
 - Editable brief hotspots; linked thought nodes; optional branches, rejections, connections and undo.
 - TRACEWORK Grammar, Freeform (Low Structure) and six adapted research-framework lenses.
@@ -25,9 +25,9 @@ Projects are currently stored **in this browser on this device**. Before clearin
 - Spatial Reading Studio, curated feature examples, built-project references and linked reading/search resources.
 - Project export/import, combined-project copies, project checks and map export previews.
 
-**D1.7 refinement:** The dock keeps a constant height whether empty or showing text-recognition matches; panel tabs sit on their panels’ upper edges; a deliberate click outside Edit Node closes it, but dragging text selection out does not; link preview follows the pointer without animation lag, with destination highlights coloured by the active framework role; tutorial dialogs no longer have an unexplained purple top stripe. D1.6 help, node-body linking and tutorial tracking remain intact.
+**D1.7 refinement (retained):** The dock keeps a constant height whether empty or showing text-recognition matches; panel tabs sit on their panels’ upper edges; a deliberate click outside Edit Node closes it, but dragging text selection out does not; link preview follows the pointer without animation lag, with destination highlights coloured by the active framework role; tutorial dialogs no longer have an unexplained purple top stripe. D1.6 help, node-body linking and tutorial tracking remain intact.
 
-**Important:** Source-level checks do not establish a green-lit deployed experience. D1.7 browser testing remains necessary, particularly focused arrangements, viewport restore and provenance edits.
+**Important:** Source-level checks do not establish a green-lit deployed experience. D1.8 browser testing remains necessary, particularly focused arrangements, viewport restore and provenance edits.
 
 ## Guides and research
 
@@ -51,3 +51,5 @@ D1.7 updates the actual website code and its existing documentation; no new root
 - Full deployed-browser regression (responsive UI, provenance edits, focus/aggregate arrangements, viewport restoration, map/export recovery) is required before a freeze.
 
 For historic details or older release-specific tests, consult the [archive](docs/archive/INDEX.md); those notes may describe **superseded** controls and must not be used as the current user instructions.
+
+**D1.8 refinement (19 October):** The bottom composer is a stable-height, elongated two-level command bar with legible reasoning matches; opening optional metadata reveals a separate, scrollable panel only when requested. The Brief and Guidance collapse buttons belong to the panel headers; compact reopening tabs remain visible when a panel is hidden. Tutorial spotlight geometry is constrained to visible screen boundaries to address intermittent stray outline artefacts. These interactions require confirmation in the deployed browser.

@@ -510,3 +510,145 @@
     height:160px!important;min-height:160px!important;max-height:160px!important;
   }
 }
+
+
+/* D1.8 — Architectural command bar: stable height, generous text spacing,
+   legible recognition and optional metadata in a separate intentional drawer.
+   Restore document-flow spacing from canvas without floating over nodes. */
+#workspaceView .canvas-panel .thought-dock:not(.hidden){
+  position:relative!important;grid-row:3;box-sizing:border-box!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-rows:39px 30px 26px minmax(18px,1fr) auto!important;
+  align-content:stretch!important;align-items:center!important;
+  gap:4px 10px!important;
+  width:calc(100% - 20px)!important;max-width:calc(100% - 20px)!important;
+  height:177px!important;min-height:177px!important;max-height:177px!important;
+  margin:8px 10px 7px!important;padding:9px 12px!important;
+  border:1px solid #dde1ed!important;border-radius:13px!important;
+  background:#f6f7fb!important;box-shadow:0 4px 14px rgba(27,34,60,.055)!important;
+  overflow:visible!important;
+}
+#workspaceView .canvas-panel .thought-entry{display:contents!important;}
+#workspaceView .canvas-panel .thought-entry>textarea{
+  grid-column:1/-1!important;grid-row:1!important;align-self:stretch!important;
+  display:block;width:100%!important;height:39px!important;
+  min-height:39px!important;max-height:39px!important;
+  padding:9px 11px!important;font:400 12px/1.45 var(--font)!important;
+  background:#fff!important;border:1px solid #dce0eb!important;
+  border-radius:9px!important;resize:none!important;
+}
+#workspaceView .canvas-panel .thought-reading{
+  grid-column:1!important;grid-row:2!important;
+  display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+  min-width:0!important;min-height:28px!important;padding:0 3px!important;gap:9px!important;
+}
+#workspaceView .canvas-panel .thought-reading>span{font-size:11px!important;white-space:nowrap;}
+#workspaceView .canvas-panel .thought-reading select{height:29px!important;font-size:12px!important;min-width:120px;}
+#workspaceView .canvas-panel .thought-actions{
+  grid-column:2!important;grid-row:2/4!important;align-self:center!important;
+  display:flex!important;gap:7px!important;justify-content:flex-end!important;white-space:nowrap;
+}
+#workspaceView .canvas-panel .thought-actions button{font-size:11px!important;min-height:32px!important;padding:8px 11px!important;}
+#workspaceView .canvas-panel .thought-advanced-metadata{
+  grid-column:1!important;grid-row:3!important;align-self:stretch!important;
+  margin:0!important;padding:0!important;min-width:0!important;
+  background:#fff!important;border:1px solid #dde1ed!important;
+  border-radius:8px!important;
+}
+#workspaceView .canvas-panel .thought-advanced-metadata>summary{
+  padding:5px 9px!important;min-height:24px!important;line-height:15px!important;
+  font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#workspaceView .canvas-panel .thought-advanced-metadata[open]{padding:0!important;}
+#workspaceView .canvas-panel .thought-advanced-metadata .thought-metadata-body{
+  position:absolute;z-index:45;bottom:calc(100% + 9px);left:12px;
+  box-sizing:border-box;width:min(540px,calc(100% - 24px));
+  max-height:min(48vh,340px);padding:12px 13px;overflow:auto;
+  background:#fff;border:1px solid #dce0eb;border-radius:13px;
+  box-shadow:0 13px 38px rgba(25,30,50,.18);
+  overscroll-behavior:contain;
+}
+#workspaceView .canvas-panel .thought-advanced-metadata .thought-metadata-grid{padding:2px 0 6px;}
+#workspaceView .canvas-panel .thought-advanced-metadata .thought-optional-field{
+  margin:5px 0 0!important;width:100%!important;box-sizing:border-box;
+}
+#workspaceView .canvas-panel .thought-reason{
+  grid-column:1/-1!important;grid-row:4!important;min-width:0!important;
+  align-self:center!important;margin:0!important;padding:1px 3px!important;
+  line-height:1.4!important;font-size:10px!important;max-height:29px!important;
+  overflow:hidden!important;text-overflow:ellipsis;
+}
+#workspaceView .canvas-panel .thought-matches{
+  grid-column:1/-1!important;grid-row:5!important;
+  min-width:0!important;min-height:20px!important;max-height:26px!important;
+  display:flex!important;gap:5px;overflow-x:auto!important;overflow-y:hidden!important;
+  align-items:center!important;margin:0!important;padding:0 0 1px!important;
+  scrollbar-width:thin;
+}
+#workspaceView .canvas-panel .thought-clarifier{display:none!important;}
+#workspaceView .canvas-panel .thought-dock:not(.has-thought-text) .thought-reason,
+#workspaceView .canvas-panel .thought-dock:not(.has-thought-text) .thought-matches:empty{visibility:hidden!important;}
+/* Prevent the older mobile breakpoint from flattening command rows. */
+@media(max-width:1050px){
+ #workspaceView .canvas-panel .thought-dock:not(.hidden){
+   grid-template-columns:minmax(0,1fr) auto!important;
+   grid-template-rows:39px 30px 26px minmax(18px,1fr) auto!important;
+ }
+ #workspaceView .canvas-panel .thought-actions{grid-column:2!important;grid-row:2/4!important;}
+}
+@media(max-width:600px){
+ #workspaceView .canvas-panel .thought-dock:not(.hidden){
+   width:calc(100% - 14px)!important;max-width:calc(100% - 14px)!important;
+   margin:7px!important;padding:8px!important;
+   height:185px!important;min-height:185px!important;max-height:185px!important;
+   grid-template-columns:minmax(0,1fr)!important;
+   grid-template-rows:38px 29px 26px minmax(18px,1fr) auto!important;
+   gap:4px!important;
+ }
+ #workspaceView .canvas-panel .thought-entry>textarea{grid-row:1!important;height:38px!important;min-height:38px!important;max-height:38px!important;}
+ #workspaceView .canvas-panel .thought-reading{grid-column:1!important;grid-row:2!important;}
+ #workspaceView .canvas-panel .thought-reading>span{font-size:10px!important;}
+ #workspaceView .canvas-panel .thought-reading select{min-width:95px;max-width:50%;font-size:11px!important;}
+ #workspaceView .canvas-panel .thought-advanced-metadata{grid-column:1!important;grid-row:3!important;}
+ #workspaceView .canvas-panel .thought-actions{grid-column:1!important;grid-row:4!important;justify-content:flex-end!important;}
+ #workspaceView .canvas-panel .thought-actions button{min-height:27px!important;padding:5px 8px!important;}
+ #workspaceView .canvas-panel .thought-reason{display:none!important;}
+ #workspaceView .canvas-panel .thought-matches{grid-column:1!important;grid-row:5!important;}
+ #workspaceView .canvas-panel .thought-advanced-metadata .thought-metadata-body{
+   left:6px;width:calc(100% - 12px);max-height:min(43vh,300px);
+ }
+}
+/* Real on-panel collapse icons and separate edge tabs ONLY while collapsed. */
+#workspaceView #toggleSourcePanel[hidden],#workspaceView #toggleInspectorPanel[hidden]{display:none!important;}
+#workspaceView .source-panel-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
+#workspaceView .inspector-panel-actions{display:flex;justify-content:flex-end;align-items:center;min-height:23px;margin:-4px -5px 6px 0;}
+#workspaceView .panel-inline-collapse{
+  appearance:none;display:inline-flex;align-items:center;justify-content:center;
+  width:27px;height:27px;min-width:27px;min-height:27px;
+  background:#fff;border:1px solid #dce0ea;border-radius:8px;
+  color:#5652be;cursor:pointer;font:750 15px var(--font);
+}
+#workspaceView .panel-inline-collapse:hover,#workspaceView .panel-inline-collapse:focus-visible{
+  background:#f0efff;border-color:#aaa6e7;outline-offset:2px;
+}
+#workspaceView>.panel-edge-control:not([hidden]){
+  display:inline-flex!important;position:absolute!important;top:13px!important;
+  height:30px!important;min-width:27px!important;padding:4px 6px!important;
+  background:#fff;border:1px solid #dce0ea;border-radius:0 9px 9px 0!important;
+  box-shadow:0 2px 8px rgba(29,37,61,.12);transform:none!important;
+}
+#workspaceView.panel-source-closed>.panel-edge-left{left:0!important;right:auto!important;}
+#workspaceView.panel-inspector-closed>.panel-edge-right{
+  right:0!important;left:auto!important;border-radius:9px 0 0 9px!important;
+}
+@media(max-width:560px){
+ #workspaceView>.panel-edge-control:not([hidden]){position:fixed!important;top:calc(var(--topbar,56px) + 10px)!important;}
+}
+
+/* Recognition must be legible, not compressed into tiny percentage chips. */
+#workspaceView .canvas-panel .thought-match{
+  flex:0 0 auto!important;min-height:22px!important;box-sizing:border-box;
+  padding:3px 8px!important;font-size:10px!important;line-height:1.35!important;
+  white-space:nowrap;gap:6px!important;
+}
+#workspaceView .canvas-panel .thought-match strong{font-size:10px!important;font-variant-numeric:tabular-nums;}

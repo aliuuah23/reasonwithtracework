@@ -1,12 +1,19 @@
 # TRACEWORK — Changelog
 
-This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.7; acceptance testing remains open.**
+This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.8; acceptance testing remains open.**
+
+## D1.8 — Command bar and panel refinement (19 October 2026)
+
+- Rebuilt the stable-height composer as a separated, elongated entry with readable recognition results and a deliberately opened metadata panel; the working canvas does not jump when suggestions appear.
+- Embedded collapse buttons inside Brief and Guidance; slim protruding reopen tabs appear only when collapsed.
+- Clamped tutorial spotlight bounds to the visible viewport to prevent intermittent edge-spanning ghost lines during step transitions.
+- Preserved the connection interaction, existing edits, saved traces, framework modes, original map layouts and exports.
 
 ## D releases — reasoning transparency and usability (14–18 October 2026)
 
 | Release | Consolidated change |
 |---|---|
-| **D1.7 (current development release)** | Fixed-height bottom dock across classification updates; top-aligned panel controls; intentional backdrop-click edit dismissal; node-colour connection targeting and frame-synchronised wire preview; removed decorative tutorial top stripe. |
+| **D1.7** | Fixed-height bottom dock across classification updates; top-aligned panel controls; intentional backdrop-click edit dismissal; node-colour connection targeting and frame-synchronised wire preview; removed decorative tutorial top stripe. |
 | **D1.6** | Full-width docked command line, panel-edge controls clear of headings, consistent dropdown scale and clickable help, non-accidental modal dismissal, forgiving link targets, faster tutorial spotlight tracking and clarified interface labels. |
 | **D1.5** | Compact command line and panel-edge toggles; aligned provenance fields and per-field help in command input and edit dialog; named attribution/activity/record metadata, node and inspector visibility; live text-match feedback; saved viewport; focus/path Arrange maps with separate coordinates; tutorial dismissal/positioning improvements. |
 | **D1.4** | One-row responsive ribbon; independently retractable Brief/Guidance panels; generalised provenance fields informed by PROV-O Entity/Agent/Activity; edit-triggered provenance/reasoning review; separate dismissal/pinning of warnings; loading resilience. |

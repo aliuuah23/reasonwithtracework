@@ -31,7 +31,7 @@ import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js?v=d1-7-refinement';
 import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-5-closable';
 import { spatialReadModalMarkup, bindSpatialModal, detectSpatialTerms } from './reasoning/spatial-literacy.js?v=c2.3-recovery';
-import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1-7-refinement';
+import { bindTutorialTriggers, maybeOpenFirstVisitTutorial, maybeOpenFrameworkTutorial, resetTutorialProgress } from './ui/tutorials.js?v=d1.8';
 
 const $ = s => document.querySelector(s);
 const els = {};
@@ -109,6 +109,10 @@ function applyPanelVisibility(){
     btn.setAttribute('aria-label',(panelVisibility[side]?'Hide ':'Show ')+label+' panel');
     btn.title=(panelVisibility[side]?'Hide ':'Show ')+label+' panel';
     btn.classList.toggle('is-collapsed',!panelVisibility[side]);
+    // Reopening tabs only exist outside a panel after it has been hidden.
+    btn.hidden=panelVisibility[side];
+    const inline=document.getElementById(side==='source'?'collapseSourcePanel':'collapseInspectorPanel');
+    if(inline) inline.setAttribute('aria-expanded',String(panelVisibility[side]));
   }
 }
 function togglePanelVisibility(side){
@@ -197,6 +201,8 @@ function cacheEls(){
 function bindGlobalEvents(){
   $('#toggleSourcePanel')?.addEventListener('click',()=>togglePanelVisibility('source'));
   $('#toggleInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
+  $('#collapseSourcePanel')?.addEventListener('click',()=>togglePanelVisibility('source'));
+  $('#collapseInspectorPanel')?.addEventListener('click',()=>togglePanelVisibility('inspector'));
   $('#loadDemoButton').onclick=async()=>{ const demo=await (await fetch('./data/demo-project.json')).json(); els.briefLanding.value=demo.brief; if(els.projectNameLanding)els.projectNameLanding.value=demo.projectName||'Flexible Pavilion — example'; pendingBriefFileName=''; pendingBriefChunks=landingBriefMode==='document'?chunkBrief(demo.brief):[]; pendingActiveChunkId=pendingBriefChunks[0]?.id||null; updateLandingChunkPreview(); els.briefLanding.focus(); };
   $('#restoreTestExamplesButton').onclick=restoreTestExamples;
   document.querySelectorAll('[data-brief-mode]').forEach(b=>b.onclick=()=>setLandingBriefMode(b.dataset.briefMode,{clear:true}));
