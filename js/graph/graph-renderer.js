@@ -40,6 +40,22 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   const issueSet=new Set(issueNodeIds||[]);
   els.nodes.innerHTML=laid.map(n=>nodeMarkup(n,selectedSet.has(n.id)||n.id===activeNodeId,issueSet.has(n.id),frameworkId,showNodeTypes)).join('');
   els.svg.innerHTML=edges.map(e=>edgeMarkup(e,activeNodeId,edges,selectedEdgeId,nodesById,showWireSignals,pilotEvidence)).join('');
+  // If a generated study is selected, reveal ALL actual recorded source thoughts
+  // and the wires between them. These are highlights, not new graph edges or
+  // rewritten participant provenance. Do not alter ordinary D1.9 selection.
+  const selectedStudy=nodesById.get(activeNodeId);
+  const linkedIds=selectedStudy?.meta?.artifactKind && Array.isArray(selectedStudy.meta.sourceNodeIds)
+    ? new Set(selectedStudy.meta.sourceNodeIds.filter(id=>nodesById.has(id))) : null;
+  if(linkedIds?.size){
+    const sourceWireIds=new Set(edges.filter(e=>linkedIds.has(e.source)&&linkedIds.has(e.target)).map(e=>e.id));
+    els.surface.classList.add('show-artifact-sources');
+    els.nodes.querySelectorAll('.graph-node').forEach(el=>{
+      if(linkedIds.has(el.dataset.id))el.classList.add('artifact-source-thought');
+    });
+    els.svg.querySelectorAll('path.trace-edge').forEach(el=>{
+      el.classList.add(sourceWireIds.has(el.dataset.edgeId)?'artifact-source-wire':'artifact-unrelated-wire');
+    });
+  }else els.surface.classList.remove('show-artifact-sources');
   // Fit should measure the *rendered* cards. Long labels and expanded previews
   // can exceed their nominal 112px height, especially in dense Aggregate maps.
   const rendered=[...els.nodes.querySelectorAll('.graph-node')];

@@ -166,7 +166,7 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
   ].filter(x=>x.active);
   const strategyName=architecture==='Pavilion'?named[strategy]:named[strategy].replace(' pavilion',' spatial study');
   const title=mode==='aggregate'
-    ?`Form study ${String(ordinal).padStart(2,'0')} · ${named[strategy].replace(' pavilion','')}`
+    ?`Form study ${String(ordinal).padStart(2,'0')} · ${formLabels[strategy].split(' and ')[0]}`
     :`${architecture} ${String(ordinal).padStart(2,'0')} · ${strategyName}`;
   const featureDefinitions={
     movement:[['Movement','Continuous through-route kept independent of occupation','movement'],['Occupation','Seating is concentrated in lateral pockets','movement'],['Shelter','Linear shelter spans route and edge pockets',null]],
@@ -186,6 +186,23 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
     return {heading,form,sourceId:supporting?.id||null,sourceText:supporting?.label||'',grounded:!!supporting,
       status:supporting?'Interpretive geometry derived from stated spatial move':'System assumption — not specified by this pathway'};
   });
+  // Aggregate is a system-made FORM hypothesis, not a completed building.
+  // Do not attach the Focus typology's implied building pieces to abstract forms.
+  if(mode==='aggregate'){
+    const family=option?.formalVariant||'fold';
+    const familyLogic={
+      cluster:'Dispersed occupation pieces connected by selective links; gaps remain meaningful',
+      ring:'A continuous perimeter organised around an open centre, with multiple thresholds',
+      petals:'Radial, directionally varied pieces converging on a shared spatial focus',
+      ribbon:'Continuous linear bands that distinguish movement from adjacent occupation',
+      fold:'Alternating folded planes creating a directional sequence of sheltered and exposed pockets'
+    };
+    const spatialEffect={movement:'Separate through-movement from areas where people linger',privacy:'Stage degrees of visual exposure through layered edges',capacity:'Reserve reversible occupation without assuming increased built footprint',climate:'Vary openness and shelter according to environmental intention',duration:'Differentiate arrival, short pauses and sustained occupation',social:'Support both proximity and retreat without forcing a single pattern',pockets:'Give separate activities distinct territories without fixed enclosed rooms',court:'Make a central void an organising spatial relationship',tier:'Express varied occupation levels and connected accessible routes',adaptable:'Enable rearrangement while keeping an identifiable stable zone'};
+    annotations.length=0;
+    annotations.push({heading:'Recorded spatial intention',form:formLabels[strategy],sourceId:lead?.id||null,sourceText:lead?.label||'',grounded:Boolean(lead),status:lead?'Recorded spatial direction; form is an interpretation':'Needs a recorded spatial decision'});
+    annotations.push({heading:'Form relationship',form:familyLogic[family]||familyLogic.fold,sourceId:null,sourceText:'',grounded:false,status:'System-proposed formal translation; designer review required'});
+    annotations.push({heading:'Potential spatial outcome',form:spatialEffect[strategy]||'Spatial organisation must be further specified',sourceId:null,sourceText:'',grounded:false,status:'Potential consequence; not an architectural performance claim'});
+  }
   // A whole pavilion also communicates sourced secondary moves, rather than only
   // the single primary visual taxonomy. Secondary features are drawn below.
   if(mode!=='aggregate'){
@@ -195,7 +212,7 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
     }
   }
   const {score,criteria}=option?{score:option.score,criteria:option.criteria}:optionScore(nodes,scoped?.edges||[]);
-  return {id:`prop-${Date.now()}-${ordinal}`,title,mode,ordinal,architecture,strategy,concept:named[strategy],
+  return {id:`prop-${Date.now()}-${ordinal}`,title,mode,ordinal,architecture,strategy,concept:mode==='aggregate'?formLabels[strategy]:strategyName,
     formalVariant:option?.formalVariant||(['movement','duration','adaptable'].includes(strategy)?'ribbon':['court','social','privacy'].includes(strategy)?'ring':['pockets','climate'].includes(strategy)?'petals':'fold'),
     translation:option?.translation||'source-led',secondaryMoves:secondary.map(x=>({key:x.key,sourceId:x.source.id,sourceText:x.source.label})),
     fullPavilion:mode!=='aggregate',briefChecks:checks,
@@ -203,7 +220,7 @@ export function makePropositionSpec({state,scoped,mode='focus-map',option=null,o
     documentedScore:score,scoreCriteria:criteria,annotations,sourceIds:[...new Set(all.map(n=>n.id))],
     recordedClaims:annotations.filter(a=>a.grounded).length,assumptions:annotations.filter(a=>!a.grounded).map(a=>a.form),
     sourceStatement:lead?.label||'',sourceStatementId:lead?.id||null,
-    note:mode==='aggregate'?'Abstract spatial translation from recorded reasoning; a formal hypothesis, not a designed or validated building.':'Coordinated whole-pavilion option from this pathway. Roof, access route, spatial zoning and occupation are proposed together; seating, footprints, structural integrity, shelter and accessibility are NOT verified.',
+    note:mode==='aggregate'?'Form proposition translated from recorded reasoning. Spatial relationships are proposals, not a verified building, measured plan or participant design.':'Coordinated whole-project design option from this pathway. Roof, access route, spatial zoning and occupation are proposed together; seating, footprints, structural integrity, shelter and accessibility are NOT verified.',
     frameworkId:state.frameworkId||'tracework',evidenceStatus:analysis.choice==='generic'?'Insufficient documented spatial direction':'Source-led spatial interpretation'};
 }
 const f=x=>Number(x.toFixed(2));
@@ -363,6 +380,50 @@ function schemePlan(spec){
  }
  return art;
 }
+// Explicit aggregate diagram: morphology and occupation paths are presented
+// beside the axonometric so a formal hypothesis can be evaluated in plan.
+function aggregateFormPlan(spec){
+ const family=spec.formalVariant||'fold',x=72,y=222,s=137;
+ const dot=(u,v,r=4)=>`<circle cx="${x+u*s}" cy="${y+v*s}" r="${r}" fill="#c4a37c" stroke="#90785b" stroke-width=".7"/>`;
+ const p=(u,v)=>`${(x+u*s).toFixed(1)},${(y+v*s).toFixed(1)}`;
+ let shape=`<rect x="${x}" y="${y}" width="${s}" height="${s}" rx="7" fill="#f5f7f3" stroke="#adc0be" stroke-width="1.1"/>`;
+ const area='fill="#b7d7d0" stroke="#49838a" stroke-width="1.7"';
+ const lane='fill="none" stroke="#438a8d" stroke-width="2.5" stroke-dasharray="5 4"';
+ if(family==='cluster'){
+   for(const [u,v,rx,ry] of [[.23,.24,.16,.12],[.72,.20,.12,.14],[.31,.73,.2,.13],[.77,.76,.12,.17]]){
+     shape+=`<ellipse cx="${x+u*s}" cy="${y+v*s}" rx="${rx*s}" ry="${ry*s}" ${area}/>`+dot(u,v);
+   }
+   shape+=`<path d="M${p(.34,.31)} L${p(.62,.23)} M${p(.4,.67)} L${p(.66,.75)} M${p(.31,.38)} L${p(.32,.6)}" ${lane}/>`;
+ }else if(family==='ring'){
+   shape+=`<circle cx="${x+s*.5}" cy="${y+s*.5}" r="${s*.36}" fill="#b7d7d0" stroke="#43858b" stroke-width="2"/>`;
+   shape+=`<circle cx="${x+s*.5}" cy="${y+s*.5}" r="${s*.18}" fill="#f5f7f3" stroke="#8ba69b" stroke-width="1.4"/>`;
+   shape+=`<path d="M${p(.5,.1)} A${s*.4},${s*.4} 0 0 1 ${p(.89,.5)} M${p(.5,.9)} A${s*.4},${s*.4} 0 0 1 ${p(.11,.5)}" ${lane}/>`;
+   for(const a of [0,Math.PI/2,Math.PI,3*Math.PI/2])shape+=dot(.5+.28*Math.cos(a),.5+.28*Math.sin(a));
+ }else if(family==='petals'){
+   for(let i=0;i<6;i++){
+     const a=i*Math.PI/3+.2;
+     const cx=.5+.22*Math.cos(a),cy=.5+.22*Math.sin(a);
+     shape+=`<ellipse cx="${x+cx*s}" cy="${y+cy*s}" rx="${s*.27}" ry="${s*.095}" transform="rotate(${a*180/Math.PI} ${x+cx*s} ${y+cy*s})" ${area}/>`;
+   }
+   shape+=`<circle cx="${x+s*.5}" cy="${y+s*.5}" r="${s*.12}" fill="#c4a37c"/>`;
+ }else if(family==='ribbon'){
+   for(const offset of [-.17,.17])shape+=`<path d="M${p(.07,.42+offset)} C${p(.29,.08+offset)} ${p(.55,.85+offset)} ${p(.93,.47+offset)}" fill="none" stroke="#9cc7bd" stroke-width="18" stroke-linecap="round"/>`;
+   shape+=`<path d="M${p(.04,.5)} C${p(.35,.15)} ${p(.55,.86)} ${p(.97,.5)}" ${lane}/>`;
+   shape+=dot(.23,.3)+dot(.76,.67);
+ }else{
+   const pts=[[.1,.8],[.26,.25],[.42,.66],[.57,.17],[.72,.62],[.9,.2]];
+   shape+=`<polygon points="${pts.map(([u,v])=>p(u,v)).join(' ')} ${p(.9,.8)} ${p(.1,.88)}" ${area}/>`;
+   shape+=`<path d="${pts.map(([u,v],i)=>`${i?'L':'M'}${p(u,v)}`).join(' ')}" fill="none" stroke="#4c8283" stroke-width="2"/>`;
+   for(const [u,v] of [[.21,.78],[.53,.77],[.82,.76]])shape+=dot(u,v);
+ }
+ const title={cluster:'DISTRIBUTED',ring:'CENTRAL VOID',petals:'RADIAL',ribbon:'CONTINUOUS',fold:'FOLDED FIELD'}[family]||'FORM';
+ return `<rect x="44" y="150" width="189" height="238" rx="12" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/>
+ <text x="58" y="172" font-size="11" font-family="Arial" font-weight="700" letter-spacing=".3" fill="#506974">FORM RELATIONSHIP / PLAN</text>
+ <text x="58" y="191" font-size="10" font-family="Arial" fill="#547581">${title}</text>
+ ${shape}
+ <circle cx="68" cy="374" r="3.5" fill="#c4a37c"/><text x="78" y="378" font-size="9" font-family="Arial" fill="#617883">potential occupation</text>
+ <text x="59" y="402" font-size="9" font-family="Arial" fill="#80969b">Unscaled relationship diagram</text>`;
+}
 function graphicFor(spec){
  if(spec.mode==='aggregate')return abstractGraphicFor(spec);
  const kind=spec.strategy;let ground='',furn='',wall='',roof='',humanParts='',markers={};
@@ -474,24 +535,24 @@ export function renderPropositionSVG(spec,{width=1180,height=790}={}){
   const score=Number.isFinite(Number(spec.documentedScore))?`Trace completeness: ${spec.documentedScore} pts`:'Trace completeness: not scored';
   const isAggregate=spec.mode==='aggregate';
   const register=(spec.secondaryMoves||[]).slice(0,4).map((m,i)=>`<text x="${270+(i%2)*235}" y="${154+Math.floor(i/2)*19}" font-family="Arial" font-size="10" fill="#4f6b71">• ${escape(named[m.key].replace(' pavilion',''))}</text>`).join('');
-  const plan=isAggregate?'':`<rect x="44" y="152" width="189" height="197" rx="12" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/>
+  const plan=isAggregate?aggregateFormPlan(spec):`<rect x="44" y="152" width="189" height="197" rx="12" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/>
     <text x="58" y="175" font-size="11" font-family="Arial" font-weight="700" letter-spacing=".4" fill="#506974">PROGRAMME PLAN</text>
     ${schemePlan(spec)}
     <text x="57" y="334" font-size="9" font-family="Arial" fill="#5c797b">${spec.briefChecks?.some(c=>c.key==='seating')?'• 20 indicative seat loci':'• occupation + access zoning'}</text>
     <text x="57" y="345" font-size="8" font-family="Arial" fill="#82969b">Diagram · not dimensionally tested</text>`;
   const checks=(spec.briefChecks||[]).slice(0,4);
   const checkBand=!isAggregate&&checks.length?`<rect x="765" y="594" width="378" height="52" rx="9" fill="#f5f4ed" stroke="#e0dbce"/>
-    <text x="778" y="610" font-family="Arial" font-size="10" fill="#735b42" font-weight="700">PILOT BRIEF · VERIFY IN DESIGN</text>
+    <text x="778" y="610" font-family="Arial" font-size="10" fill="#735b42" font-weight="700">BRIEF REQUIREMENTS · VERIFY</text>
     ${checks.map((c,i)=>`<text x="${778+(i%2)*184}" y="${624+Math.floor(i/2)*15}" font-family="Arial" font-size="10" fill="#526c72">□ ${escape(c.label)}</text>`).join('')}`:'';
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 1180 790" role="img" aria-label="${escape(spec.title)}: ${escape(spec.layout)}">
   <rect width="1180" height="790" fill="#f7f8f6"/>
-  <text x="37" y="32" font-family="Arial" font-size="12" fill="#517080" letter-spacing="1.7">TRACEWORK / ${isAggregate?'ABSTRACT FORM TRANSLATION':'FULL PAVILION STUDY'} / ${spec.ordinal}</text>
+  <text x="37" y="32" font-family="Arial" font-size="12" fill="#517080" letter-spacing="1.7">TRACEWORK / ${isAggregate?'ABSTRACT FORM TRANSLATION':'COMPLETE DESIGN STUDY'} / ${spec.ordinal}</text>
   ${multi(spec.title,37,72,{size:26,max:66,lines:1,weight:'700',color:'#223e4c'})}
   ${multi(spec.layout,38,101,{size:13,max:90,lines:1,color:'#56717e'})}
   <rect x="24" y="132" width="725" height="557" rx="15" fill="#e8eeeb" stroke="#d3ddda"/>
   <path d="M38 589L742 250" fill="none" stroke="#fff" stroke-width="1" opacity=".5"/>
   <g transform="translate(44,85)">${shapes}${pins}</g>
-  ${isAggregate?'':plan}
+  ${plan}
   ${isAggregate?'':register}
   <text x="47" y="666" font-family="Arial" font-size="11" fill="#526a77">${isAggregate?'ABSTRACT FORM HYPOTHESIS · DISTINCT MORPHOLOGY, NOT A FINISHED BUILDING':'PROGRAMME + SITE STUDY · ROUTES, SHELTER AND OCCUPANCY REQUIRE CHECKING'}</text>
   <text x="767" y="151" font-family="Arial" font-size="12" font-weight="700" fill="#536e78" letter-spacing=".8">ARCHITECTURAL FEATURES AND REASONING</text>
@@ -504,5 +565,5 @@ export function renderPropositionSVG(spec,{width=1180,height=790}={}){
   </svg>`;
 }
 export function propositionMarkdown(spec){
-  return `# ${spec.title}\n\n**Pilot-brief checks (NOT verified):** ${spec.briefChecks?.length?spec.briefChecks.map(c=>c.label).join('; '):'No stated measurable checks extracted'}\n\n**Map scope:** ${spec.mode.replaceAll('-',' ')}\n**Spatial direction:** ${spec.layout}\n**Documented branch:** ${spec.branchTitle}\n**Documentary support:** ${spec.documentedScore??'not scored'} (not architectural quality)\n**Status:** ${spec.fullPavilion?'Whole-pavilion pathway configuration':'Aggregate abstract form study'}; ${spec.translation==='speculative'?'speculative alternative geometry':'source-led spatial translation'}, not participant drawing or validated design\n\n## Primary source statement\n${spec.sourceStatement||'No sufficiently specific design move recorded'}\n\n## Architectural translation\n${spec.annotations.map((a,i)=>`${i+1}. **${a.heading}:** ${a.form}\n   - ${a.grounded?`Linked statement [${a.sourceId}]: ${a.sourceText}`:'System assumption, not recorded evidence'}`).join('\n')}\n\n## Scoring basis\n${Object.entries(spec.scoreCriteria||{}).map(([k,v])=>`- ${k}: ${v}`).join('\n')}\n\n## Verification required\n${spec.note}\n`;
+  return `# ${spec.title}\n\n**Brief checks (NOT verified):** ${spec.briefChecks?.length?spec.briefChecks.map(c=>c.label).join('; '):'No stated measurable checks extracted'}\n\n**Map scope:** ${spec.mode.replaceAll('-',' ')}\n**Spatial direction:** ${spec.layout}\n**Documented branch:** ${spec.branchTitle}\n**Documentary support:** ${spec.documentedScore??'not scored'} (not architectural quality)\n**Status:** ${spec.fullPavilion?'Complete pathway design configuration':'Aggregate abstract form study'}; ${spec.translation==='speculative'?'speculative alternative geometry':'source-led spatial translation'}, not participant drawing or validated design\n\n## Primary source statement\n${spec.sourceStatement||'No sufficiently specific design move recorded'}\n\n## Architectural translation\n${spec.annotations.map((a,i)=>`${i+1}. **${a.heading}:** ${a.form}\n   - ${a.grounded?`Linked statement [${a.sourceId}]: ${a.sourceText}`:'System assumption, not recorded evidence'}`).join('\n')}\n\n## Scoring basis\n${Object.entries(spec.scoreCriteria||{}).map(([k,v])=>`- ${k}: ${v}`).join('\n')}\n\n## Verification required\n${spec.note}\n`;
 }

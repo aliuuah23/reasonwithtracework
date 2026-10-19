@@ -1,3 +1,12 @@
+## D2.5 — Workflow clarity and aggregate reasoning diagrams (test deployment)
+
+- Architectural Propositions opens immediately on a readable **Reasoning Summary**; **Design Studies** is the second tab. No blank intermediate selection modal.
+- All generic controls use building-type-neutral language; project-specific typology remains visible only in outputs derived from a relevant brief.
+- Aggregate proposals now show distinct programme relationship plans and separate recorded reasoning from system-proposed formal possibilities. Focus example geometry is preserved.
+- Selecting a saved design study highlights its contributing source thoughts and existing connecting wires without creating extra edges.
+- Dialog width and study-grid columns adapt to half-screen and smaller windows.
+- Regression testing and visual acceptance are still required before freezing.
+
 # TRACEWORK — Give reasoning traction
 
 **Latest deployed release:** D2.3. **Next deployment candidate:** D2.4 — complete Focus pavilion configurations, Aggregate architectural form research, board comparison, and revised architectural translation (19 October 2026). **Accepted interaction baseline:** D1.9. D2.4 requires live-browser testing before acceptance.
@@ -62,7 +71,7 @@ D2.1: Find Reasoning Tools beside the trace title. In a literature framework, th
 
 ### D2.2 Reasoning Tools
 
-With no thought selected, **Start Me Off** suggests complete editable sentences from the source language. Select a thought to enable **What Next** for direct development of that thought. **Compare Structure** shows analytical readings without altering historical roles; **Decision Brief** provides a print-ready summary for review. Suggestions are not validated claims and are not saved without an explicit user action. Unclassified Freeform notes can receive optional inferred labels in a literature framework while remaining stored as notes.
+With no thought selected, **Start Me Off** suggests complete editable sentences from the source language. Select a thought to enable **What Next** for direct development of that thought. **Compare Structure** shows analytical readings without altering historical roles; **Reasoning Summary** provides a print-ready summary for review. Suggestions are not validated claims and are not saved without an explicit user action. Unclassified Freeform notes can receive optional inferred labels in a literature framework while remaining stored as notes.
 
 ### D2.2 Architectural Propositions — formed design outputs
 

@@ -1245,3 +1245,39 @@ html.tutorial-tour-active{overflow:hidden}
 .prop-choose-label select{max-width:340px;padding:7px;border-radius:7px;border:1px solid #bdcaca}
 @media (max-width:1030px){.prop-grid-compare{grid-template-columns:repeat(3,minmax(245px,1fr));overflow:auto}.prop-option-list{max-height:67vh}}
 @media (max-width:650px){.prop-grid-compare{grid-template-columns:repeat(3,minmax(255px,1fr))}.prop-comparison-tools{flex-direction:column}.prop-option-list{max-height:65vh}}
+
+/* D2.5: project-neutral, responsive architectural study tabs. */
+.modal:has(.prop-modal){width:min(1140px,calc(100vw - 32px));max-height:calc(100dvh - 28px);padding:clamp(14px,2.1vw,24px);}
+.prop-modal{width:100%;min-width:0;}
+.prop-view-switch{display:flex;align-items:center;gap:5px;border-bottom:1px solid #d9e2e5;margin:14px 0 13px;max-width:100%;overflow:auto;}
+.prop-view-tab{border:0;border-bottom:3px solid transparent;background:transparent;color:#536779;font-size:13px;font-weight:700;line-height:1.4;font-family:inherit;padding:10px 17px 12px;white-space:nowrap;cursor:pointer;border-radius:0;}
+.prop-view-tab.active{border-bottom-color:#5957d5;color:#403eac;background:#f7f6ff;}
+.prop-view-tab:focus-visible{outline:2px solid #605de4;outline-offset:-2px;}
+.prop-digest-heading{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.prop-digest-heading h3{font-size:15px;margin:5px 0 12px;}
+.prop-digest-heading span{font-size:11px;color:#607783;}
+.prop-digest-preview .prop-markdown{max-height:min(52dvh,520px);}
+.prop-option-list{max-height:min(70dvh,750px);overflow:auto;scrollbar-gutter:stable;}
+.prop-grid-compare{grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr));}
+.prop-comparison-tools{gap:10px;}
+.prop-comparison-tools .prop-inline-actions{gap:6px;}
+@media(max-width:950px){
+ .modal:has(.prop-modal){width:calc(100vw - 20px);max-height:calc(100dvh - 18px);padding:15px;}
+ .prop-grid-compare{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));}
+ .prop-comparison-tools .prop-inline-actions{flex:1 1 100%;}
+}
+@media(max-width:600px){
+ .modal:has(.prop-modal){width:calc(100vw - 12px);padding:12px;max-height:calc(100dvh - 12px);}
+ .prop-modal h2{font-size:17px;}
+ .prop-view-tab{font-size:12px;padding:9px 11px 10px;}
+ .prop-grid-compare{grid-template-columns:1fr;}
+ .prop-render svg{min-width:420px;}
+ .prop-disclosure{font-size:11px!important;}
+}
+/* On selecting a saved study, source reasoning is readable without drawing extra lines. */
+.graph-node.artifact-source-thought{outline:3px solid #167d85;outline-offset:4px;box-shadow:0 0 0 7px rgba(38,153,155,.12),0 7px 24px rgba(19,85,89,.18);z-index:6;}
+.show-artifact-sources .trace-edge.artifact-source-wire{stroke:#07888f!important;stroke-width:4.6px!important;opacity:1!important;filter:drop-shadow(0 0 2px rgba(0,125,135,.36));}
+.show-artifact-sources .trace-edge.artifact-unrelated-wire{opacity:.11!important;}
+
+/* Keep the adaptive dialog inside the padded viewport, including split-screen. */
+.modal-backdrop:has(.prop-modal){padding:10px;}

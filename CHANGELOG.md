@@ -1,3 +1,13 @@
+## D2.5 — Clarity, adaptive dialogs and source-trace highlight (TEST BUILD, 19 October 2026)
+
+- Removed intermediary Architectural Propositions selection screen. Open directly on **Reasoning Summary**, switch to **Design Studies** within the same dialog.
+- Renamed generic feature labels to avoid assuming the user's project is a pavilion; renamed **Decision Brief** to **Reasoning Summary**.
+- Preserved Focus example geometry and distinct pathway studies.
+- Added aggregate form-relationship plan inset and more honest distinction between recorded spatial intentions and interpreted formal propositions.
+- Selecting a saved study highlights source thoughts and their existing links, quieting unrelated wires instead of drawing duplicate links.
+- Made proposition dialogs and comparison card grids responsive in half-screen widths.
+- Preserved D1.9 interaction logic. Browser acceptance remains pending.
+
 ## D2.4 — 19 October 2026 · Focus/Aggregate architectural translation (revised deployment candidate)
 - Focus Path/Focus Map generate pathway-specific whole-pavilion alternatives; Aggregate generates 3–5 form-study propositions for visual comparison.
 - Add a programme-plan inset derived from the form strategy, with optional twenty-seat locations and a route trace when required by the source brief. A location marker is not a dimensional compliance claim.
