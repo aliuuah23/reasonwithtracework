@@ -277,13 +277,13 @@ function applyFrameworkHeuristics(value,frameworkId,{bump,afterRole}){
     if(has(/\b(rather than|not .* but|reframe|frame this|seen as|treat .* as|working principle|way of seeing)\b/)) bump('frame',6,'reframing/lens language');
     if(has(/\b(problem|issue|situation|condition|currently|there is|we have)\b/)) bump('situation',3.5,'problematic situation');
     if(has(/\b(aim|purpose|value|we want|should support|so that|why it matters)\b/)) bump('value',3.5,'desired value or aim');
-    if(has(/^(create|provide|use|arrange|place|move|add|remove|design|make)\b|\b(could create|respond by|spatial response)\b/)) bump('response',4.5,'design response');
+    if(has(/^(introduce|install|deploy|insert|create|provide|use|arrange|place|move|add|remove|design|make|divide|separate|reconfigure)\b|\b(could create|respond by|spatial response)\b/)) bump('response',6,'direct design response');
   }
   if(frameworkId==='reflective'){
     if(has(/\b(instead|rather than|rethink|reframe|revise|try another|change .* instead|move .* instead)\b/)) bump('reframe',7,'revised frame or next move');
     if(has(/\b(this|that)\s+(makes?|creates?|causes?|reveals?|means?|results?)\b|\b(but may|however|interfere|unintended|consequence|result)\b/)) bump('backtalk',6,'situation talking back to the move');
     if(has(/\b(i notice|i realise|i realize|on reflection|this works|does not work|doesn't work|better|worse|successful|fails?|reflect)\b/)) bump('reflection',6,'reflection on the result');
-    if(has(/^(place|move|add|remove|arrange|try|use|shift|rotate|open|close|make|draw|model|test)\b|\b(i will|let's try|try to)\b/)) bump('move',5,'design move/experiment');
+    if(has(/^(introduce|install|deploy|insert|create|provide|divide|separate|reconfigure|place|move|add|remove|arrange|try|use|shift|rotate|open|close|make|draw|model|test)\b|\b(i will|let's try|try to)\b/)) bump('move',7,'explicit design move/experiment');
     if(has(/\b(the problem is|the idea is|i think|i am treating|current frame|understand this as)\b/)) bump('frame',4,'current framing');
   }
   if(frameworkId==='semantics'){
@@ -292,7 +292,7 @@ function applyFrameworkHeuristics(value,frameworkId,{bump,afterRole}){
     if(has(/\b(use|experience|behavio|occupation|occupy|interaction|activity|how people)\b/)) bump('use',3.8,'use/experience implication');
     if(has(/\b(value|relationship|relation|priority|what matters|important because|between)\b/)) bump('value_relation',3.8,'value or relation');
     if(has(/\b(feels?|atmosphere|sense of|quality|welcoming|quiet|comfort|character)\b/)) bump('atmosphere',3.8,'atmospheric/qualitative meaning');
-    if(has(/\b(spatial|architect|enclos|visual connection|partial enclosure|threshold|screen|layout|seating|route|circulation|opening|wall|edge|centre|center|form|section|plan)\b/)) bump('implication',6.5,'architectural/spatial implication');
+    if(has(/\b(spatial|architect|enclos|visual connection|partial enclosure|threshold|screens?|partitions?|layout|seating|route|circulation|opening|walls?|edge|centre|center|form|section|plan)\b/)) bump('implication',6.5,'architectural/spatial implication');
     if(has(/\b(maintain(?:ing)? visual connection|partial(?:ly)? enclos|screen(?:ing)?|threshold|spatially|architectural consequence)\b/)) bump('implication',3.5,'developed architectural consequence');
     if(afterRole==='meaning' && has(/\b(enclos|visual|threshold|screen|layout|seating|route|circulation|form|space)\b/)) bump('implication',3,'meaning developing toward architecture');
     if(!afterRole && !has(/\bmean|context|use|experience|value|atmosphere|spatial|architect|enclos|visual|threshold|layout|seating|route|form\b/)) bump('expression',1.5,'unresolved expression/term');

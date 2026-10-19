@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current development release:** D2.0 (19 October 2026). **Accepted usability baseline:** D1.9; D2.0 live-browser verification pending.
+**Current development release:** D2.1 (19 October 2026). **Accepted usability baseline:** D1.9; D2.0 live-browser verification pending.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -52,3 +52,5 @@ D2.0 updates the website code and its existing documentation; no new root-level 
 - D3 will verify complete journeys, map exports, framework comparisons, responsive layouts, tutorials and recovery before final freeze.
 
 For historic details see [archived deployment notes](docs/archive/INDEX.md).
+
+D2.1: Find Reasoning Tools beside the trace title. In a literature framework, the inspector and Edit Node lead with its active reading; the underlying TRACEWORK classification remains retained, separately accessible.

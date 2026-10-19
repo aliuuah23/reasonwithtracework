@@ -1150,3 +1150,17 @@ html.tutorial-tour-active{overflow:hidden}
 /* Freeform starts with no mandatory category or confidence display. */
 .thought-dock.d2-freeform-unclassified .thought-reading,.thought-dock.d2-freeform-unclassified .thought-reason,.thought-dock.d2-freeform-unclassified .thought-matches,.thought-dock.d2-freeform-unclassified .thought-clarifier{display:none!important}
 .modal:has(.d2-dialog){box-sizing:border-box;max-width:calc(100vw - 28px)}
+
+/* D2.1: Reasoning Tools are a first-class, discoverable workspace action. */
+.d2-prominent-tools-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:34px;padding:7px 13px;border-radius:9px;border:1px solid #4843b9;background:#5954cd;color:white;font:inherit;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer;box-shadow:0 2px 5px rgba(69,62,156,.13)}
+.d2-prominent-tools-button:hover,.d2-prominent-tools-button:focus-visible{background:#4742b7;outline-offset:3px}
+.canvas-heading-group{flex-wrap:wrap;min-width:0;row-gap:7px}
+.active-framework-explanation{padding:11px 12px;border:1px solid #dfdcfa;border-radius:9px;background:#f8f7ff;margin-bottom:11px}
+.active-framework-explanation strong{font-size:12px}
+.active-framework-explanation p{margin:7px 0;line-height:1.5}
+.active-framework-explanation small{font-size:11px;color:#60617b}
+.base-role-details,.underlying-role-editor{margin:9px 0;padding:10px;border-radius:9px;border:1px solid #e3e5ee;background:#fafbfe}
+.base-role-details summary,.underlying-role-editor summary{cursor:pointer;font-size:12px;font-weight:700}
+.d2-role-editor-note{margin:6px 0 0;font-size:11px;color:#65687a;line-height:1.45}
+@media(max-width:1280px){.d2-prominent-tools-button{min-height:30px;padding:6px 10px;font-size:11px}}
+@media(max-width:560px){.d2-prominent-tools-button{flex:1 1 100%}}

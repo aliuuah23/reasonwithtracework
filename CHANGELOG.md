@@ -1,3 +1,10 @@
+## D2.1 — Framework readings and accessible tools (19 October 2026)
+- Put Reasoning Tools beside the trace title so Start Me Off, What Next, Compare Structure and Decision Digest are easy to find.
+- Made the inspector’s Explain This section lead with the active literature framework; retained the stored TRACEWORK category in a separately collapsed reference.
+- Added active-framework role editing without silently rewriting the underlying TRACEWORK category or attribution. Preserved framework-specific overrides in project data.
+- Strengthened detection of explicit spatial design actions across Reflective Practice and Design Framing; clarified low/zero wording scores.
+- Retained the accepted D1.9 interactions and other D2.0 capabilities. Live regression checks remain necessary.
+
 ## D1.9 — Metadata dismissal and tutorial stability (19 October 2026)
 
 - Kept the D1.8 command bar, panel controls, node links and layouts unchanged after live acceptance.

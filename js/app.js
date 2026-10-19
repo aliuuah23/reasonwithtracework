@@ -4,7 +4,7 @@ import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './g
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
-import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d1-6-labels';
+import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d2.1';
 import { createNode, createEdge } from './core/trace-model.js';
 import { nodeGuidance } from './core/node-guidance.js';
 import { evidenceKinds, generationActivities, inferredEvidenceKind, bridgePrompt, provenanceConnectionCheck } from './core/reasoning-transparency.js?v=d1-6-labels';
@@ -27,7 +27,7 @@ import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
 import { renderBrief, renderLegend, toggleBriefEditor } from './ui/workspace.js?v=c1.0';
-import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d1-6-labels';
+import { renderEmptyInspector, renderHotspotInspector, renderNodeInspector } from './ui/panels.js?v=d2.1';
 import { renderTraceDashboard } from './ui/trace-panel.js';
 import { openModal, closeModal } from './ui/modals.js?v=d1-7-refinement';
 import { toast, coach, setSaveStatus } from './ui/notifications.js?v=d1-5-closable';
@@ -1020,6 +1020,10 @@ function branchFrom(id){
 
 function editNode(node){
   const sourceInput=node.type==='input' && node.meta?.source==='brief';
+  const editingFramework=getFramework(getState().frameworkId||'tracework');
+  const activeFrameworkReading=!['tracework','freeform'].includes(editingFramework.id) && !sourceInput && node.type!=='note';
+  const currentFrameworkRole=activeFrameworkReading?frameworkRoleForNode(node,editingFramework.id):null;
+  const frameworkRoleOptions=activeFrameworkReading?frameworkCategories(editingFramework.id).map(c=>`<option value="${escapeHtml(c.id)}" ${c.id===currentFrameworkRole?.id?'selected':''}>${escapeHtml(c.label)}</option>`).join(''):'';
   const editableTypes=['input','interpretation','grounding','consequence','evaluation','goal','note'];
   const typeOptions=editableTypes.map(t=>`<option value="${t}" ${node.type===t?'selected':''}>${escapeHtml(typeLabels[t]||t)}</option>`).join('');
   const currentProvenance=sourceInput?'brief':inferLegacyProvenance(node);
@@ -1031,26 +1035,33 @@ function editNode(node){
   const evidenceMarkup=evidenceKinds.map(item=>`<option value="${item.id}" ${selectedEvidence===item.id?'selected':''}>${escapeHtml(item.label)}</option>`).join('');
   const currentActivity=node.meta?.generationActivity||'unspecified';
   const activityMarkup=generationActivities.map(a=>`<option value="${a.id}" ${currentActivity===a.id?'selected':''}>${escapeHtml(a.label)}</option>`).join('');
-  const recognition=classifyThought(node.label,{provenance:currentProvenance});
-  const match=recognition.matches?.find(item=>item.type===node.type);
-  const matchingPercent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):Math.round((recognition.confidence||0)*100);
+  const recognition=activeFrameworkReading?classifyFrameworkThought(node.label,editingFramework.id,{canonicalType:node.type}):classifyThought(node.label,{provenance:currentProvenance});
+  const matchingRole=activeFrameworkReading?currentFrameworkRole?.id:node.type;
+  const match=recognition.matches?.find(item=>(activeFrameworkReading?item.role:item.type)===matchingRole);
+  const matchingPercent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):0;
+  const matchingLabel=activeFrameworkReading?(currentFrameworkRole?.label||editingFramework.shortLabel):(typeLabels[node.type]||node.type);
   const tip=(description)=>`<button type="button" class="metadata-help" data-help="${escapeHtml(description)}" aria-label="Explain this field">?</button>`;
-  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(node.type==='note'?'Note':typeLabels[node.type]||node.type)}</h2><p>Revise the wording, reasoning role or attribution of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought Statement ${tip("The exact wording of this thought. Changing the text may change its suggested reasoning role.")}</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">This statement remains linked to the original brief, so its source and reasoning role stay fixed. No author is assumed.</div>':`<div class="node-type-edit-row"><label for="editNodeType">Node Type ${tip("Choose the reasoning role this statement performs; you can revise this without deleting links.")}</label><select id="editNodeType">${typeOptions}</select></div><div class="node-type-edit-row"><label for="editNodeProvenance">${`Attribution ${tip("Who or what is responsible for this thought? It might be the designer, another collaborator, a document or software. This does not prove the claim.")}`}</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editAttributionName">Named Contributor ${tip("Optional name of a person, collaborator, reviewer, organisation or software tool responsible for the thought.")}</label><input class="field-input" id="editAttributionName" maxlength="120" value="${escapeHtml(node.meta?.attributionName||'')}" placeholder="Person, collaborator, reviewer, software…"></div><div class="node-type-edit-row"><label for="editGenerationActivity">${`Generation Activity ${tip("How was this thought produced: authored, interpreted, observed, revised, generated by software or imported?")}`}</label><select id="editGenerationActivity">${activityMarkup}</select></div><div class="node-type-edit-row"><label for="editActivityDetails">Activity Details ${tip("Optional detail about how this was generated, tested or edited.")}</label><input class="field-input" id="editActivityDetails" maxlength="180" value="${escapeHtml(node.meta?.activityDetails||'')}" placeholder="Optional process, method or event"></div><div class="node-type-edit-row"><label for="editEvidenceKind">${`Supporting Record ${tip("What separate document, observation, drawing, measurement or note supports this thought, if any? Sources are not automatically verified.")}`}</label><select id="editEvidenceKind">${evidenceMarkup}</select></div><div class="node-type-edit-row"><label for="editRecordTitle">Record Title ${tip("Optional title or identifier of the supporting record.")}</label><input class="field-input" id="editRecordTitle" maxlength="180" value="${escapeHtml(node.meta?.recordTitle||'')}" placeholder="Optional drawing, document or observation name"></div>${legacyEvidence?'<p class="metadata-review-note">An older evidence category needs review. Select the supporting record, if one exists.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation ${tip("Optional precise reference, page, URL, event or drawing where the supporting record can be checked.")}</label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Source title, document location, URL, or drawing reference…"><div class="recognition-readout" title="Textual cue matching only; not a certainty score or an assessment of design quality.">Text recognition · ${matchingPercent}% wording match for ${escapeHtml(typeLabels[node.type]||node.type)}. This is a suggestion, not a probability of correctness.</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{allowBackdropDismiss:true,
+  openModal(`<div class="reasoning-edit-dialog"><h2 id="modalTitle">Edit ${escapeHtml(activeFrameworkReading?matchingLabel:(node.type==='note'?'Note':typeLabels[node.type]||node.type))}</h2><p>Revise the wording, reasoning role or attribution of this thought${sourceInput?' while keeping it anchored to the brief.':'.'}</p><label class="field-label" for="editNodeText">Thought Statement ${tip("The exact wording of this thought. Changing the text may change its suggested reasoning role.")}</label><textarea class="field-textarea" id="editNodeText">${escapeHtml(node.label)}</textarea>${sourceInput?'<div class="guided-help-note">This statement remains linked to the original brief, so its source and reasoning role stay fixed. No author is assumed.</div>':`${activeFrameworkReading?`<div class="node-type-edit-row active-framework-role-editor"><label for="editFrameworkRole">${escapeHtml(editingFramework.shortLabel)} Reading ${tip("This is the active framework's analytical role, which can be revised without changing the original TRACEWORK category or past evidence.")}</label><select id="editFrameworkRole">${frameworkRoleOptions}</select><p class="d2-role-editor-note">This reading belongs to ${escapeHtml(editingFramework.label)}. Changing it does not rewrite the recorded TRACEWORK category.</p></div><details class="underlying-role-editor"><summary>Underlying TRACEWORK category · ${escapeHtml(typeLabels[node.type]||node.type)}</summary><div class="node-type-edit-row"><label for="editNodeType">Recorded Category ${tip("Change the underlying TRACEWORK category only if the original classification itself needs correction.")}</label><select id="editNodeType">${typeOptions}</select></div></details>`:`<div class="node-type-edit-row"><label for="editNodeType">Node Type ${tip("Choose the reasoning role this statement performs; you can revise this without deleting links.")}</label><select id="editNodeType">${typeOptions}</select></div>`}<div class="node-type-edit-row"><label for="editNodeProvenance">${`Attribution ${tip("Who or what is responsible for this thought? It might be the designer, another collaborator, a document or software. This does not prove the claim.")}`}</label><select id="editNodeProvenance">${provenanceOptionsMarkup}</select></div>`}<div class="node-type-edit-row"><label for="editAttributionName">Named Contributor ${tip("Optional name of a person, collaborator, reviewer, organisation or software tool responsible for the thought.")}</label><input class="field-input" id="editAttributionName" maxlength="120" value="${escapeHtml(node.meta?.attributionName||'')}" placeholder="Person, collaborator, reviewer, software…"></div><div class="node-type-edit-row"><label for="editGenerationActivity">${`Generation Activity ${tip("How was this thought produced: authored, interpreted, observed, revised, generated by software or imported?")}`}</label><select id="editGenerationActivity">${activityMarkup}</select></div><div class="node-type-edit-row"><label for="editActivityDetails">Activity Details ${tip("Optional detail about how this was generated, tested or edited.")}</label><input class="field-input" id="editActivityDetails" maxlength="180" value="${escapeHtml(node.meta?.activityDetails||'')}" placeholder="Optional process, method or event"></div><div class="node-type-edit-row"><label for="editEvidenceKind">${`Supporting Record ${tip("What separate document, observation, drawing, measurement or note supports this thought, if any? Sources are not automatically verified.")}`}</label><select id="editEvidenceKind">${evidenceMarkup}</select></div><div class="node-type-edit-row"><label for="editRecordTitle">Record Title ${tip("Optional title or identifier of the supporting record.")}</label><input class="field-input" id="editRecordTitle" maxlength="180" value="${escapeHtml(node.meta?.recordTitle||'')}" placeholder="Optional drawing, document or observation name"></div>${legacyEvidence?'<p class="metadata-review-note">An older evidence category needs review. Select the supporting record, if one exists.</p>':''}<label class="field-label" for="editSourceReference">Source or Citation ${tip("Optional precise reference, page, URL, event or drawing where the supporting record can be checked.")}</label><input class="field-input" id="editSourceReference" maxlength="500" value="${escapeHtml(node.meta?.sourceReference||'')}" placeholder="Source title, document location, URL, or drawing reference…"><div class="recognition-readout" title="Textual cue matching only; not a certainty score or an assessment of design quality.">${escapeHtml(editingFramework.shortLabel)} wording recognition · ${matchingPercent?`${matchingPercent}% match for ${escapeHtml(matchingLabel)}`:`No wording cue found for ${escapeHtml(matchingLabel)}`}. This is a textual cue fit, not design correctness.</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Cancel</button><button class="primary-button compact" id="saveNodeEdit">Save Changes</button></div></div>`,{allowBackdropDismiss:true,
     onOpen:m=>{
       const refreshScore=()=>{
         const text=m.querySelector('#editNodeText')?.value||'';
         const role=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
-        const classifier=classifyThought(text,{provenance:m.querySelector('#editNodeProvenance')?.value||currentProvenance});
-        const match=classifier.matches?.find(item=>item.type===role);
-        const percent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):Math.round((classifier.confidence||0)*100);
-        const el=m.querySelector('.recognition-readout');if(el)el.textContent=`Text recognition · ${percent}% wording match for ${typeLabels[role]||role}. This is a suggestion, not a probability of correctness.`;
+        const lensRole=activeFrameworkReading?m.querySelector('#editFrameworkRole')?.value:null;
+        const classifier=activeFrameworkReading?classifyFrameworkThought(text,editingFramework.id,{canonicalType:role}):classifyThought(text,{provenance:m.querySelector('#editNodeProvenance')?.value||currentProvenance});
+        const match=classifier.matches?.find(item=>activeFrameworkReading?item.role===lensRole:item.type===role);
+        const percent=Number.isFinite(Number(match?.strength))?Math.round(Number(match.strength)):0;
+        const label=activeFrameworkReading?(getFrameworkCategory(editingFramework.id,lensRole)?.label||lensRole):(typeLabels[role]||role);
+        const el=m.querySelector('.recognition-readout');if(el)el.textContent=`${editingFramework.shortLabel} wording recognition · ${percent?`${percent}% match for ${label}`:`No wording cue found for ${label}`}. This is a textual cue fit, not design correctness.`;
       };
       m.querySelector('#editNodeText')?.addEventListener('input',refreshScore);
       m.querySelector('#editNodeType')?.addEventListener('change',refreshScore);
+      m.querySelector('#editFrameworkRole')?.addEventListener('change',refreshScore);
       m.querySelector('#editNodeProvenance')?.addEventListener('change',refreshScore);
       m.querySelector('#saveNodeEdit').onclick=()=>{
       const val=m.querySelector('#editNodeText').value.trim(); if(!val)return;
       const nextType=sourceInput?node.type:(m.querySelector('#editNodeType')?.value||node.type);
+      const nextFrameworkRole=activeFrameworkReading?m.querySelector('#editFrameworkRole')?.value:null;
+      const frameworkRoleChanged=activeFrameworkReading&&nextFrameworkRole!==currentFrameworkRole?.id;
       const nextProvenance=sourceInput?'brief':(m.querySelector('#editNodeProvenance')?.value||currentProvenance);
       const changedType=nextType!==node.type;
       const evidenceKind=m.querySelector('#editEvidenceKind')?.value||'unspecified';
@@ -1073,11 +1084,12 @@ function editNode(node){
           delete n.meta.suggestedType;
         }
         n.meta={...(n.meta||{}),evidenceKind,sourceReference,generationActivity,attributionName,activityDetails,recordTitle};
+        if(activeFrameworkReading&&nextFrameworkRole){n.meta.frameworkRoles={...(n.meta.frameworkRoles||{}),[editingFramework.id]:nextFrameworkRole};}
         if(changedType){
           s.edges.filter(e=>e.source===n.id||e.target===n.id).forEach(e=>{e.meta={...(e.meta||{}),typeEdited:true};});
         }
       });
-      logEvent(changedType?'Reasoning type revised':'Reasoning revised',changedType?`${typeLabels[node.type]||node.type} → ${typeLabels[nextType]||nextType} · ${val}`:val);
+      logEvent(frameworkRoleChanged?'Framework reading revised':changedType?'Reasoning type revised':'Reasoning revised',frameworkRoleChanged?`${editingFramework.shortLabel} · ${getFrameworkCategory(editingFramework.id,nextFrameworkRole)?.label||nextFrameworkRole} · ${val}`:changedType?`${typeLabels[node.type]||node.type} → ${typeLabels[nextType]||nextType} · ${val}`:val);
       closeModal(); renderWorkspace();
       // Recheck connected relationships when wording, type or attribution changes.
       // Notify only on newly introduced concerns; do not claim every cross-source link is invalid.
@@ -2573,7 +2585,8 @@ function updateFrameworkControls(state){
   }
   if(els.toggleNodeTypesButton){
     if(framework.id==='freeform') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred types':'Reveal inferred types';
-    else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
+    else if(framework.id==='tracework') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
+    else els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred roles':'Reveal inferred roles';
   }
   const arranged=workspaceMapMode==='focus'?focusArrangeMode:aggregateArrangeSession?.frameworkId===framework.id && aggregateArrangeBlend===100;
   if(els.arrangeAggregateButton){

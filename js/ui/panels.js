@@ -120,7 +120,7 @@ export async function renderHotspotInspector(hotspot,state,handlers){
 
 export async function renderNodeInspector(node,state,handlers){
   const request=++inspectorRequest;
-  const key=`${state?.projectId||'project'}:node:${node.id}:${state?.frameworkId||'tracework'}:${node.status||'active'}:${node.label}`;
+  const key=`${state?.projectId||'project'}:node:${node.id}:${state?.frameworkId||'tracework'}:${frameworkRoleForNode(node,state?.frameworkId||'tracework')?.id||'unknown'}:${node.status||'active'}:${node.label}:${node.updatedAt||''}`;
   const root=document.getElementById('inspectorContent');
   const draftKey=node.type==='input'&&node.meta?.hotspotId
     ?`${state?.projectId||'project'}:hotspot:${node.meta.hotspotId}:${state?.frameworkId||'tracework'}`
@@ -325,16 +325,13 @@ function bindNext(root,node,handlers){
 function roleExplanationMarkup(node,framework=null,frameworkRole=null){
   const role=nodeGuidance[node.type]||nodeGuidance.note;
   const detail=roleClarifications[node.type]||roleClarifications.note;
+  const activeLens=framework && !['tracework','freeform'].includes(framework.id) && frameworkRole;
   const origin=provenanceLabel(inferLegacyProvenance(node));
   const evidence=evidenceLabel(inferredEvidenceKind(node));
-  const lens=framework && !['tracework','freeform'].includes(framework.id)
-    ? `<p><strong>Framework lens:</strong> ${esc(frameworkRole?.label||'Unmapped')} — ${esc(frameworkRole?.description||'This is an analytical lens; it does not prove the designer used this framework.')}</p>` : '';
-  return `<details class="inspector-section trace-explain" open><summary>Explain this · ${esc(role.title)}</summary>
-    <div class="trace-explain-body"><p><strong>Role:</strong> ${esc(role.use)}</p>
-    <p><strong>When useful:</strong> ${esc(role.when)}</p>
-    <p><strong>For example:</strong> ${esc(detail.example)}</p>
-    <p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>
-    ${lens}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
+  const lens=activeLens
+    ? `<div class="active-framework-explanation"><strong>${esc(framework.label)} · Current analytical reading</strong><p>${esc(frameworkRole.description||'The selected framework interprets this thought in its own terms.')}</p><small>This is an inferred lens unless the role has been explicitly set. It does not establish the method originally used.</small></div>` : '';
+  return `<details class="inspector-section trace-explain" open><summary>Explain This · ${esc(activeLens?frameworkRole.label:role.title)}</summary>
+    <div class="trace-explain-body">${activeLens ? `${lens}<details class="base-role-details"><summary>Underlying TRACEWORK classification · ${esc(role.title)}</summary><p><strong>Recorded category:</strong> ${esc(role.use)}</p><p><strong>Example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p></details>` : `<p><strong>Role:</strong> ${esc(role.use)}</p><p><strong>When useful:</strong> ${esc(role.when)}</p><p><strong>For example:</strong> ${esc(detail.example)}</p><p><strong>Distinguish:</strong> ${esc(detail.boundary)}</p>`}<div class="trace-evidence-summary"><span>Attribution · ${esc(origin)}${node.meta?.attributionName?' · '+esc(node.meta.attributionName):''}</span><span>Generation Activity · ${esc(({authored:'Authored or Recorded',interpreted:'Interpreted or Analysed',observed:'Observed or Documented',revised:'Revised or Edited',generated:'Software Generated',imported:'Imported from Source'})[node.meta?.generationActivity]||'Not Specified')}</span><span>Supporting Record · ${esc(evidence)}${node.meta?.recordTitle?' · '+esc(node.meta.recordTitle):''}</span></div>
     ${node.meta?.sourceReference?`<p><strong>Source reference:</strong> ${esc(node.meta.sourceReference)}</p>`:''}
     <p class="trace-provenance-note">Provenance describes where this assertion entered the trace, not whether it is true. If the basis is missing, edit the node to record it.</p></div>
   </details>`;
