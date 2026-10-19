@@ -1,3 +1,14 @@
+## D2.12 — D2 Visual completion candidate (not accepted until browser testing)
+
+- Image/Reference nodes: PNG/JPEG/WebP upload, drag/drop and clipboard paste in an explicit authoring modal, attribution/source, persistent local image, image preview, connection ports and vector-map exports.
+- Resizable reasoning, digest, architectural-proposition and reference-image nodes with a visible bottom-right handle; pointer movement respects workspace zoom, updates edge positions, supports undo, stores dimensions for each map/arrangement and survives project save/reopen.
+- Framework-sensitive Start Me Off and What Next prompts; selection uses the active framework and the actual thought rather than always returning the same method prompt.
+- Full-trace prompt synthesis for image generation, using brief, source nodes and links, provenance, accepted/rejected history and current framework method.
+- Optional secure model-backed image generation from an external Worker endpoint. This requires **separate backend setup and model API credentials**; no API keys or direct OpenAI calls in the browser. Offline template-based vector diagrams remain available and clearly identified as procedural.
+- Framework highlight parity: contributing source nodes receive an equally prominent halo in Focus and Aggregate; authored sources are never rewritten.
+- Previous D1.9 tested interactions kept without feature-level refactoring.
+- D2.12 is a deployment candidate; API image generation and live browser interactions have not been verified in the target hosted environment.
+
 ## D2.11 — Final D2 visual parity and highlight consistency (test candidate)
 
 - Make source-thought highlighting visually consistent between Focus and Aggregate maps.

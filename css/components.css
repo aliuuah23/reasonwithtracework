@@ -1292,3 +1292,12 @@ html.tutorial-tour-active{overflow:hidden}
 
 /* Keep the adaptive dialog inside the padded viewport, including split-screen. */
 .modal-backdrop:has(.prop-modal){padding:10px;}
+
+/* D2.12 reference uploader and model readiness */
+.ref-upload-drop{margin:12px 0;padding:22px;border:2px dashed #9cbab5;border-radius:14px;background:#eef4f1;color:#355f63;text-align:center;}
+.ref-upload-drop.dragover{background:#d1e7de;border-color:#428c84;}
+.ref-upload-drop input{display:block;margin:12px auto 0;max-width:100%;}
+.ref-preview img,.reference-large-preview img{display:block;max-width:100%;max-height:380px;object-fit:contain;margin:8px auto;border:1px solid #cbd8d4;border-radius:10px;}
+.prop-modal .ref-upload-drop+label,.prop-modal label{max-width:100%;}
+.prop-modal label input,.prop-modal label textarea,.prop-modal label select{max-width:100%;}
+.graph-node.graph-artifact .node-resize-handle{background-color:rgba(255,255,255,.3);}

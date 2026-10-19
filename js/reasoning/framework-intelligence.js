@@ -35,9 +35,81 @@ function guidanceForContext(state,hotspot){
   add('start-contrast','Consider another reading',`What alternative meaning of ${quotes} should remain open?`,`An alternative reading of ${quotes} may lead to a different spatial arrangement and should be compared before selecting one.`,'interpretation','Keeps multiple interpretations available to the designer.');
   return distinct(prompts).slice(0,5);
 }
-export function startSuggestions(state,hotspot=null){return guidanceForContext(state,hotspot);}
+// Prompts are framed through the chosen method, while the recorded statement remains unaltered.
+const methodLens={
+ tracework:{label:'Trace the interpretation',question:'Which reading of this language leads to a testable spatial consequence?',draft:'A possible interpretation of the recorded requirement is that a different spatial arrangement may be necessary.',role:'interpretation'},
+ freeform:{label:'Explore without categories',question:'What does this specific statement bring to mind, without choosing a node category yet?',draft:'This statement raises a possible design direction that I want to explore before classifying it.',role:'note'},
+ 'requirements-elicitation':{label:'Clarify and verify the requirement',question:'Who requires this, under what conditions, and what would count as satisfying it?',draft:'The requirement needs a stated stakeholder, a specific condition, and an observable acceptance check.',role:'grounding'},
+ 'five-whys':{label:'Question the underlying cause',question:'Why is this particular condition important? Which preceding cause explains it?',draft:'A possible underlying cause remains to be identified and checked rather than assumed.',role:'interpretation'},
+ laddering:{label:'Connect attribute, consequence and value',question:'Which property matters, what consequence follows, and why is that consequence valued?',draft:'A candidate spatial attribute may produce a consequence which supports an explicit design value.',role:'goal'},
+ 'means-end':{label:'Connect means and desired ends',question:'What designed attribute leads to what consequence and human value?',draft:'A possible spatial means could serve a stated design end; the relationship should be tested.',role:'goal'},
+ 'design-framing':{label:'Reframe the problem',question:'What different design question emerges if the original assumption changes?',draft:'An alternative frame of the brief would prioritise a different relationship between users, site and activity.',role:'interpretation'},
+ 'reflective-practice':{label:'Reflect on an intervention',question:'What was tried, what response was observed, and what should change in the next move?',draft:'A proposed design action invites reflection on its observable spatial and social consequences.',role:'evaluation'},
+ 'design-semantics':{label:'Trace intended meaning into use',question:'What meaning should the designed element communicate and how might users interpret it?',draft:'This spatial feature may communicate a particular use or value, but that meaning requires user interpretation.',role:'interpretation'}
+};
+function lensFor(state){const id=(state?.frameworkId||'tracework').toLowerCase();if(methodLens[id])return methodLens[id];
+ if(id.includes('require'))return methodLens['requirements-elicitation'];if(id.includes('why'))return methodLens['five-whys'];
+ if(id.includes('ladder')||id.includes('means'))return methodLens.laddering;if(id.includes('fram'))return methodLens['design-framing'];
+ if(id.includes('reflect'))return methodLens['reflective-practice'];if(id.includes('semantic'))return methodLens['design-semantics'];
+ return methodLens.tracework;}
+const methodQuestions={
+ tracework:[
+ ['Interrogate the language','Which words are ambiguous, and what alternative interpretations are possible?','This phrase may carry more than one meaning in this project.','interpretation'],
+ ['Establish a basis','What evidence or project condition would distinguish those readings?','The relevant site or user evidence remains to be established.','grounding'],
+ ['Make a spatial consequence','What architectural change follows from the preferred reading?','A possible spatial consequence can be drawn and tested against other readings.','consequence'],
+ ['Evaluate the consequence','What might that move enable, exclude or compromise?','This spatial hypothesis needs explicit evaluation and comparison.','evaluation']],
+ freeform:[
+ ['Open association','What unexpected image, event or analogy does this bring to mind?','An emerging association suggests a direction worth exploring without fixing its category.','note'],
+ ['Counterexample','What alternative thought could coexist with or contradict it?','A competing thought remains open without forcing a formal branch type.','note'],
+ ['Follow a curiosity','What is worth sketching or observing next?','An exploratory drawing or observation may be informative.','note'],
+ ['Return to the whole','How might the current thought change the wider design situation?','This thought might connect to other recorded ideas in an unforeseen way.','note']],
+ requirements:[
+ ['Identify stakeholders','Who requires this condition, and where is that documented?','The relevant stakeholder and original requirement source need to be identified.','grounding'],
+ ['Specify an acceptance criterion','What observable evidence would demonstrate that the requirement is met?','An explicit, testable acceptance condition should be stated.','evaluation'],
+ ['Find conflicts','Which other recorded requirement would this constrain or contradict?','Requirements may conflict and require a documented trade-off.','evaluation'],
+ ['Separate solution from requirement','Does this sentence prescribe an outcome or prematurely select a form?','The intended performance should be separated from any assumed architectural solution.','interpretation']],
+ fivewhys:[
+ ['First cause','Why is the described problem happening, based on the recorded evidence?','A candidate immediate cause needs investigation.','grounding'],
+ ['Next underlying cause','What condition might explain the preceding cause?','An underlying cause should be differentiated from a surface symptom.','grounding'],
+ ['Challenge the causal chain','Which link in this explanation might be wrong or unobserved?','The causal reading needs evidence rather than an assumed straight-line chain.','evaluation'],
+ ['Act on the root cause','What spatial intervention would change the cause, not merely its symptom?','A testable design action could address the identified underlying cause.','consequence']],
+ laddering:[
+ ['Identify a design attribute','Which exact property of the environment is under discussion?','A specific spatial attribute should be described before its wider value is assumed.','grounding'],
+ ['Trace a consequence','What immediate experience would that attribute change for a user?','This attribute could produce a particular user consequence.','interpretation'],
+ ['Name the value','Why would that consequence matter to the people concerned?','A design value needs to be attached to a documented human consequence.','goal'],
+ ['Compare means','What different attribute might support the same valued consequence?','An alternative design means could be tested against the same value.','consequence']],
+ framing:[
+ ['Expose the present frame','What problem has been assumed, and by whom?','The present framing needs to be stated as a revisable interpretation.','interpretation'],
+ ['Invert an assumption','How does the design question change if one assumption is reversed?','A competing problem frame may lead to a different architecture.','interpretation'],
+ ['Redefine the design task','What different question would now deserve attention?','The redefined design problem needs an explicit statement.','goal'],
+ ['Compare consequences of frames','What forms or decisions would differ under these two frames?','Competing frames can be tested through contrasting spatial strategies.','consequence']],
+ reflective:[
+ ['Identify an action','What was designed, drawn, changed or tested?','The prior design action should be documented before reflecting on it.','consequence'],
+ ['Notice the response','What was actually observed in response to that action?','The resulting observation should be distinguished from an expectation.','grounding'],
+ ['Reflect on the surprise','What consequence differs from what was intended?','A mismatch between expectation and outcome may warrant revision.','evaluation'],
+ ['Re-enter the design','What next action would test the revised understanding?','An iterative design move can test the reflection.','consequence']],
+ semantics:[
+ ['State intended meaning','What use, identity or value is the design intended to communicate?','An intended spatial meaning should be stated explicitly.','goal'],
+ ['Question user interpretation','How could someone else interpret the same form differently?','The meaning experienced by another user may differ from the designer intention.','interpretation'],
+ ['Examine the signifier','Which physical quality of the place would communicate that meaning?','A shape, threshold, texture or affordance might act as a signifier.','consequence'],
+ ['Test affordance and ambiguity','What action does the feature invite, and could that invitation be mistaken?','An affordance must be assessed from the user perspective.','evaluation']]
+};
+function methodId(state){const id=(state?.frameworkId||'tracework').toLowerCase();return ({fivewhys:'fivewhys',requirements:'requirements',laddering:'laddering',framing:'framing',reflective:'reflective',semantics:'semantics',freeform:'freeform'})[id]||'tracework';}
+function methodSet(state,term,phase='start'){
+ const fw=methodId(state),prefix=phase==='start'?'Begin with':'Develop the selected thought';
+ return (methodQuestions[fw]||methodQuestions.tracework).map(([heading,question,draft,role],i)=>({
+   id:`${fw}-${phase}-${i}`,heading,question:`${prefix} “${term}”. ${question}`,draft:`${draft} Regarding “${term}”.`,role,
+   why:`Method-specific ${getFramework(state?.frameworkId||'tracework').label} reading; an editable proposal, not a recorded conclusion.`}));
+}
+export function startSuggestions(state,hotspot=null){
+ const term=contextTerm({state,hotspot});
+ const result=methodSet(state,term,'start');
+ // Context-specific cues are supplementary in the default TRACEWORK grammar only.
+ return methodId(state)==='tracework'?[...result,...guidanceForContext(state,hotspot).slice(0,1).map(p=>({...p,draft:p.draft.replace(/pavilion/gi,'project')}))].slice(0,5):result;
+}
 export function nextSuggestions(state,node=null,hotspot=null){
   if(!node)return [];
+  const method=lensFor(state);
   const term=cut(node.label,90);
   const quoted=`“${term}”`;
   const signals=semanticSignals(`${node.label} ${state?.brief||''}`);
@@ -65,7 +137,9 @@ export function nextSuggestions(state,node=null,hotspot=null){
     add('next-link','Explore a relationship',`Which existing thought could explain or follow from ${quoted}?`,`The thought ${quoted} may relate to another recorded requirement or design move; that connection should be checked before it is drawn.`,'grounding','A disconnected node is not automatically an error.');
   if(signals.movement && !out.some(x=>x.id==='next-test'))
     add('next-route','Check access',`How could ${quoted} change movement?`,`The implications of ${quoted} for circulation and an unobstructed route remain to be tested.`,'evaluation','Makes an access consequence explicit without claiming a result.');
-  return distinct(out).slice(0,5);
+  // Method-specific alternatives are the main output, never the same canonical-role suggestions across modes.
+  const methodPrompts=methodSet(state,term,'next');
+  return methodId(state)==='tracework'?[...methodPrompts,...out.slice(0,1)].slice(0,5):methodPrompts;
 }
 export function compareFrameworkReadings(state,frameworkA,frameworkB,visibleIds=null){
   const a=getFramework(frameworkA),b=getFramework(frameworkB);

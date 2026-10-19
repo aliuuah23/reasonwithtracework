@@ -1,6 +1,7 @@
+import { traceImagePrompt, generatedImagePlate } from './reasoning/trace-image-prompts.js?v=d2.12';
 import { auditProject } from './core/project-audit.js';
 import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.11-final-d2-visual-parity';
-import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.5-plain-language';
+import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.12-framework-prompts';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
@@ -19,7 +20,7 @@ import { addGrounding } from './reasoning/grounding.js';
 import { addConsequence } from './reasoning/consequences.js';
 import { addEvaluation, addGoal } from './reasoning/evaluation.js';
 import { createBranch, forkNext, nextNodeType, rejectBranch, restoreBranch, repairSharedInputs } from './reasoning/branching.js';
-import { renderGraph } from './graph/graph-renderer.js?v=d2.9-artifact-halo';
+import { renderGraph } from './graph/graph-renderer.js?v=d2.12-resize-nodes';
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
@@ -260,6 +261,15 @@ function bindGlobalEvents(){
   $('#compareButton').onclick=openCompare;
   $('#reasoningToolsButton').onclick=()=>openReasoningTools();
   $('#architecturalPropositionButton').onclick=()=>openArchitecturalPropositions();
+  // Add one project-neutral image/reference tool alongside existing reasoning tools.
+  const studyButton=$('#architecturalPropositionButton');
+  if(studyButton&&!document.getElementById('imageReferenceButton')){
+    const refButton=document.createElement('button');refButton.type='button';refButton.id='imageReferenceButton';
+    refButton.className=studyButton.className;refButton.textContent='Image / Reference +';
+    refButton.title='Add your own image, sketch, observation or precedent to the reasoning map';
+    studyButton.insertAdjacentElement('afterend',refButton);
+    refButton.addEventListener('click',openImageReferenceUploader);
+  }
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel();queueViewportSave(); };
   $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
@@ -559,7 +569,13 @@ function renderGraphState(){
   const pathScoped=focusPathRootId?focusTraceAround(baseScoped,focusPathRootId):baseScoped;
   const scoped=workspaceMapMode==='focus'&&focusPathRootId?focusArrangedTrace(state,pathScoped):pathScoped;
   els.graphSurface?.classList.toggle('aggregate-map',workspaceMapMode==='aggregate');
-  renderGraph({...state,nodes:scoped.nodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
+  const sizeScope=workspaceMapMode==='aggregate'?(aggregateArrangeBlend===100?'aggregate-arranged:'+state.frameworkId:'aggregate-original'):
+    (focusArrangeMode?'focus-arranged:'+focusArrangementKey(state):'focus-original');
+  const sizedNodes=scoped.nodes.map(n=>{
+    const dims=n.meta?.nodeSizes?.[sizeScope]||n.meta?.nodeSizes?.original||null;
+    return dims?{...n,meta:{...n.meta,cardWidth:dims.width,cardHeight:dims.height}}:n;
+  });
+  renderGraph({...state,nodes:sizedNodes,edges:scoped.edges},{surface:els.graphSurface,svg:els.graphEdges,nodes:els.graphNodes},{
     onNodeClick:(id,e)=>selectNode(id,e),
     onNodeDoubleClick:id=>{ const node=getState().nodes.find(n=>n.id===id); if(node?.meta?.artifactKind)openSavedArtifact(node);else if(node)editNode(node); },
     onNodePreviewToggle:id=>{const node=getState().nodes.find(n=>n.id===id);if(node?.meta?.artifactKind)openSavedArtifact(node);else showSpatialReadForNode(id);},
@@ -576,6 +592,16 @@ function renderGraphState(){
       // Capture the snapshot before any pointer movement mutates the rendered
       // positions. One drag gesture = one undo step, including groups/selections.
       checkpoint((ids||[]).length>1?'move selected reasoning nodes':'move reasoning node');
+    },
+    onNodeResize:(id,width,height)=>{
+      const w=Math.max(195,Math.min(900,Math.round(width)));
+      const h=Math.max(100,Math.min(800,Math.round(height)));
+      checkpoint('resize reasoning or visual node');
+      updateState(st=>{
+        const n=st.nodes.find(x=>x.id===id);if(!n)return;
+        n.meta={...(n.meta||{}),nodeSizes:{...(n.meta?.nodeSizes||{}),[sizeScope]:{width:w,height:h}}};
+      });
+      queueViewportSave();
     },
     onNodeMove:(id,x,y)=>{
       // Stage C: Source positions travel FORWARD into Arrange, never backwards.
@@ -1420,7 +1446,8 @@ async function pngForVisual(svg,{compact=false}={}){
     const canvas=document.createElement('canvas');canvas.width=compact?560:840;canvas.height=compact?375:591;
     const ctx=canvas.getContext('2d');if(!ctx)throw Error('No canvas context.');
     ctx.fillStyle='#f5f7f7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    const data=canvas.toDataURL('image/png');
+    let data=canvas.toDataURL('image/jpeg',.76);
+    if(data.length>800000)data=canvas.toDataURL('image/jpeg',.53);
     if(data.length>800000)throw Error('Image too large for safe project storage. Please export the sheet instead.');
     return data;
   } finally{URL.revokeObjectURL(url);}
@@ -1498,6 +1525,11 @@ async function placePropositionBoard(choices,modeName){
 }
 function openSavedArtifact(node){
   if(!node?.meta?.artifactKind)return;
+  if(node.meta.artifactKind==='image-reference'){
+    const data=node.meta.imagePng||node.meta.imageData||'';
+    openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(node.label)}</h2><p class="prop-disclosure">${escapeHtml(node.meta.sourceLabel||'Designer reference')} · Reference material; not a system-generated design.</p><div class="reference-large-preview"><img src="${data}" alt="${escapeHtml(node.label)}"></div><p>${escapeHtml(node.meta.sourceReference||'No source description supplied')}</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button></div></div>`);
+    return;
+  }
   if(node.meta.artifactKind==='reasoning-digest'){
     const md=node.meta.markdownDigest||'';
     openModal(`<div class="prop-modal"><h2 id="modalTitle">${escapeHtml(node.label)}</h2><div class="prop-markdown">${escapeHtml(md)}</div><div class="modal-actions"><button type="button" class="secondary-button" id="artifactMdExport">Download Markdown</button><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>m.querySelector('#artifactMdExport').onclick=()=>fileDownload(md,'TRACEWORK-Reasoning-Digest.md','text/markdown')});return;
@@ -1529,6 +1561,54 @@ function propositionComparisonSheet(choices,scopeName){
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>TRACEWORK — Architectural Pathway Comparison</title><style>@page{size:A3 landscape;margin:10mm}body{font:12px Arial;color:#304851;margin:20px}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:24px}main{display:grid;grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr));gap:12px}article{break-inside:avoid;border:1px solid #cad6d3;padding:8px}article svg{width:100%;height:auto}h2{font-size:15px}p{font-size:11px;line-height:1.4}button{background:#244858;color:white;border:0;padding:10px}@media print{button{display:none}body{margin:0}main{grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr))}}</style></head><body><header><h1>TRACEWORK — ${escapeHtml(scopeName)} · Pathway Comparison</h1><button onclick="print()">Print / Save PDF</button></header><p>Focus: complete pathway-specific design studies. Aggregate: conceptual architectural form translations. A geometric alternative may come from the same recorded path and is a system hypothesis. Documentary scores are not architectural quality. No output is a participant drawing.</p><main>${cards}</main></body></html>`);
   win.document.close();win.focus();
 }
+// D2 Visual: reference images are independently attributed, editable in size and exportable.
+function openImageReferenceUploader(){
+ if(!getState().brief){toast('Open a project first.');return;}
+ openModal(`<div class="prop-modal"><h2 id="modalTitle">Add Image / Reference</h2><p class="prop-disclosure">Add a sketch, drawing, precedent, observation or your own photograph. This is a source node, not an AI-generated proposition.</p>
+ <div class="ref-upload-drop" id="refUploadDrop" tabindex="0">Drop an image here, paste from clipboard, or choose a PNG / JPEG / WebP file.<input type="file" id="refUploadInput" accept="image/png,image/jpeg,image/webp"></div>
+ <div class="ref-preview" id="refUploadPreview"></div>
+ <label>Node title <input id="refUploadTitle" placeholder="e.g. Sketch of a sheltered threshold" maxlength="180"></label>
+ <label>Origin <select id="refUploadSource"><option value="designer">Designer work</option><option value="participant">Participant-supplied (with permission)</option><option value="tutor">Tutor / reviewer</option><option value="precedent">Published precedent</option><option value="observation">Observation</option><option value="other">Other recorded source</option></select></label>
+ <label>Attribution or reference <textarea id="refUploadCitation" rows="2" placeholder="Author, context, date, source; optional"></textarea></label>
+ <div class="modal-actions"><button type="button" class="primary-button" id="refUploadSave" disabled>Add reference node</button><button type="button" class="secondary-button" data-close-modal>Cancel</button></div></div>`,{onOpen:m=>{
+   let data=null;const drop=m.querySelector('#refUploadDrop'),fileInput=m.querySelector('#refUploadInput'),preview=m.querySelector('#refUploadPreview'),save=m.querySelector('#refUploadSave');
+   const processFile=file=>{
+     if(!file||!['image/png','image/jpeg','image/webp'].includes(file.type)){toast('Please choose a PNG, JPEG or WebP image.');return;}
+     if(file.size>15_000_000){toast('Image is too large (maximum 15 MB).');return;}
+     const url=URL.createObjectURL(file);const img=new Image();img.onload=()=>{
+       const canvas=document.createElement('canvas');const k=Math.min(1,900/Math.max(img.width,img.height));canvas.width=Math.max(1,Math.round(img.width*k));canvas.height=Math.max(1,Math.round(img.height*k));
+       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);
+       data=canvas.toDataURL('image/jpeg',.72);if(data.length>760000){data=canvas.toDataURL('image/jpeg',.48);}
+       if(data.length>760000){toast('Image is too large for reliable local storage. Try a smaller image.');data=null;return;}
+       preview.innerHTML='';const display=document.createElement('img');display.src=data;display.alt='Selected reference preview';preview.append(display);
+       if(!m.querySelector('#refUploadTitle').value.trim())m.querySelector('#refUploadTitle').value=file.name.replace(/\.[^.]+$/,'');
+       save.disabled=false;
+     };img.onerror=()=>{URL.revokeObjectURL(url);toast('Image could not be decoded.');};img.src=url;
+   };
+   fileInput.onchange=()=>processFile(fileInput.files[0]);
+   drop.ondragover=e=>{e.preventDefault();drop.classList.add('dragover');};
+   drop.ondragleave=()=>drop.classList.remove('dragover');
+   drop.ondrop=e=>{e.preventDefault();drop.classList.remove('dragover');processFile(e.dataTransfer.files[0]);};
+   const onPaste=e=>{const file=[...(e.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'))?.getAsFile();if(file){e.preventDefault();processFile(file);}};
+   m.addEventListener('paste',onPaste);
+   save.onclick=()=>{
+     if(!data)return;
+     const state=getState(),point=nearVisiblePlacement(),selected=state.nodes.find(n=>n.id===state.activeNodeId&&!n.meta?.artifactKind);
+     const provenance=m.querySelector('#refUploadSource').value,citation=m.querySelector('#refUploadCitation').value.trim(),label=m.querySelector('#refUploadTitle').value.trim()||'Untitled image / reference';
+     const node=createNode({type:'note',label,x:point.x,y:point.y,branchId:selected?.branchId||state.activeBranchId,
+       meta:{artifactKind:'image-reference',imagePng:data,sourceMode:workspaceMapMode,sourceNodeIds:selected?[selected.id]:[],sourceLabel:provenance,sourceReference:citation,
+       provenance:provenance==='precedent'?'other':provenance==='participant'?'other':provenance==='observation'?'designer':provenance,
+       evidenceKind:provenance==='precedent'?'precedent':provenance==='observation'?'observation':'drawing',generationActivity:'imported',hotspotId:state.selectedHotspotId,
+       outputCreatedAt:new Date().toISOString(),nodeSizes:{original:{width:340,height:320}}}});
+     // Verify browser storage capacity before adding a binary record.
+     try{const staged=structuredClone(state);staged.nodes.push(node);if(JSON.stringify(staged).length>3_200_000)throw Error('Project would exceed the safe browser storage budget. Export JSON and use smaller images.');}
+     catch(e){toast('Reference not inserted: '+e.message);return;}
+     checkpoint('add image or reference');updateState(st=>{st.nodes.push(node);st.activeNodeId=node.id;
+       if(selected){const edge=createEdge(selected.id,node.id,{status:'provisional'});edge.meta={artifact:true,relation:'references'};st.edges.push(edge);}
+     });focusPathRootId=null;closeModal();renderWorkspace();toast('Image / Reference added. Drag the lower-right corner to resize it.');
+   };
+ }});
+}
 function openArchitecturalPropositions(){
   if(!getState().brief){toast('Open a project first.');return;}
   const ctx=propositionContext(),modeName=ctx.mode==='focus-path'?'Focus Path':ctx.mode==='focus-map'?'Focus Map':'Aggregate Map';
@@ -1544,8 +1624,20 @@ function openArchitecturalPropositions(){
     :ctx.mode==='focus-map'
     ?'Focus Map: each reasoning pathway develops into a complete design study with relevant spatial decisions brought together. Compare the alternatives directly or place them side by side on the map.'
     :'Aggregate Map: explore 3–5 spatial propositions drawn from project-wide reasoning. Each is an interpretive form study rather than a verified design. Alternatives and assumptions are clearly labelled.';
-  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-view-switch" role="tablist" aria-label="Architectural propositions output"><button type="button" class="prop-view-tab active" data-prop-tab="digest" role="tab" aria-selected="true">Reasoning Summary</button><button type="button" class="prop-view-tab" data-prop-tab="visual" role="tab" aria-selected="false">Design Studies</button></div><div id="propOutput" class="prop-option-list" role="tabpanel" aria-live="polite"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-inline-actions" style="margin:8px 0"><button type="button" class="secondary-button compact" id="configureImageModel">Connect image model (optional)</button><span class="prop-disclosure">Offline studies are procedural; unique AI images require a separately configured model service.</span></div><div class="prop-view-switch" role="tablist" aria-label="Architectural propositions output"><button type="button" class="prop-view-tab active" data-prop-tab="digest" role="tab" aria-selected="true">Reasoning Summary</button><button type="button" class="prop-view-tab" data-prop-tab="visual" role="tab" aria-selected="false">Design Studies</button></div><div id="propOutput" class="prop-option-list" role="tabpanel" aria-live="polite"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
     const output=m.querySelector('#propOutput');let choices=[];
+    const configure=m.querySelector('#configureImageModel');
+    configure.onclick=()=>{
+      const endpoint=window.prompt('Enter the secured model service URL (not an API key). Leave blank to use offline diagrams.',sessionStorage.getItem('tracework.model.endpoint')||'');
+      if(endpoint===null)return;
+      if(endpoint.trim()&&!/^https:\/\//i.test(endpoint.trim())){toast('Use an HTTPS endpoint for the model service.');return;}
+      if(endpoint.trim()){
+        const token=window.prompt('Enter the personal access token configured on your model backend. It stays in this browser session, not your project JSON.','');
+        if(token===null)return;
+        sessionStorage.setItem('tracework.model.endpoint',endpoint.trim());sessionStorage.setItem('tracework.model.token',token);
+        toast('Image service endpoint saved for this browser session. Generate one study explicitly to control costs.');
+      }else{sessionStorage.removeItem('tracework.model.endpoint');sessionStorage.removeItem('tracework.model.token');toast('Offline diagram mode enabled.');}
+    };
     const showMarkdown=()=>{
       const markdown=scopedDigest(ctx);
       output.innerHTML=`<section class="prop-digest-preview"><div class="prop-digest-heading"><h3>${escapeHtml(modeName)} · Reasoning Summary</h3><span>Based on the current recorded trace</span></div><div class="prop-markdown">${escapeHtml(markdown)}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propMdSave">Download Markdown</button><button type="button" class="primary-button compact" id="propMdInsert">Place summary on map</button></div></section>`;
@@ -1554,14 +1646,42 @@ function openArchitecturalPropositions(){
     };
     const showDetail=i=>{
       selected=i;const {spec,svg}=choices[i];
-      output.innerHTML=`<div class="prop-comparison-tools"><button type="button" class="secondary-button compact" id="propBackToAll">← Back to all ${choices.length} options</button>${choices.length>1?`<label class="prop-choose-label">Pathway <select id="propChoosePath">${choices.map((x,j)=>`<option value="${j}" ${j===i?'selected':''}>${j+1} · ${escapeHtml(x.spec.concept)}</option>`).join('')}</select></label>`:''}</div><h3>${escapeHtml(spec.title)}</h3><p class="prop-disclosure">${spec.fullPavilion?'Complete design study from one pathway':'Exploratory form study from project reasoning'}: ${escapeHtml(spec.layout)}. ${spec.translation==='speculative'?'This geometry is a system-proposed alternative. ':''}Documented support ${spec.documentedScore} points; not structurally, climatically or spatially verified.</p><div class="prop-render" id="propDetailRender"></div><div class="prop-annotation-list">${spec.annotations.map(a=>`<p><strong>${escapeHtml(a.heading)}:</strong> ${escapeHtml(a.form)}<br><em>${escapeHtml(a.grounded?'Recorded source: '+a.sourceText:'System assumption — needs designer review')}</em></p>`).join('')}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propSaveSingleSvg">Save SVG</button><button type="button" class="secondary-button compact" id="propPrintSingle">Print rationale sheet</button><button type="button" class="secondary-button compact" id="propMdSingle">Markdown rationale</button><button type="button" class="primary-button compact" id="propInsertSingle">Insert image node</button></div>`;
+      output.innerHTML=`<div class="prop-comparison-tools"><button type="button" class="secondary-button compact" id="propBackToAll">← Back to all ${choices.length} options</button>${choices.length>1?`<label class="prop-choose-label">Pathway <select id="propChoosePath">${choices.map((x,j)=>`<option value="${j}" ${j===i?'selected':''}>${j+1} · ${escapeHtml(x.spec.concept)}</option>`).join('')}</select></label>`:''}</div><h3>${escapeHtml(spec.title)}</h3><p class="prop-disclosure">${spec.fullPavilion?'Complete design study from one pathway':'Exploratory form study from project reasoning'}: ${escapeHtml(spec.layout)}. ${spec.translation==='speculative'?'This geometry is a system-proposed alternative. ':''}Documented support ${spec.documentedScore} points; not structurally, climatically or spatially verified.</p><div class="prop-render" id="propDetailRender"></div><div class="prop-annotation-list">${spec.annotations.map(a=>`<p><strong>${escapeHtml(a.heading)}:</strong> ${escapeHtml(a.form)}<br><em>${escapeHtml(a.grounded?'Recorded source: '+a.sourceText:'System assumption — needs designer review')}</em></p>`).join('')}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propSaveSingleSvg">Save SVG</button><button type="button" class="secondary-button compact" id="propPrintSingle">Print rationale sheet</button><button type="button" class="secondary-button compact" id="propMdSingle">Markdown rationale</button><button type="button" class="secondary-button compact" id="propCopyPrompt">Copy full-trace image prompt</button><button type="button" class="primary-button compact" id="propGenerateModel">Generate with image model</button><button type="button" class="primary-button compact" id="propInsertSingle">Insert image node</button></div>`;
       output.querySelector('#propDetailRender').innerHTML=svg;
+      output.querySelector('#propCopyPrompt').onclick=async()=>{
+        const prompt=traceImagePrompt(ctx.state,spec);
+        try{await navigator.clipboard.writeText(prompt);toast('Full reasoning prompt copied.');}
+        catch{window.prompt('Copy this full-trace prompt:',prompt);}
+      };
+      output.querySelector('#propGenerateModel').onclick=async()=>{
+        const endpoint=sessionStorage.getItem('tracework.model.endpoint');
+        if(!endpoint){toast('Connect an image model first, or copy the generated prompt.');return;}
+        if(!window.confirm('Generate a model image? This sends the current brief and selected reasoning text to your configured external model service. Only proceed with material you are permitted to share, especially participant records. Model usage may incur costs.'))return;
+        const button=output.querySelector('#propGenerateModel');button.disabled=true;button.textContent='Generating new image…';
+        try{
+          const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-Tracework-Token':sessionStorage.getItem('tracework.model.token')||''},body:JSON.stringify({prompt:traceImagePrompt(ctx.state,spec)})});
+          const data=await res.json();if(!res.ok||!data.image)throw new Error(data.error||'Image request failed');
+          if(!/^data:image\/(png|jpeg|webp);base64,/.test(data.image))throw Error('Image response was invalid');
+          // Reduce network-generated rasters before embedding them in project JSON.
+          const image=await new Promise((resolve,reject)=>{
+            const img=new Image();img.onload=()=>{
+              const c=document.createElement('canvas'),k=Math.min(1,1100/Math.max(img.width,img.height));
+              c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+              c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+              resolve(c.toDataURL('image/jpeg',.66));
+            };img.onerror=()=>reject(Error('The model image could not be decoded.'));img.src=data.image;
+          });
+          const newSvg=generatedImagePlate(spec,image);
+          choices[i].svg=newSvg;choices[i].modelGenerated=true;
+          showDetail(i);toast('New model-generated architectural image ready. Review assumptions before using.');
+        }catch(e){button.disabled=false;button.textContent='Generate with image model';toast('Generation unavailable: '+e.message);}
+      };
       output.querySelector('#propBackToAll').onclick=()=>renderComparison();
       const chooser=output.querySelector('#propChoosePath');if(chooser)chooser.onchange=()=>showDetail(Number(chooser.value));
-      output.querySelector('#propSaveSingleSvg').onclick=()=>fileDownload(svg,`TRACEWORK-${spec.strategy}-Proposition.svg`,'image/svg+xml;charset=utf-8');
-      output.querySelector('#propPrintSingle').onclick=()=>propositionPrintSheet(spec,svg);
+      output.querySelector('#propSaveSingleSvg').onclick=()=>fileDownload(choices[i].svg,`TRACEWORK-${spec.strategy}-Proposition.svg`,'image/svg+xml;charset=utf-8');
+      output.querySelector('#propPrintSingle').onclick=()=>propositionPrintSheet(spec,choices[i].svg);
       output.querySelector('#propMdSingle').onclick=()=>fileDownload(propositionMarkdown(spec),`TRACEWORK-${spec.strategy}-Rationale.md`,'text/markdown');
-      output.querySelector('#propInsertSingle').onclick=()=>insertOutputNode('architectural-proposition',{spec,svg,markdown:propositionMarkdown(spec)});
+      output.querySelector('#propInsertSingle').onclick=()=>insertOutputNode('architectural-proposition',{spec,svg:choices[i].svg,markdown:propositionMarkdown(spec)});
     };
     const renderComparison=()=>{
       const view=choices.slice(0,showCount);

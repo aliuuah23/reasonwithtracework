@@ -1,3 +1,15 @@
+# TRACEWORK D2.12 — D2 Visual and model connection (testing candidate)
+
+## How to test
+
+1. Add Image / Reference using the new workspace toolbar control. Upload, paste or drop an image; provide provenance and a citation; insert it, resize it from the lower-right grip, save and reopen it.
+2. Resize an ordinary reasoning card and an architectural proposition card. Verify wires follow as the size changes, Original/Arrange dimensions remain independent, and PNG/SVG/PDF exports have correct image and node sizes.
+3. Compare Start Me Off and What Next across framework modes; check that different method-specific questions appear. The authored trace itself must not change.
+4. Select architectural Design Studies, inspect a study and use Copy full-trace image prompt. The prompt should mention *your exact project*, not boilerplate pavilion answers.
+5. OPTIONAL: To obtain genuinely new AI architectural renders, deploy `optional-model-backend/worker.js` as a separate secured Cloudflare Worker (instructions included), then use Connect image model and Generate with image model. Until configured, the site provides offline *procedural* diagrams, not model-generated pictures. Model usage incurs costs; do not put your API key on GitHub Pages.
+
+This release is a candidate for testing, not a D2 freeze; model-backed generation requires separate configuration and live confirmation.
+
 ## D2.11
 
 Final D2 deployment candidate for visual parity, source-highlighting consistency and framework-wide tool availability.

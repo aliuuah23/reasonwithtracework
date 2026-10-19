@@ -9,7 +9,7 @@ const CANVAS_ORIGIN_Y=680;
 let lastNodeActivation={id:null,time:0};
 
 export function renderGraph({nodes,edges,activeNodeId},els,{
-  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeQuickLink,onNodeCaseStudy,onNodeDragStart,onNodeMove,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
+  onNodeClick,onNodeDoubleClick,onNodePreviewToggle,onNodeQuickLink,onNodeCaseStudy,onNodeDragStart,onNodeMove,onNodeResize,onNodeContext,onNodeStatusClick,onNodeTypeClick,onEdgeClick,onEdgeQuickDisconnect,onConnect,canConnect,getScale=()=>1,
   selectedEdgeId=null,selectedNodeIds=[],issueNodeIds=[],showNodeTypes=true,showWireSignals=true,pilotEvidence=null,frameworkId='tracework'
 }){
   const world=autoLayout(nodes);
@@ -20,8 +20,8 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
   const size=surfaceSize(laid);
   const minX=Math.min(...laid.map(n=>n.x),CANVAS_ORIGIN_X);
   const minY=Math.min(...laid.map(n=>n.y),CANVAS_ORIGIN_Y);
-  const maxX=Math.max(...laid.map(n=>n.x+230),CANVAS_ORIGIN_X+600);
-  const maxY=Math.max(...laid.map(n=>n.y+112),CANVAS_ORIGIN_Y+420);
+  const maxX=Math.max(...laid.map(n=>n.x+(Number(n.meta?.cardWidth)|| (n.meta?.artifactKind?340:230))),CANVAS_ORIGIN_X+600);
+  const maxY=Math.max(...laid.map(n=>n.y+(Number(n.meta?.cardHeight)|| (n.meta?.artifactKind?330:112))),CANVAS_ORIGIN_Y+420);
 
   els.surface.style.width=`${size.width}px`;
   els.surface.style.height=`${size.height}px`;
@@ -195,7 +195,7 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
   els.nodes.querySelectorAll('.graph-node').forEach(el=>{
     el.addEventListener('click',e=>{
-      if(e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview'))return;
+      if(e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview,.node-resize-handle'))return;
       if(el.classList.contains('dragging'))return;
       const now=Date.now(),id=el.dataset.id;
       if(lastNodeActivation.id===id && now-lastNodeActivation.time<360){
@@ -230,6 +230,26 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
       onNodePreviewToggle?.(el.dataset.id,e);
     });
 
+    // Resize only from the visible bottom-right handle; normal card dragging is unchanged.
+    const handle=el.querySelector('.node-resize-handle');
+    if(handle)handle.addEventListener('pointerdown',ev=>{
+      if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();
+      const startX=ev.clientX,startY=ev.clientY,startW=el.offsetWidth,startH=el.offsetHeight;
+      const minW=el.dataset.artifact?230:195,minH=el.dataset.artifact?170:100;
+      handle.setPointerCapture(ev.pointerId);
+      const move=e=>{
+        const scale=Math.max(.12,Number(getScale?.()||1));
+        el.style.width=Math.max(minW,Math.min(900,Math.round(startW+(e.clientX-startX)/scale)))+'px';
+        el.style.height=Math.max(minH,Math.min(800,Math.round(startH+(e.clientY-startY)/scale)))+'px';
+        redrawEdges();
+      };
+      const finish=e=>{
+        handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',finish);
+        handle.removeEventListener('pointercancel',finish);
+        onNodeResize?.(el.dataset.id,el.offsetWidth,el.offsetHeight);
+      };
+      handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
+    });
     bindDrag(el,{
       bounds:size,
       locked:el.dataset.locked==='true',
@@ -254,17 +274,17 @@ export function renderGraph({nodes,edges,activeNodeId},els,{
 
 function artifactNodeMarkup(n,selected,issue){
   const kind=n.meta?.artifactKind;
-  const visual=kind==='architectural-proposition';
+  const visual=kind==='architectural-proposition'||kind==='image-reference';
   const rejected=n.status==='rejected'||n.meta?.status==='rejected';
-  const title=visual?'Architectural Proposition':'Reasoning Digest';
-  const img=n.meta?.imagePng||'';
-  const safeImage=img.startsWith('data:image/png;base64,')?img:'';
+  const title=kind==='image-reference'?'Image / Reference':visual?'Architectural Proposition':'Reasoning Summary';
+  const img=n.meta?.imagePng||n.meta?.imageData||'';
+  const safeImage=/^data:image\/(png|jpeg|webp);base64,/.test(img)?img:'';
   const preview=visual&&safeImage?`<img class="node-artifact-image" src="${safeImage}" alt="Annotated architectural axonometric · ${escapeHtml(n.label)}" draggable="false">`:
     `<p class="node-artifact-excerpt">${escapeHtml((n.meta?.markdownDigest||'').replace(/^#+\s*/gm,'').slice(0,220))}</p>`;
-  return `<article class="graph-node graph-artifact ${selected?'selected artifact-halo':''} ${rejected?'rejected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d">
+  return `<article class="graph-node graph-artifact ${selected?'selected artifact-halo':''} ${rejected?'rejected':''} ${issue?'trace-open':''}" data-id="${n.id}" data-type="note" data-artifact="${kind}" data-locked="false" style="left:${n.x}px;top:${n.y}px;--node-color:#5b9a9d;${n.meta?.cardWidth?`width:${n.meta.cardWidth}px;`:``}${n.meta?.cardHeight?`height:${n.meta.cardHeight}px;`:``}">
   <button class="node-port port-in" type="button" aria-label="Connect supporting reasoning"></button><button class="node-port port-out" type="button" aria-label="Connect this output"></button>
   <div class="node-accent"></div><div class="node-body"><div class="node-type"><i></i>${title}</div><div class="node-label">${escapeHtml(n.label)}</div>${preview}
-  <div class="node-foot"><span class="node-provenance">System-generated · ${escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${visual?'Open proposition ↗':'Read digest ↗'}</button></div></div></article>`;
+  <div class="node-foot"><span class="node-provenance">${kind==='image-reference'?escapeHtml(n.meta?.sourceLabel||'Designer reference'):'System-generated · '+escapeHtml((n.meta?.sourceMode||'').replaceAll('-',' '))}</span><button type="button" class="node-preview-toggle">${kind==='image-reference'?'Open reference ↗':visual?'Open proposition ↗':'Read summary ↗'}</button></div></div><span class="node-resize-handle" title="Drag to resize this node" aria-label="Resize node"></span></article>`;
 }
 function nodeMarkup(n,selected,issue,frameworkId='tracework',showNodeTypes=true){
   if(n.meta?.artifactKind) return artifactNodeMarkup(n,selected,issue);
@@ -302,14 +322,14 @@ function nodeMarkup(n,selected,issue,frameworkId='tracework',showNodeTypes=true)
   const provenanceChip=`<span class="node-provenance" title="Attribution${name?' · '+escapeHtml(name):''}">${escapeHtml(provenance)}${name?' · '+escapeHtml(name):''}</span>`;
   const activityChip=activityLabel?`<span class="node-provenance" title="Generation Activity${n.meta?.activityDetails?' · '+escapeHtml(n.meta.activityDetails):''}">${escapeHtml(activityLabel)}</span>`:'';
   const recordChip=recordLabel?`<span class="node-provenance" title="Supporting Record${n.meta?.recordTitle?' · '+escapeHtml(n.meta.recordTitle):''}">${escapeHtml(recordLabel)}</span>`:'';
-  return `<article class="graph-node ${n.type==='note' && frameworkRole?.underlyingUnclassified && showNodeTypes?'inferred-reading':''} ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor}">
+  return `<article class="graph-node ${n.meta?.cardHeight?'resized':''} ${n.type==='note' && frameworkRole?.underlyingUnclassified && showNodeTypes?'inferred-reading':''} ${selected?'selected':''} ${issue?'trace-open':''} ${locked?'locked':''} ${grouped?'grouped':''} ${previewOpen?'preview-open':''} ${n.status==='rejected'?'rejected':''}" data-id="${n.id}" data-type="${n.type}" data-framework-role="${escapeHtml(frameworkRole?.id||n.type)}" data-locked="${locked?'true':'false'}" style="left:${n.x}px;top:${n.y}px;--node-color:${roleColor};${n.meta?.cardWidth?`width:${n.meta.cardWidth}px;`:``}${n.meta?.cardHeight?`height:${n.meta.cardHeight}px;`:``}">
     ${ports}<div class="node-accent"></div>${locked?'<span class="node-lock-pill" title="Position locked">LOCKED</span>':''}${grouped?'<span class="node-group-pill" title="Moves with its group">GROUP</span>':''}<div class="node-body">
       <div class="node-type has-help" data-help="${escapeHtml(help)}"><i></i>${escapeHtml(visibleRole)}${n.type==='note'&&frameworkRole?.underlyingUnclassified?' · inferred':''}</div>
       <div class="node-label">${escapeHtml(n.label)}</div>
       ${preview}
       <div class="node-quick-actions"><button type="button" class="node-quick-action node-quick-link" title="Choose a second node and preview the relationship" aria-label="Connect this reasoning node to another thought">↗ Connect to…</button><button type="button" class="node-quick-action node-quick-case" title="See separately listed built-project references in the right inspector; feature examples are in Spatial read">⌕ Case study</button></div>
       <div class="node-foot"><button type="button" class="node-status has-help" data-help="${escapeHtml(statusHelp)}">${escapeHtml(meta)}${n.type!=='note'&&n.status!=='rejected'?' ▾':''}</button>${provenanceChip}${activityChip}${recordChip}${previewButton}</div>
-    </div></article>`;
+    </div><span class="node-resize-handle" title="Drag to resize this node" aria-label="Resize node"></span></article>`;
 }
 
 
@@ -398,7 +418,7 @@ function isOnActivePath(edge,activeNodeId,edges){
 function bindDrag(el,{bounds,onLiveMove,onDragStart,onMove,getScale,locked=false,getDragIds=()=>[el.dataset.id],nodesRoot,positions,onGuides,onClearGuides}){
   let start=null,origins=null,moved=false;
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview'))return;
+    if(e.button!==0||e.target.closest('.node-port,.node-status,.node-type,.node-preview-toggle,.node-quick-action,.spatial-preview,.node-resize-handle'))return;
     if(locked)return;
     e.stopPropagation();
     // A text field can remain focused after the user clicks a non-focusable graph

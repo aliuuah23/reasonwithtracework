@@ -378,3 +378,12 @@
 .graph-surface.aggregate-map .graph-node.rejected{opacity:.36!important;filter:saturate(.38)}
 .graph-surface.aggregate-map .trace-edge.rejected{opacity:.26!important;stroke-dasharray:4 6!important;}
 .graph-surface.aggregate-map .graph-node.graph-artifact.rejected.selected{opacity:.92!important;}
+
+/* D2.12 — all node types can be resized without changing their authorship or links. */
+.graph-node {box-sizing:border-box;}
+.graph-node.resized .node-body{max-height:100%;overflow:auto;}
+.node-resize-handle{position:absolute;right:1px;bottom:1px;width:19px;height:19px;z-index:15;cursor:nwse-resize;touch-action:none;border-radius:0 0 11px 0;background:linear-gradient(135deg,transparent 38%,color-mix(in srgb,var(--node-color) 70%,#fff) 40%,color-mix(in srgb,var(--node-color) 70%,#fff) 48%,transparent 51%,transparent 62%,color-mix(in srgb,var(--node-color) 70%,#fff) 65%);}
+.graph-node:hover .node-resize-handle{opacity:1;}
+.graph-node.graph-artifact .node-body{height:100%;box-sizing:border-box;}
+.graph-node.graph-artifact .node-artifact-image{max-height:calc(100% - 105px);object-fit:contain;}
+.graph-node.artifact-source-thought,.graph-surface.aggregate-map .graph-node.artifact-source-thought{opacity:1!important;filter:none!important;box-shadow:0 0 0 9px color-mix(in srgb,var(--node-color) 27%,transparent),0 0 0 16px color-mix(in srgb,var(--node-color) 14%,transparent),0 12px 28px rgba(34,40,61,.14)!important;border:2px solid var(--node-color)!important;outline:none!important;z-index:8;}
