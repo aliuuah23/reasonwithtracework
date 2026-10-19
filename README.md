@@ -1,3 +1,7 @@
+## D2.10 — Legibility-only corrective release
+
+This is a narrowly scoped architectural presentation adjustment to the D2.9 release. It improves labels and evidence relationship readability on Aggregate sheets. Architecture geometry, provenance, framework logic, workspace arrangement and node interaction remain unchanged. Tested offline, pending deployment verification.
+
 ## D2.9 testing candidate
 
 Deployment fixes form-node visibility, framework-aware arrangements, Aggregate rejected traces, and rich source-led architectural analysis. The on-device procedural drawing system **does not call an AI image service**; every interpretation must be checked.

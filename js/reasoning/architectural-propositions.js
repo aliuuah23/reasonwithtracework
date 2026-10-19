@@ -559,7 +559,7 @@ function aggregateFormPlan(spec){
  <text x="58" y="191" font-size="10" font-family="Arial" fill="#547581">${title}</text>
  ${shape}
  <circle cx="68" cy="374" r="3.5" fill="#c4a37c"/><text x="78" y="378" font-size="9" font-family="Arial" fill="#617883">potential occupation</text>
- <text x="59" y="402" font-size="9" font-family="Arial" fill="#80969b">Unscaled relationship diagram</text>`;
+`;
 }
 // Section through the speculative family, separate from the plan and axonometric.
 // The section is a tectonic suggestion, not a construction drawing.
@@ -567,7 +567,7 @@ function aggregateFormSection(spec){
  const family=spec.formalVariant||'fold', x=58,y=444, w=159,h=105;
  const X=u=>x+w*u,Y=v=>y+h*v;
  const L=(pts,color='#62888a',sw=2,fill='none')=>`<path d="${pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}" stroke="${color}" stroke-width="${sw}" fill="${fill}" stroke-linejoin="round" stroke-linecap="round"/>`;
- let art=`<rect x="44" y="418" width="189" height="162" rx="11" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/><text x="57" y="437" font-family="Arial" font-size="11" font-weight="700" letter-spacing=".5" fill="#536e77">SPATIAL SECTION</text>`;
+ let art=`<rect x="44" y="418" width="189" height="162" rx="11" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/>`;
  art+=L([[0,.86],[1,.86]],'#778e88',1.4);
  if(family==='cluster'){
    art+=L([[.04,.46],[.23,.38],[.33,.43]],'#5e9590',5)+L([[.44,.27],[.60,.23],[.69,.29]],'#789ca6',5)+L([[.79,.52],[.97,.43]],'#638f88',5);
@@ -601,10 +601,10 @@ function aggregateFormSection(spec){
 }
 
 function aggregateFormElevation(spec){
- const family=spec.formalVariant||'fold', x=58,y=587, w=159,h=70;
+ const family=spec.formalVariant||'fold', x=58,y=620, w=159,h=155;
  const X=u=>x+w*u,Y=v=>y+h*v;
  const L=(pts,color='#62888a',sw=2,fill='none')=>`<path d="${pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')}" stroke="${color}" stroke-width="${sw}" fill="${fill}" stroke-linejoin="round" stroke-linecap="round"/>`;
- let art=`<rect x="44" y="587" width="189" height="89" rx="11" fill="#fff" fill-opacity=".97" stroke="#d5e1df"/><text x="57" y="606" font-family="Arial" font-size="11" font-weight="700" letter-spacing=".45" fill="#536e77">EDGE ELEVATION</text>`;
+ let art=''; // Use the heading of the containing detail panel, not a second overlapping label.
  art+=L([[0,.83],[1,.83]],'#778e88',1.4);
  if(family==='cluster'){
    for(const [a,b,c] of [[.06,.34,.18],[.29,.26,.12],[.53,.39,.17],[.79,.30,.15]]) art+=`<rect x="${X(a)}" y="${Y(b)}" width="${w*c}" height="${h*(.83-b)}" fill="#c0d6d0" stroke="#62888a" stroke-width="1.2" rx="2"/>`;
@@ -627,7 +627,7 @@ function aggregateFormElevation(spec){
  if(paired.has('privacy'))for(const u of [.2,.5,.78])art+=L([[u,.52],[u,.72]],'#9aab9f',1.4);
  if(paired.has('capacity')||paired.has('adaptable'))for(const u of [.14,.32,.50,.68,.86])art+=L([[u,.79],[u+.035,.79]],'#b49b7c',3.2);
  if(paired.has('climate'))for(const u of [.15,.35,.55,.75])art+=L([[u,.10],[u-.04,.20]],'#6a9a99',1.1);
- art+=`<text x="57" y="665" font-size="8.6" font-family="Arial" fill="#788d91">Street edge / threshold reading</text>`;
+ art+=`<text x="58" y="783" font-size="10" font-family="Arial" fill="#708b8d">Diagrammatic edge profile</text>`;
  return art;
 }
 
@@ -738,31 +738,37 @@ function multi(str,x,y,{size=13,max=48,lines=2,line=17,color='#2b4853',weight='4
 // D2.9: A full architectural analysis plate rather than a repeated icon with extra labels.
 // Every overlay is conditional on the current project reasoning; no pilot-only answers are embedded.
 function aggregateEvidenceDrawing(spec){
- const moves=spec.evidencedMoves||[];
- const principles=new Set(moves.map(m=>m.key));
- const pairs=(spec.aggregateThemes||[]);
- const family=spec.formalVariant||'fold';
- const target=(key)=>principles.has(key)||pairs.some(p=>p.key===key);
- const row=moves.slice(0,5).map((m,i)=>{
-   const y=856+i*25; const intensity=Math.min(210,18+(m.weight||3)*5);
-   return `<circle cx="903" cy="${y-3}" r="5" fill="${i%2?'#b99d70':'#408f91'}"/>
-    <text x="918" y="${y}" font-size="12.5" font-weight="600" fill="#2f515c">${escape(wraps(formLabels[m.key]||m.key,48,1)[0])}</text>
-    <rect x="1350" y="${y-12}" width="${Math.min(75,intensity/3)}" height="8" rx="4" fill="${i%2?'#dac39c':'#9ecbc5'}"/>`;
+ // Give the viewer the actual transformation: two cited spatial intentions
+ // inform one designer-reviewable combination. A link here is a proposal,
+ // never presented as a participant-authored causal connection.
+ const pairs=spec.aggregateThemes||[];
+ const first=pairs[0] ? formLabels[pairs[0].key]||pairs[0].sourceText : 'Recorded intention to identify';
+ const second=pairs[1] ? formLabels[pairs[1].key]||pairs[1].sourceText : 'Further recorded intention needed';
+ const outcome=spec.annotations?.[2]?.form||'Spatial relationship to be tested';
+ const panel=(x,width,kicker,description,source,bg,stroke)=>`<rect x="${x}" y="881" width="${width}" height="101" rx="12" fill="${bg}" stroke="${stroke}"/>
+  <text x="${x+15}" y="901" font-size="11" font-weight="700" letter-spacing=".5" fill="#466b72">${escape(kicker)}</text>
+  ${multi(description,x+15,922,{size:12,max:29,lines:3,line:15,color:'#244e59',weight:'600'})}
+  <text x="${x+15}" y="974" font-size="10" fill="${source?'#547d79':'#916a45'}">${source?'Recorded in current map':'System proposal · review'}</text>`;
+ const left=panel(56,229,'A · RECORDED MOVE',first,true,'#e3f1ed','#a6c8bf');
+ const middle=panel(328,229,'B · RECORDED MOVE',second,Boolean(pairs[1]),'#f6f0e4','#d8c4a3');
+ const right=panel(602,239,'C · POSSIBLE FORM',outcome,false,'#edf1f2','#b6ccd0');
+ let diagram=`<rect x="33" y="820" width="835" height="188" rx="14" fill="#f7faf8" stroke="#cbdcd7"/>
+  <text x="50" y="846" font-size="13" font-weight="700" fill="#34545e">HOW THE RECORDED REASONING BECOMES A FORM</text>
+  <text x="50" y="869" font-size="11.8" fill="#68848a">Two documented spatial intentions inform a possible architectural relationship.</text>
+  ${left}${middle}${right}
+  <text x="306" y="940" text-anchor="middle" font-size="25" font-weight="600" fill="#6b9190">+</text>
+  <path d="M562 937 L595 937 M586 929 L595 937 L586 945" fill="none" stroke="#648d8d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="50" y="998" font-size="11" fill="#627e84">Combination is an interpretation. It is not an original connection or a verified design.</text>`;
+ // Themes derive only from this map. Their ranking expresses evidence coverage,
+ // not a fixed answer key or proof of design quality.
+ const moves=(spec.evidencedMoves||[]).slice(0,5);
+ const row=moves.map((m,i)=>{
+   const y=897+i*30;
+   const intensity=Math.min(200,28+(m.weight||3)*5);
+   return `<circle cx="911" cy="${y-4}" r="5" fill="${i%2?'#b99d70':'#408f91'}"/>
+    ${multi(formLabels[m.key]||m.key,927,y,{size:12.5,max:47,lines:2,line:14,color:'#2f515c'})}
+    <rect x="1339" y="${y-10}" width="${Math.min(85,intensity/3)}" height="9" rx="4" fill="${i%2?'#dac39c':'#9ecbc5'}"/>`;
  }).join('');
- // Architectural analysis overlays depend on the actual evidence, not generic templates.
- const path=(d,color='#318a90',width=3,dash='6 5')=>`<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-dasharray="${dash}"/>`;
- let diagram=`<rect x="33" y="820" width="835" height="162" rx="14" fill="#f7faf8" stroke="#cbdcd7"/>
-  <text x="50" y="846" font-size="13" font-weight="700" fill="#34545e">RELATIONSHIP TEST · SOURCE-DRIVEN SPATIAL LAYERS</text>`;
- const sq=(cx,cy,fill)=>`<rect x="${cx}" y="${cy}" width="80" height="30" rx="9" fill="${fill}" stroke="#719c99"/>`;
- diagram+=sq(74,894,'#bedbd4')+sq(298,894,'#d9d1b8')+sq(524,894,'#a4c7c4');
- diagram+=path('M154 909 H298','#468f8a',3,'none')+path('M378 909 H524','#468f8a',3,'none');
- const labels=[pairs[0]&&formLabels[pairs[0].key]||'Recorded intention', pairs[1]&&formLabels[pairs[1].key]||'Additional reading', 'Proposed spatial relationship'];
- labels.forEach((label,i)=>{const x=[74,298,524][i];diagram+=`<text x="${x}" y="947" font-size="11" fill="#57737a">${escape(wraps(label,24,1)[0])}</text>`;});
- if(target('movement'))diagram+=path('M60 962 H840','#207f90',3,'9 5');
- if(target('privacy'))diagram+=path('M254 872 V974 M479 872 V974','#a18b65',3,'4 5');
- if(target('adaptable')||target('capacity'))for(const x of [150,190,230,600,640])diagram+=`<rect x="${x}" y="968" width="21" height="8" rx="2" fill="#c3a57b"/>`;
- if(target('climate'))for(const x of [88,280,480,680])diagram+=path(`M${x} 870 l25 15`,'#68a5a7',2,'none');
- if(target('social')||target('pockets'))for(const x of [180,400,710])diagram+=`<circle cx="${x}" cy="887" r="12" stroke="#b19a73" stroke-width="2" fill="none"/>`;
  return {diagram,row};
 }
 function renderDetailedAggregateSVG(spec){
@@ -803,8 +809,9 @@ function renderDetailedAggregateSVG(spec){
   ${multi(`Documented links: ${spec.documentedScore??'not scored'} pts (evidence coverage, not design quality)`,907,762,{size:14,max:79,lines:1,weight:'700'})}
   <text x="907" y="782" font-size="11" fill="#68818a">${spec.translation==='speculative'?'Cross-pathway combination proposed':'Source-linked interpretation proposed'} · all performance checks outstanding</text>
   <g transform="translate(0,133)">${diagram}</g>
-  <rect x="891" y="819" width="552" height="163" rx="12" fill="white" stroke="#cbdad7"/>
-  <text x="907" y="843" font-size="13" font-weight="700" fill="#4b6c73">EVIDENCE THEMES IN THE CURRENT MAP</text>
+  <rect x="891" y="819" width="552" height="239" rx="12" fill="white" stroke="#cbdad7"/>
+  <text x="907" y="845" font-size="13" font-weight="700" fill="#4b6c73">EVIDENCE THEMES IN THE CURRENT MAP</text>
+  <text x="907" y="869" font-size="11" fill="#6b858a">Relative documentary support · not design quality</text>
   ${row}
   <path d="M30 1155 H1450" stroke="#cbdad7"/>
   ${multi('SOURCE SYNTHESIS: '+(spec.aggregateThemes||[]).map(m=>formLabels[m.key]).join(' + '),38,1180,{size:15,max:150,lines:2,line:21,color:'#385967'})}

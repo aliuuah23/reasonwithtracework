@@ -1,5 +1,5 @@
 import { auditProject } from './core/project-audit.js';
-import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.9-evidence-detail';
+import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.10-plate-legibility';
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.5-plain-language';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';

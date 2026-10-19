@@ -1,3 +1,12 @@
+## D2.10 — Architectural Plate Legibility (test candidate)
+
+- Correct Evidence Themes title/body separation with larger vertical spacing and aligned rows.
+- Replace confusing abstract relationship marks with a three-stage A + B → proposed form diagram, using current map themes and clearly distinguishing source from interpretation.
+- Remove overlapping duplicate elevation and section labels; keep the architectural graphics and scheme generation intact.
+- Remove stray inset plan caption outside its panel, and cache-bust changed renderer/module imports.
+- Preserve accepted D2.9 form-card interaction and layout, framework-sensitive evidence, Focus schemes, rejected-path visibility, and D1.9 usability behaviour.
+- Live browser acceptance still required.
+
 ## D2.9 — Artifact handling, architectural elaboration, and rejected-path visibility (test candidate)
 
 - Cache-bust all changed module and graph stylesheet references.
