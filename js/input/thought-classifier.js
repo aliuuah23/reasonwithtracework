@@ -84,7 +84,7 @@ const RULES = {
     words:['because','evidence','observation','precedent','research','context','rationale','basis','survey','pilot','site','climate','behaviour','behavior']
   },
   consequence: {
-    phrases:['place','locate','arrange','rearrange','reconfigure','open up','close off','create a','add seating','widen','narrow','orient','cluster','separate','connect','provide a','use a canopy','edge seating','set back','raise','lower','screen','carve','stack','rotate','fold','layer'],
+    phrases:['introduce','install','deploy','insert','place','locate','arrange','rearrange','reconfigure','open up','close off','create a','introduce','install','deploy','insert','add seating','widen','narrow','orient','cluster','separate','connect','provide a','use a canopy','edge seating','set back','raise','lower','screen','carve','stack','rotate','fold','layer'],
     words:['layout','seating','furniture','threshold','route','circulation','canopy','enclosure','edge','zone','opening','wall','roof','bench','table','cluster','form','section','plan']
   },
   evaluation: {
@@ -119,7 +119,7 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   }
 
   // Examples are secondary evidence, with structural wording remaining decisive.
-  for(const cue of pilotRoleCues(value))bump(cue.role,cue.score,`similar to pilot-coded ${TYPE_INFO[cue.role].label}: “${cue.label}”`);
+  for(const cue of pilotRoleCues(value))bump(cue.role,cue.score,`similar wording in coded ${TYPE_INFO[cue.role].label} examples`);
 
   const lower=value.toLowerCase();
   const has=re=>re.test(lower);
@@ -131,14 +131,17 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   if(has(/\b(students?|users?|people|visitors?|occupants?)\s+(need|require|benefit from|struggle with|tend to)\b/)) bump('grounding',5.2,'user need or behaviour used as reasoning');
   if(has(/\b(site|sun|wind|rain|heat|hot|shade|noise|crowding|peak periods?|time of day|morning|afternoon|evening|vegetation|slope|accessibility)\b/) && !has(/^\s*(create|provide|place|move|arrange|use|add|remove|orient|screen|raise|lower)\b/)) bump('grounding',1.8,'contextual condition');
 
-  const actionVerb='create|provide|place|locate|arrange|rearrange|orient|move|shift|open|close|cluster|separate|connect|add|remove|raise|lower|screen|carve|stack|rotate|fold|layer|widen|narrow|set back|reconfigure|use';
+  const actionVerb='introduce|install|deploy|insert|create|provide|place|locate|arrange|rearrange|orient|move|shift|open|close|cluster|separate|connect|add|remove|raise|lower|screen|carve|stack|rotate|fold|layer|widen|narrow|set back|reconfigure|use';
   const spatialAction=new RegExp(`^\\s*(?:${actionVerb})\\b|\\b(?:to|could|should|would|can|will|by)\\s+(?:${actionVerb})\\b`,'i').test(value);
   const spatialObject=has(/\b(space|spatial|layout|seating|furniture|threshold|route|circulation|canopy|enclosure|edge|zone|opening|wall|roof|bench|table|cluster|form|section|plan|screen|level)\b/);
   const spatialEffect=has(/\b(creates?|produces?|results? in|leads? to|makes .* possible|opens? up|blocks?|separates?|connects?|channels?|shades?|encloses?)\b/);
   const userMovement=has(/\b(students?|users?|people|visitors?|occupants?)\b[^.!?]{0,70}\b(?:can|could|should|would|will)?\s*(?:move|shift|walk|pass|circulate)\b/);
+  if(has(/^\s*(?:(?:movable|fixed|folding|retractable|temporary)\s+)?(?:screens?|partitions?|walls?|benches?|seats?|furniture|canop(?:y|ies)|panels?|roofs?|layouts?)\b.{0,75}\b(?:provide|create|divide|separate|allow|support|shade|organis[ez]e|define|enclose|redirect|enable)\b/)) bump('consequence',7.3,'spatial element described through its operational effect');
   if(spatialAction && !userMovement) bump('consequence',4.5,'architectural or spatial action');
   if(spatialAction && spatialObject && !userMovement) bump('consequence',2.2,'action + spatial element');
-  if(spatialEffect && spatialObject) bump('consequence',2,'spatial effect');
+  if(spatialEffect && spatialObject) bump('consequence',4.6,'effect of a spatial action');
+  if(has(/^\s*(this|that|the proposal|the intervention)\s+(creates?|produces?|results? in|leads? to|opens? up)\b/) && has(/\b(study|spatial|zone|area|privacy|circulation|space|seat|room)\b/)) bump('consequence',7,'described effect of a spatial intervention');
+  if(has(/^\s*(introduce|install|deploy|insert|provide|create|arrange|place|move|reconfigure)\b/)) bump('consequence',5.5,'direct design intervention stated as an action');
   if(spatialObject && !spatialAction && !spatialEffect) bump('consequence',0.35,'spatial vocabulary only');
 
   if(has(/\b(but|however|while|whereas|although|trade-?off|at the cost of|compromise|risk|drawback|better|worse|conflict|interfere|priority|prioriti[sz]e|works|fails?)\b/)) bump('evaluation',4.2,'comparison, judgement or conflict');
@@ -201,7 +204,7 @@ export function classifyThought(text,{afterType=null,provenance='designer'}={}){
   return {
     type:best.type,
     confidence,
-    reason:`${cueText} ${ambiguity} Match strengths compare language cues with coded pilot examples; they are not probabilities.`,
+    reason:`${cueText} ${ambiguity} Match strengths reflect language cues and a small illustrative reference set, not probabilities or correctness.`,
     scores,
     matches,
     alternatives:ranked.slice(1,3),

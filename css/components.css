@@ -1133,3 +1133,20 @@ html.tutorial-tour-active{overflow:hidden}
   pointer-events:visiblePainted;cursor:pointer;}
 .tutorial-scrim-outline{fill:none;stroke:rgba(255,255,255,.97);stroke-width:2;
   pointer-events:none;vector-effect:non-scaling-stroke;}
+
+/* D2 reasoning intelligence: additive controls; preserves D1.9 layout and interactions. */
+.modal:has(.d2-dialog){width:min(940px,calc(100vw - 28px));max-height:90vh;padding:clamp(14px,2vw,24px)}
+.d2-dialog{min-width:0}.d2-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:15px 0 12px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.d2-tab{cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;padding:10px 12px;border-radius:10px}
+.d2-tab.active{background:#edeaff;border-color:#d7d2ff;color:#4e45b5}.d2-content{max-height:min(58vh,580px);overflow:auto;overscroll-behavior:contain;padding-right:4px}
+.d2-context{padding:10px 12px;background:var(--surface-soft,#f5f5fa);border-radius:9px}.d2-intro,.d2-footnote{font-size:12px;line-height:1.55;color:var(--muted)}
+.d2-prompt-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}.d2-prompt-card{padding:13px;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.d2-prompt-card p{margin:0;font-size:13px;color:var(--text);line-height:1.5}.d2-prompt-card button{align-self:flex-start;margin-top:auto}.d2-prompt-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.d2-prompt-top strong{font-size:12px}.d2-prompt-top span{font-size:10px;color:var(--muted);white-space:nowrap}.d2-why{font-size:11px;color:var(--muted);line-height:1.45}
+.d2-framework-choice{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0}.d2-framework-choice label{display:grid;gap:6px;flex:1 1 220px;font-size:12px;font-weight:700}.d2-framework-choice select{font:inherit;width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+.d2-compare-scroll{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:390px}.d2-compare-table{border-collapse:collapse;width:100%;min-width:560px;font-size:12px}.d2-compare-table th,.d2-compare-table td{border-bottom:1px solid var(--border);padding:10px;vertical-align:top;text-align:left;line-height:1.45}.d2-compare-table th{position:sticky;top:0;background:var(--surface);z-index:1}.d2-compare-table td:first-child{width:45%}.d2-compare-table small{display:block;color:var(--muted);font-size:10px;margin-top:5px}.d2-summary{font-size:12px;color:var(--muted)}
+.d2-digest-stats{display:flex;gap:8px;flex-wrap:wrap}.d2-digest-stats span{flex:1 1 100px;border:1px solid var(--border);border-radius:9px;padding:10px;font-size:11px}.d2-digest-stats strong{display:block;font-size:19px}.d2-digest-text{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.65 ui-monospace,Consolas,monospace;padding:12px;border:1px solid var(--border);border-radius:10px;max-height:330px;overflow:auto;background:var(--surface-soft,#f8f8fb)}.d2-export-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+@media(max-width:740px){.d2-tab{padding:8px;font-size:11px}.d2-prompt-list{grid-template-columns:1fr}.d2-compare-table{font-size:11px}}
+
+/* Freeform starts with no mandatory category or confidence display. */
+.thought-dock.d2-freeform-unclassified .thought-reading,.thought-dock.d2-freeform-unclassified .thought-reason,.thought-dock.d2-freeform-unclassified .thought-matches,.thought-dock.d2-freeform-unclassified .thought-clarifier{display:none!important}
+.modal:has(.d2-dialog){box-sizing:border-box;max-width:calc(100vw - 28px)}

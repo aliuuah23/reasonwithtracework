@@ -1,4 +1,5 @@
 import { auditProject } from './core/project-audit.js';
+import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest } from './reasoning/framework-intelligence.js?v=d2.0';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d1-wire-semantics';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
 import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
@@ -224,6 +225,7 @@ function bindGlobalEvents(){
   if(els.toggleWireSignalsButton) els.toggleWireSignalsButton.onclick=()=>{ showWireSignals=!showWireSignals; els.toggleWireSignalsButton.textContent=showWireSignals?'Hide wire signals':'Show wire signals'; renderWorkspace(); };
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
+  $('#reasoningToolsButton').onclick=()=>openReasoningTools('start');
   $('#fitButton').onclick=()=>{ canvasZoom=fitGraph(els.graphViewport,els.graphStage,els.graphSurface); updateZoomLabel();queueViewportSave(); };
   $('#zoomOutButton').onclick=()=>zoomTo(canvasZoom-.1);
   $('#zoomInButton').onclick=()=>zoomTo(canvasZoom+.1);
@@ -1257,6 +1259,69 @@ function openCompare(){
     });
 }
 
+// D2 — user-driven reasoning aids, reading lenses and evidence-aware decision digest.
+// Opening these tools never mutates nodes, edges, framework selections or author attribution.
+function openReasoningTools(initialTab='start'){
+  if(!getState().brief){toast('Open a project to use reasoning tools.');return;}
+  let tab=initialTab;
+  const currentState=()=>getState();
+  const activeNode=()=>currentState().nodes.find(n=>n.id===currentState().activeNodeId)||null;
+  const selectedHotspot=()=>currentState().hotspots?.find(h=>h.id===currentState().selectedHotspotId)||null;
+  const options=()=>['tracework','freeform','requirements','fivewhys','laddering','framing','reflective','semantics'].map(id=>`<option value="${id}">${escapeHtml(getFramework(id).label)}</option>`).join('');
+  const header=()=>`<div class="d2-tabs" role="tablist" aria-label="Reasoning tools">${[['start','Start Me Off'],['next','What Next'],['structure','Compare Structure'],['digest','Decision Digest']].map(([id,label])=>`<button type="button" class="d2-tab ${tab===id?'active':''}" data-d2-tab="${id}" role="tab" aria-selected="${tab===id}">${label}</button>`).join('')}</div><div id="d2Content" class="d2-content"></div>`;
+  openModal(`<div class="d2-dialog"><h2 id="modalTitle">Reasoning Tools</h2><p>Optional prompts and analytical readings. Your recorded trace stays unchanged until you explicitly add or edit something.</p>${header()}<div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{
+    onOpen:m=>{
+      const content=m.querySelector('#d2Content');
+      const bindTabs=()=>m.querySelectorAll('[data-d2-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.d2Tab; m.querySelectorAll('[data-d2-tab]').forEach(x=>{x.classList.toggle('active',x.dataset.d2Tab===tab);x.setAttribute('aria-selected',String(x.dataset.d2Tab===tab));});draw();});
+      const draftToComposer=(draft,role)=>{
+        if(!draft){closeModal();els.freeThoughtInput.focus();toast('Write your own thought in the command line; no node was added.');return;}
+        els.freeThoughtInput.value=draft;
+        const f=getFramework(currentState().frameworkId||'tracework');
+        const cRole=f.id==='tracework'||f.id==='freeform'?role:null;
+        els.thoughtTypeSelect.dataset.manual='';
+        if(cRole && [...els.thoughtTypeSelect.options].some(o=>o.value===cRole)){
+          els.thoughtTypeSelect.value=cRole;
+          if(f.id==='freeform')els.thoughtTypeSelect.dataset.manual='1';
+        }
+        closeModal();
+        updateThoughtSuggestion();
+        els.freeThoughtInput.focus();
+        toast('Draft added to the command line. Revise it before saving; no node was created.');
+      };
+      const makePrompts=(items)=>`<div class="d2-prompt-list">${items.map((item,i)=>`<article class="d2-prompt-card"><div class="d2-prompt-top"><strong>${i+1}. ${escapeHtml(item.heading)}</strong><span>${escapeHtml(typeLabels[item.role]||item.role||'Freeform')}</span></div><p>${escapeHtml(item.question)}</p><div class="d2-why">${escapeHtml(item.why)}</div><button type="button" class="secondary-button compact" data-d2-draft="${i}">${item.draft?'Use editable starting phrase →':'Write my own response →'}</button></article>`).join('')}</div>`;
+      function draw(){
+        const state=currentState(),node=activeNode();
+        if(tab==='start'||tab==='next'){
+          const start=tab==='start';const items=start?startSuggestions(state,selectedHotspot()):nextSuggestions(state,node,selectedHotspot());
+          const context=node&&!start?`Selected thought: <strong>${escapeHtml(node.label)}</strong>`:`Selected brief language: <strong>${escapeHtml(selectedHotspot()?.text||state.brief?.slice(0,90)||'Project brief')}</strong>`;
+          content.innerHTML=`<p class="d2-context">${context}</p><p class="d2-intro">These questions respond to the current wording and trace context. They are suggestions, not prescribed stages or verified design conclusions.</p>${makePrompts(items)}`;
+          content.querySelectorAll('[data-d2-draft]').forEach(b=>b.onclick=()=>{const item=items[Number(b.dataset.d2Draft)];draftToComposer(item?.draft,item?.role);});
+          return;
+        }
+        if(tab==='structure'){
+          content.innerHTML=`<p class="d2-intro">Compare two interpretive lenses against exactly the same recorded thoughts. “Inferred” means the lens suggests a reading; it is <strong>not</strong> evidence of the method originally used.</p><div class="d2-framework-choice"><label>First lens<select id="d2FrameworkA">${options()}</select></label><label>Second lens<select id="d2FrameworkB">${options()}</select></label></div><div id="d2StructureResult"></div>`;
+          const a=content.querySelector('#d2FrameworkA'),b=content.querySelector('#d2FrameworkB'),target=content.querySelector('#d2StructureResult');
+          a.value=state.frameworkId||'tracework'; b.value=a.value==='requirements'?'reflective':'requirements';
+          function refresh(){
+            if(a.value===b.value){target.innerHTML='<p class="d2-intro">Choose two different lenses to compare their interpretations.</p>';return;}
+            const ids=new Set(workspaceTrace(currentState()).nodes.map(n=>n.id));
+            const r=compareFrameworkReadings(currentState(),a.value,b.value,ids);
+            const shown=r.rows.slice(0,45);
+            target.innerHTML=`<p class="d2-summary">${r.rows.length} visible thoughts · ${r.differences} differently labelled readings. ${r.rows.length>45?'Showing the first 45; use a focus map to narrow your comparison.':''}</p><div class="d2-compare-scroll"><table class="d2-compare-table"><thead><tr><th>Recorded statement</th><th>${escapeHtml(r.a.shortLabel)}</th><th>${escapeHtml(r.b.shortLabel)}</th></tr></thead><tbody>${shown.map(row=>`<tr><td><strong>${escapeHtml(row.label)}</strong><small>Recorded ${escapeHtml(typeLabels[row.type]||row.type)} · Source: ${escapeHtml(row.origin)}</small></td><td>${escapeHtml(row.a.label)}<small>${row.a.kind==='open'?'No imposed category':row.a.kind==='inferred'?'Inferred analytical reading':'Recorded role'}</small></td><td>${escapeHtml(row.b.label)}<small>${row.b.kind==='open'?'No imposed category':row.b.kind==='inferred'?'Inferred analytical reading':'Recorded role'}</small></td></tr>`).join('')}</tbody></table></div><p class="d2-footnote">Comparison never changes saved node roles, sources, positions or connections. To change the active framework, use the existing Framework selector after closing this view.</p>`;
+          }
+          a.onchange=refresh;b.onchange=refresh;refresh();return;
+        }
+        const digest=decisionDigest(state);
+        content.innerHTML=`<p class="d2-intro">A factual summary of what your trace currently records. Rejected options are retained; missing links are questions to review, not automated verdicts.</p><div class="d2-digest-stats"><span><strong>${digest.nodes.length}</strong> thoughts</span><span><strong>${digest.choices.length}</strong> spatial propositions</span><span><strong>${digest.evaluations.length}</strong> evaluations</span><span><strong>${digest.withRecords.length}</strong> supported records</span></div><pre class="d2-digest-text" id="d2DigestText"></pre><div class="d2-export-row"><button type="button" class="primary-button compact" id="d2CopyDigest">Copy Digest</button><button type="button" class="secondary-button compact" id="d2DownloadDigest">Download Markdown</button></div>`;
+        content.querySelector('#d2DigestText').textContent=digest.markdown;
+        content.querySelector('#d2CopyDigest').onclick=async()=>{try{await navigator.clipboard.writeText(digest.markdown);toast('Decision Digest copied.');}catch(_){const ta=document.createElement('textarea');ta.value=digest.markdown;document.body.append(ta);ta.select();const ok=document.execCommand('copy');ta.remove();toast(ok?'Decision Digest copied.':'Copy unavailable; use Download Markdown.');}};
+        content.querySelector('#d2DownloadDigest').onclick=()=>{const blob=new Blob([digest.markdown],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='TRACEWORK-Decision-Digest.md';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+      }
+      bindTabs();draw();
+    }
+  });
+}
+
 function confirmRejectBranch(branchId,node){
   openModal(`<h2 id="modalTitle">Reject this path?</h2><p>The path will stay visible in the reasoning history and can be restored later. Shared source language and other branches will remain active.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Keep path</button><button class="danger-button" id="confirmRejectPath">Reject path</button></div>`,{onOpen:m=>m.querySelector('#confirmRejectPath').onclick=()=>{
     updateState(s=>rejectBranch(s,branchId)); logEvent('Path rejected',node?.label||'Retained in project history'); closeModal(); renderWorkspace(); toast('Path rejected — select it to restore.');
@@ -1715,6 +1780,7 @@ function updateThoughtSuggestion(){
   els.addFreeThoughtButton.disabled=!hasText;
   els.addLooseNoteButton.disabled=!hasText;
 
+  if(framework.id==='freeform') els.addFreeThoughtButton.textContent=els.thoughtTypeSelect.dataset.manual==='1'?'Add with Chosen Role →':'Add to Field (Unclassified) →';
   if(!hasText){
     els.thoughtReason.textContent=framework.id==='freeform'
       ? 'Start typing to see an optional TRACEWORK structure suggestion.'
@@ -1773,6 +1839,8 @@ function visibleCanvasPlacement(seed=0){
 
 function addFreeThought(){
   const text=els.freeThoughtInput.value.trim(); if(!text)return;
+  // In Freeform, no inferred category is imposed unless the user explicitly chooses one.
+  if(getState().frameworkId==='freeform' && els.thoughtTypeSelect.dataset.manual!=='1'){addLooseNote();return;}
   focusPathRootId=null;
   checkpoint('add reasoning node');
   const state=getState();
@@ -2482,6 +2550,7 @@ function updateFrameworkControls(state){
   }
   document.body.dataset.framework=framework.id;
   document.body.classList.toggle('framework-types-visible',Boolean(showNodeTypes));
+  els.thoughtDock?.classList.toggle('d2-freeform-unclassified',framework.id==='freeform'&&!showNodeTypes);
 
   const commandFrameworkId=framework.id==='freeform'?'tracework':framework.id;
   const categories=commandFrameworkId==='tracework'
@@ -2496,6 +2565,7 @@ function updateFrameworkControls(state){
     if(frameworkChanged) els.thoughtTypeSelect.dataset.manual='';
   }
 
+  if(els.addFreeThoughtButton){els.addFreeThoughtButton.textContent=framework.id==='freeform'?'Add to Field (Unclassified) →':'Add to field →';}
   if(els.thoughtReadingLabel){
     els.thoughtReadingLabel.textContent=framework.id==='freeform'
       ? 'Optional TRACEWORK structure'

@@ -1,6 +1,6 @@
-# TRACEWORK — User Guide (D1.4 baseline)
+# TRACEWORK — User Guide (D2.0 development release)
 
-This describes the current codebase. Some actions still need live-browser acceptance testing; report unexpected behaviour before treating it as final.
+D1.9 interactions were accepted in the live browser. The D2.0 reasoning tools are new and require deployed-browser verification.
 
 ## 1. Start and manage a trace
 
@@ -51,6 +51,14 @@ To back up a trace, use the project JSON export in **My Trace**. **Import saved 
 
 **Never use Reset local data just to fix a visual display issue.** It intentionally clears browser-local work on that device.
 
-## 7. Pending or partial functionality
+## 7. Reasoning Tools (D2.0 — verify after deployment)
 
-The following are **not accepted as fully complete** at the D1.4 baseline: context-sensitive Start Me Off / What Next intelligence, Reveal/Compare Structure, final Freeform refinement, dedicated Decision Digest, user-uploaded image nodes, node resizing and full browser-wide regression. The [changelog](../CHANGELOG.md) distinguishes existing code from a verified release.
+Select **Reasoning Tools** above the canvas to open four optional functions. **Start Me Off** responds to selected brief language with a small set of contextual questions. **What Next** responds to the selected reasoning node and its connections. Choosing a starting phrase puts an editable draft into the existing command line; it does not create a node until you save it yourself.
+
+**Compare Structure** reads the same visible nodes through two chosen frameworks. Saved roles are labelled separately from inferred analytical readings. It does not change the project's active framework or the recorded history of how the design decisions were made. **Decision Digest** summarises recorded spatial propositions, evaluations, goals, rejected options, attribution and review questions. It can be copied or downloaded as Markdown. It is not an automatic architectural assessment.
+
+In **Freeform**, writing a new thought creates an unclassified note unless the user explicitly reveals and selects a role. The six theoretical lenses remain optional.
+
+## 8. Still planned
+
+Image/Reference nodes with paste or upload, resizing, appropriate image storage and image-aware exports are planned for D2 Visual. D3 remains the full-system verification and final website freeze.

@@ -1,4 +1,4 @@
-# TRACEWORK — Developer Notes (D1.4 baseline)
+# TRACEWORK — Developer Notes (D2.0 development release)
 
 ## Static architecture
 
@@ -50,3 +50,9 @@ D1.5 adds compact workspace controls, expandable command-line Attribution / Gene
 After deploying, smoke-test (1) both Brief/Guidance edge tabs at full/half screen, (2) command-line metadata creation → edit → inspector → JSON backup → reopening, (3) per-project canvas scroll and zoom restoration, (4) Original → Arrange in Focus Map, Focus Path and Aggregate Map, with node dragging and undo, (5) export preview with "Automatically arrange export" unchecked to verify the visible arrangement, and (6) tutorial click-outside dismissal, repositioning, and Close-button scale.
 
 Source syntax/JSON/HTML and import checks do not replace real browser interaction. No new root-level deployment-note TXT files are needed; update `CHANGELOG.md` and this guide instead.
+
+## D2.0 modular guidance and regression
+
+The new `js/reasoning/framework-intelligence.js` exposes pure (non-mutating) context-aware start/next suggestions, two-lens comparison and a Markdown Decision Digest. The **Reasoning Tools** modal in `js/app.js` uses these functions without changing node IDs, types, provenance or layout state. It inserts editable draft text into the command input only after an explicit action.
+
+Regression: verify D1.9 metadata dismissal, modal selection-drag safety, tutorial spotlight, wire dragging, local project persistence and export. Verify D2 suggestions for seating/privacy/circulation, compare recorded vs inferred roles without rewriting nodes, Freeform unclassified creation and later deliberate categorisation, and Decision Digest copy/download while preserving rejected alternatives. Classification tests include direct spatial actions and resulting spatial effects; heuristic percentages are not correctness probabilities.

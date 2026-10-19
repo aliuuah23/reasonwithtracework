@@ -7,7 +7,18 @@
 
 # TRACEWORK — Changelog
 
-This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current code baseline: D1.8; acceptance testing remains open.**
+This is the short release record. Detailed original notes, including past troubleshooting and test instructions, are preserved in [`docs/archive/`](docs/archive/INDEX.md). Release dates below follow those recorded in the original notes. **Current development release: D2.0; accepted usability baseline: D1.9.**
+
+## D2.0 — Framework intelligence (19 October 2026)
+
+- Added one **Reasoning Tools** dialog: context-sensitive Start Me Off, What Next, side-by-side Compare Structure and a downloadable/copyable Decision Digest. None of these analytical previews changes stored nodes or participant attribution.
+- Framework comparison distinguishes saved roles from *inferred* analytical readings; Freeform remains unclassified until deliberately structured.
+- Strengthened thought classification for explicit architectural actions and resulting spatial effects without representing cue matches as design correctness.
+- D1.9 accepted interactions, project schema, saved layouts and previous exports are retained. Post-deployment D2.0 testing is required.
+
+## D1.9 — Accepted usability baseline (19 October 2026)
+
+- User-confirmed: intentional metadata click-outside dismissal, selection-drag safety, stable tutorial without grey flickering, and node connection sensitivity/feedback. Frozen as the D1 baseline.
 
 ## D1.8 — Command bar and panel refinement (19 October 2026)
 
