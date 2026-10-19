@@ -1,5 +1,5 @@
 import { auditProject } from './core/project-audit.js';
-import { supportedOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.3-branch';
+import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.4-architectural-translation';
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.2';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.2-architecture';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
@@ -1378,14 +1378,14 @@ function scopedDigest(ctx){
   return out;
 }
 function safeSvgPreview(svg){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
-async function pngForVisual(svg){
+async function pngForVisual(svg,{compact=false}={}){
   // Raster thumbnail is embedded into project JSON, so the output survives reopening
   // and the existing vector-map export can include it without network requests.
   const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob);
   try{
     const img=new Image();
     await new Promise((yes,no)=>{img.onload=yes;img.onerror=()=>no(Error('Proposition could not be rendered.'));img.src=url;});
-    const canvas=document.createElement('canvas');canvas.width=840;canvas.height=591;
+    const canvas=document.createElement('canvas');canvas.width=compact?560:840;canvas.height=compact?375:591;
     const ctx=canvas.getContext('2d');if(!ctx)throw Error('No canvas context.');
     ctx.fillStyle='#f5f7f7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
     const data=canvas.toDataURL('image/png');
@@ -1431,6 +1431,39 @@ async function insertOutputNode(kind,{spec=null,markdown='',svg='',title=null}={
   setTimeout(()=>{const element=els.graphNodes.querySelector(`[data-id="${CSS.escape(newNode.id)}"]`);if(element)focusNode(els.graphViewport,element,canvasZoom);},100);
   toast(kind==='reasoning-digest'?'Digest inserted into the workspace.':'Architectural proposition inserted into the workspace.');
 }
+// D2.4: Board comparison is a saved layout of independently inspectable,
+// source-linked images. It does NOT duplicate or alter participant-authored thoughts.
+async function placePropositionBoard(choices,modeName){
+  if(!choices.length)return;
+  const ctx=propositionContext(),point=nearVisiblePlacement(),nodes=[],edges=[];
+  const collectionId=`${ctx.state.projectId}-comparison-${Date.now()}`;
+  try{
+    for(const [i,{spec,svg}] of choices.entries()){
+      const imagePng=await pngForVisual(svg,{compact:true});
+      const sourceIds=spec.sourceIds||[];
+      const src=ctx.state.nodes.find(n=>sourceIds.includes(n.id)&&n.type==='consequence')||ctx.state.nodes.find(n=>sourceIds.includes(n.id)&&n.type!=='input');
+      const node=createNode({type:'note',label:spec.title,branchId:src?.branchId||ctx.state.activeBranchId,
+        x:point.x+(i%3)*395,y:point.y+Math.floor(i/3)*390,
+        meta:{artifactKind:'architectural-proposition',sourceMode:ctx.mode,sourceNodeIds:sourceIds,
+          imagePng,visualSvg:svg,propositionSpec:spec,markdownDigest:propositionMarkdown(spec),
+          provenance:'system',generationActivity:'generated',evidenceKind:'suggestion',
+          hotspotId:ctx.mode==='aggregate'?src?.meta?.hotspotId||ctx.state.selectedHotspotId:ctx.state.selectedHotspotId,
+          outputCreatedAt:new Date().toISOString(),comparisonCollection:collectionId}});
+      nodes.push(node);
+      if(src){const link=createEdge(src.id,node.id,{status:'provisional'});link.meta={artifact:true,relation:'visualises'};edges.push(link);}
+    }
+    const bank=JSON.parse(localStorage.getItem('tracework.projects.v3')||'{}');
+    const proposed=structuredClone(ctx.state);
+    proposed.nodes.push(...nodes);proposed.edges.push(...edges);
+    bank[ctx.state.projectId]=proposed;
+    if(JSON.stringify(bank).length>3800000)throw Error('The local project store is close to its limit. Export individual SVG sheets or back up your project instead.');
+    const test='tracework-board-preflight';localStorage.setItem(test,JSON.stringify({bytes:JSON.stringify(bank).length,nodes:nodes.length}));localStorage.removeItem(test);
+  }catch(e){toast('Comparison was not inserted: '+e.message);return;}
+  checkpoint('place architectural comparison board');
+  updateState(st=>{st.nodes.push(...nodes);st.edges.push(...edges);st.activeNodeId=nodes[0].id;});
+  focusPathRootId=null;closeModal();renderWorkspace();
+  toast(`${nodes.length} ${modeName.toLowerCase()} study images placed side by side on the map. Double-click any image to inspect or export it.`);
+}
 function openSavedArtifact(node){
   if(!node?.meta?.artifactKind)return;
   if(node.meta.artifactKind==='reasoning-digest'){
@@ -1461,7 +1494,7 @@ function openPropositionPreview(spec,svg,{saved=false}={}){
 function propositionComparisonSheet(choices,scopeName){
   const win=window.open('','_blank');if(!win){toast('Please allow pop-ups to print the comparison.');return;}
   const cards=choices.map(({spec,svg},i)=>`<article><h2>${i+1}. ${escapeHtml(spec.title)}</h2><p>${escapeHtml(spec.layout)}</p>${svg}<p><strong>Source move:</strong> ${escapeHtml(spec.sourceStatement||'Not recorded')}</p><p>Documentary support: ${spec.documentedScore} points. Concept only; validation required.</p></article>`).join('');
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>TRACEWORK — Architectural Pathway Comparison</title><style>@page{size:A3 landscape;margin:10mm}body{font:12px Arial;color:#304851;margin:20px}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:24px}main{display:grid;grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr));gap:12px}article{break-inside:avoid;border:1px solid #cad6d3;padding:8px}article svg{width:100%;height:auto}h2{font-size:15px}p{font-size:11px;line-height:1.4}button{background:#244858;color:white;border:0;padding:10px}@media print{button{display:none}body{margin:0}main{grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr))}}</style></head><body><header><h1>TRACEWORK — ${escapeHtml(scopeName)} · Pathway Comparison</h1><button onclick="print()">Print / Save PDF</button></header><p>Options reflect documented alternative paths. The scores measure completeness of recorded support, not architectural quality. Ties are not evidence that one proposal is better. No output is a participant drawing.</p><main>${cards}</main></body></html>`);
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>TRACEWORK — Architectural Pathway Comparison</title><style>@page{size:A3 landscape;margin:10mm}body{font:12px Arial;color:#304851;margin:20px}header{display:flex;justify-content:space-between;align-items:center}h1{font-size:24px}main{display:grid;grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr));gap:12px}article{break-inside:avoid;border:1px solid #cad6d3;padding:8px}article svg{width:100%;height:auto}h2{font-size:15px}p{font-size:11px;line-height:1.4}button{background:#244858;color:white;border:0;padding:10px}@media print{button{display:none}body{margin:0}main{grid-template-columns:repeat(${Math.min(choices.length,3)},minmax(0,1fr))}}</style></head><body><header><h1>TRACEWORK — ${escapeHtml(scopeName)} · Pathway Comparison</h1><button onclick="print()">Print / Save PDF</button></header><p>Focus: complete pathway-specific pavilion studies. Aggregate: conceptual architectural form translations. A geometrical alternative may come from the same recorded path and is a system hypothesis. Documentary scores are not architectural quality. No output is a participant drawing.</p><main>${cards}</main></body></html>`);
   win.document.close();win.focus();
 }
 function openArchitecturalPropositions(){
@@ -1469,14 +1502,17 @@ function openArchitecturalPropositions(){
   const ctx=propositionContext(),modeName=ctx.mode==='focus-path'?'Focus Path':ctx.mode==='focus-map'?'Focus Map':'Aggregate Map';
   const count=ctx.visible.nodes.filter(n=>!n.meta?.artifactKind).length;
   if(!count){toast('Select and develop a reasoning trace before generating an architectural proposition.');return;}
-  const all=supportedOptions(ctx.state,ctx.visible,36,{selectedRootId:ctx.mode==='focus-path'?focusPathRootId:null});
-  const showAggregate=ctx.mode==='aggregate';let layout='all',showCount=showAggregate?3:all.length,selected=0;
+  const showAggregate=ctx.mode==='aggregate';
+  const all=showAggregate
+    ?aggregateFormOptions(ctx.state,ctx.visible,{min:3,max:5})
+    :supportedOptions(ctx.state,ctx.visible,36,{selectedRootId:ctx.mode==='focus-path'?focusPathRootId:null});
+  let layout='all',showCount=showAggregate?Math.min(5,all.length):all.length,selected=0;
   const scopeExplain=ctx.mode==='focus-path'
-    ?'Focus Path reads the selected reasoning chain. If a shared Input connects several paths, choose one below; these paths are not collapsed into a single scheme.'
+    ?'Focus Path: choose one chain and see a coordinated full-pavilion configuration produced from that chain’s documented spatial moves. A shared Input does not merge different designs.'
     :ctx.mode==='focus-map'
-    ?'Focus Map compares the different documented pathways associated with this hotspot. Each scheme is based on its own spatial consequence, not the entire brief.'
-    :'Aggregate Map ranks documented pathways across the project by evidence and reasoning completeness; this is NOT a ranking of design quality. The top three can be viewed together.';
-  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-actions"><button type="button" class="secondary-button" id="propGenerateMd">Generate Markdown Digest</button><button type="button" class="primary-button compact" id="propGenerateVisual">${showAggregate?'Compare strongest documented pathways':'Visualise documented pathways'}</button></div><div id="propOutput" class="prop-option-list"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+    ?'Focus Map: each independently selectable reasoning pathway develops into a whole pavilion — roof, movement, occupation and documented secondary moves. Compare complete alternatives directly, or pin them side by side to this map.'
+    :'Aggregate Map: explore 3–5 abstract architectural pieces translated from recorded reasoning across the project. These are form-making hypotheses, not completed pavilions. Distinct spatial intentions are prioritised over high numerical scores; additional interpretations are explicitly labelled.';
+  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-actions"><button type="button" class="secondary-button" id="propGenerateMd">Generate Markdown Digest</button><button type="button" class="primary-button compact" id="propGenerateVisual">${showAggregate?'Generate 3–5 form studies':'Build complete pathway pavilions'}</button></div><div id="propOutput" class="prop-option-list"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
     const output=m.querySelector('#propOutput');let choices=[];
     m.querySelector('#propGenerateMd').onclick=()=>{
       const markdown=scopedDigest(ctx);
@@ -1486,7 +1522,7 @@ function openArchitecturalPropositions(){
     };
     const showDetail=i=>{
       selected=i;const {spec,svg}=choices[i];
-      output.innerHTML=`<div class="prop-comparison-tools"><button type="button" class="secondary-button compact" id="propBackToAll">← Back to all ${choices.length} options</button>${choices.length>1?`<label class="prop-choose-label">Pathway <select id="propChoosePath">${choices.map((x,j)=>`<option value="${j}" ${j===i?'selected':''}>${j+1} · ${escapeHtml(x.spec.concept)}</option>`).join('')}</select></label>`:''}</div><h3>${escapeHtml(spec.title)}</h3><p class="prop-disclosure">Source-led scheme: ${escapeHtml(spec.layout)}. Documentary support ${spec.documentedScore} points. This is a concept study, NOT a verified building or participant drawing.</p><div class="prop-render" id="propDetailRender"></div><div class="prop-annotation-list">${spec.annotations.map(a=>`<p><strong>${escapeHtml(a.heading)}:</strong> ${escapeHtml(a.form)}<br>${escapeHtml(a.grounded?'Recorded source: '+a.sourceText:'System assumption — needs designer review')}</p>`).join('')}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propSaveSingleSvg">Save SVG</button><button type="button" class="secondary-button compact" id="propPrintSingle">Print rationale sheet</button><button type="button" class="secondary-button compact" id="propMdSingle">Markdown rationale</button><button type="button" class="primary-button compact" id="propInsertSingle">Insert image node</button></div>`;
+      output.innerHTML=`<div class="prop-comparison-tools"><button type="button" class="secondary-button compact" id="propBackToAll">← Back to all ${choices.length} options</button>${choices.length>1?`<label class="prop-choose-label">Pathway <select id="propChoosePath">${choices.map((x,j)=>`<option value="${j}" ${j===i?'selected':''}>${j+1} · ${escapeHtml(x.spec.concept)}</option>`).join('')}</select></label>`:''}</div><h3>${escapeHtml(spec.title)}</h3><p class="prop-disclosure">${spec.fullPavilion?'Whole pavilion from one pathway':'Abstract form study from project reasoning'}: ${escapeHtml(spec.layout)}. ${spec.translation==='speculative'?'This geometry is a system-proposed alternative. ':''}Documented support ${spec.documentedScore} points; not structurally, climatically or spatially verified.</p><div class="prop-render" id="propDetailRender"></div><div class="prop-annotation-list">${spec.annotations.map(a=>`<p><strong>${escapeHtml(a.heading)}:</strong> ${escapeHtml(a.form)}<br><em>${escapeHtml(a.grounded?'Recorded source: '+a.sourceText:'System assumption — needs designer review')}</em></p>`).join('')}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propSaveSingleSvg">Save SVG</button><button type="button" class="secondary-button compact" id="propPrintSingle">Print rationale sheet</button><button type="button" class="secondary-button compact" id="propMdSingle">Markdown rationale</button><button type="button" class="primary-button compact" id="propInsertSingle">Insert image node</button></div>`;
       output.querySelector('#propDetailRender').innerHTML=svg;
       output.querySelector('#propBackToAll').onclick=()=>renderComparison();
       const chooser=output.querySelector('#propChoosePath');if(chooser)chooser.onchange=()=>showDetail(Number(chooser.value));
@@ -1498,15 +1534,21 @@ function openArchitecturalPropositions(){
     const renderComparison=()=>{
       const view=choices.slice(0,showCount);
       if(!view.length){output.innerHTML='<p class="prop-disclosure">This trace does not yet contain a documented spatial move. Add a Spatial Consequence to generate a source-led proposal rather than an arbitrary building.</p>';return;}
-      const scores=all.map(x=>x.score),cutoff=view.at(-1)?.spec.documentedScore;
-      const tied=showAggregate?all.filter(x=>x.score===cutoff).length:0;
-      output.innerHTML=`<div class="prop-comparison-tools"><div><strong>${view.length} pathway-specific architectural schemes</strong><p class="prop-disclosure">${showAggregate?`Selected from ${all.length} documented pathways. ${tied>1?`${tied} pathways are tied at the display cutoff; order is not a quality judgment.`:''}`:`Each image develops a different recorded architectural move. Similar recorded moves may produce similar results rather than fabricated differences.`}</p></div><div class="prop-inline-actions"><button type="button" class="secondary-button compact ${layout==='all'?'prop-active-layout':''}" id="propAllLayout">Compare side by side</button><button type="button" class="secondary-button compact ${layout==='single'?'prop-active-layout':''}" id="propSingleLayout">One at a time</button>${showAggregate&&all.length>3?`<button type="button" class="secondary-button compact" id="propToggleAll">${showCount===3?`Show all ${all.length} tied / ranked paths`:'Show top 3'}</button>`:''}<button type="button" class="secondary-button compact" id="propPrintCompare">Print comparison</button></div></div><div class="prop-grid ${layout==='single'?'prop-grid-single':'prop-grid-compare'}">${(layout==='single'?view.slice(selected,selected+1):view).map((x,index)=>{const i=layout==='single'?selected:index;return `<article class="prop-option"><div class="prop-option-heading"><strong>${showAggregate?(tied>1?'Tied option '+(i+1):'Rank '+(i+1)):'Pathway '+(i+1)}</strong><span>${x.spec.documentedScore} documented points</span></div><div class="prop-thumb" data-visual-index="${i}"></div><h3>${escapeHtml(x.spec.concept)}</h3><p class="prop-source-line"><b>Spatial move:</b> ${escapeHtml(x.spec.sourceStatement||'No recorded spatial move')}</p><p class="prop-disclosure">${x.spec.recordedClaims} sourced features · ${x.spec.assumptions.length} assumptions</p><div class="prop-inline-actions"><button type="button" class="primary-button compact" data-prop-index="${i}">Inspect, export or insert →</button></div></article>`;}).join('')}</div>${layout==='single'&&view.length>1?`<div class="prop-inline-actions"><button type="button" id="propPrevSingle" class="secondary-button compact">← Previous</button><button type="button" id="propNextSingle" class="secondary-button compact">Next →</button></div>`:''}<p class="prop-disclosure">Documentary score = spatial move (up to 6) + grounding (2) + interpretation (1) + evaluation (2) + goal (1) + recorded links (up to 4) + specificity (2). Equal scores are ties, not proof of equal design merit.</p>`;
+      const tied=showAggregate?all.filter(x=>x.score===view.at(-1)?.spec.documentedScore).length:0;
+      output.innerHTML=`<div class="prop-comparison-tools"><div><strong>${view.length} ${showAggregate?'distinct architectural form studies':'pathway-specific pavilion schemes'}</strong><p class="prop-disclosure">${showAggregate?`Up to five formal translations from the project reasoning network. A different form can be a system hypothesis, not a different participant's thought.`:`Each selectable pathway becomes one integrated pavilion. Documented secondary moves alter its configuration rather than remaining isolated diagrams.`}</p></div><div class="prop-inline-actions"><button type="button" class="secondary-button compact ${layout==='all'?'prop-active-layout':''}" id="propAllLayout">Compare side by side</button><button type="button" class="secondary-button compact ${layout==='single'?'prop-active-layout':''}" id="propSingleLayout">One at a time</button>${showAggregate&&all.length>3?`<button type="button" class="secondary-button compact" id="propToggleAll">${showCount===3?'Show up to 5':'Show 3'}</button>`:''}<button type="button" class="secondary-button compact" id="propPrintCompare">Print comparison</button><button type="button" class="primary-button compact" id="propPlaceBoard">Place ${showAggregate?'form studies':'pavilions'} on map ↗</button></div></div><div class="prop-grid ${layout==='single'?'prop-grid-single':'prop-grid-compare'}">${(layout==='single'?view.slice(selected,selected+1):view).map((x,index)=>{const i=layout==='single'?selected:index;return `<article class="prop-option"><div class="prop-option-heading"><strong>${showAggregate?'FORM STUDY '+(i+1):'PAVILION PATH '+(i+1)}</strong><span>${x.spec.translation==='speculative'?'System alternative':`${x.spec.documentedScore} trace points`}</span></div><div class="prop-thumb" data-visual-index="${i}"></div><h3>${escapeHtml(x.spec.concept)}</h3><p class="prop-source-line"><b>Spatial move:</b> ${escapeHtml(x.spec.sourceStatement||'No recorded spatial move')}</p><p class="prop-disclosure">${x.spec.recordedClaims} sourced features · ${x.spec.assumptions.length} stated assumptions ${x.spec.fullPavilion?`· ${(x.spec.secondaryMoves||[]).length} other spatial move(s)`:''}</p><div class="prop-inline-actions"><button type="button" class="primary-button compact" data-prop-index="${i}">Inspect, export or insert →</button></div></article>`;}).join('')}</div>${layout==='single'&&view.length>1?`<div class="prop-inline-actions"><button type="button" id="propPrevSingle" class="secondary-button compact">← Previous</button><button type="button" id="propNextSingle" class="secondary-button compact">Next →</button></div>`:''}<p class="prop-disclosure">Trace scores describe documentary completeness, never design merit. Drawings are source-linked design studies, not replicas of participant work or validated built projects.</p>`;
       output.querySelector('#propAllLayout').onclick=()=>{layout='all';renderComparison();};
       output.querySelector('#propSingleLayout').onclick=()=>{layout='single';selected=Math.min(selected,view.length-1);renderComparison();};
-      const toggler=output.querySelector('#propToggleAll');if(toggler)toggler.onclick=()=>{showCount=showCount===3?all.length:3;selected=0;renderComparison();};
+      const toggler=output.querySelector('#propToggleAll');if(toggler)toggler.onclick=()=>{showCount=showCount===3?Math.min(5,all.length):3;selected=0;renderComparison();};
       output.querySelector('#propPrintCompare').onclick=()=>propositionComparisonSheet(view,modeName);
+      output.querySelector('#propPlaceBoard').onclick=()=>placePropositionBoard(view,modeName);
       if(layout==='single'&&view.length>1){output.querySelector('#propPrevSingle').onclick=()=>{selected=(selected-1+view.length)%view.length;renderComparison();};output.querySelector('#propNextSingle').onclick=()=>{selected=(selected+1)%view.length;renderComparison();};}
-      output.querySelectorAll('[data-visual-index]').forEach(el=>el.innerHTML=choices[Number(el.dataset.visualIndex)].svg);
+      output.querySelectorAll('[data-visual-index]').forEach(el=>{
+        el.innerHTML=choices[Number(el.dataset.visualIndex)].svg;
+        // Card preview: crop the source diagram rather than shrinking an entire
+        // annotated A3-style sheet to illegibility. Full annotations remain in detail.
+        const drawing=el.querySelector('svg');
+        if(drawing){drawing.setAttribute('viewBox','20 125 735 575');drawing.setAttribute('aria-label','Architectural scheme thumbnail — open for full annotated sheet');}
+      });
       output.querySelectorAll('[data-prop-index]').forEach(button=>button.onclick=()=>showDetail(Number(button.dataset.propIndex)));
     };
     m.querySelector('#propGenerateVisual').onclick=()=>{

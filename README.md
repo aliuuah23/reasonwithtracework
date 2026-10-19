@@ -1,6 +1,6 @@
 # TRACEWORK — Give reasoning traction
 
-**Current development release:** D2.3 Pathway-specific Architectural Propositions (19 October 2026). **Accepted usability baseline:** D1.9; D2.3 full-site deployed-browser verification pending.
+**Latest deployed release:** D2.3. **Next deployment candidate:** D2.4 — complete Focus pavilion configurations, Aggregate architectural form research, board comparison, and revised architectural translation (19 October 2026). **Accepted interaction baseline:** D1.9. D2.4 requires live-browser testing before acceptance.
 
 TRACEWORK is a browser-based research prototype for making architectural design reasoning explicit and inspectable. It helps designers trace language, interpretation, supporting grounds, spatial propositions, evaluation and design goals. It **does not** certify design decisions, infer a person's historical thoughts, or automatically produce verified architecture.
 
@@ -71,3 +71,18 @@ From **Focus Path**, **Focus Map**, or **Aggregate Map**, open **Architectural P
 A visual proposition can be previewed, exported as SVG, printed as an **Architectural Proposition Sheet**, downloaded as a Markdown rationale and returned to the workspace as a dark, source-linked **Architectural Proposition Node**. These embedded assets are included in project JSON backups and map image/vector exports where supported. Browser-local storage is limited: the system checks a conservative budget, and users should export a JSON backup before storing many image nodes. User upload/paste and drag-resizing follow in D2 Visual.
 
 **Interpretive boundary:** This is local deterministic procedural axonometry, not AI image generation, full building design or BIM. Forms are diagrammatic architectural schemes, not dimensionally verified proposals, and structural, accessibility, climate and seat-count claims must be independently tested. The system explicitly differentiates linked recorded thoughts from inferred forms and visual assumptions.
+
+
+### D2.4 — Focus as complete pavilion / Aggregate as architectural form research
+
+**Focus Path / Focus Map:** Each documented pathway can be selected individually, developed as a whole-pavilion diagram (roof, circulation, occupation, seating, privacy/climate where spatially stated), and compared with the other complete alternatives. Secondary recorded spatial ideas within the same route are represented together instead of disappearing behind the primary typology. Drawings include a small plan diagram and a disclosure of authored vs system-inferred features. No performance claim is made for fitting, dimensions, seats, access or structure.
+
+**Aggregate Map:** Presents up to five abstract architectural form studies. It prioritises distinct recorded spatial intentions (not simply highest completeness score), using circular forums, roof petals, ribbons, radial terraces, and folded structures. When fewer than three documented distinct routes exist, additional form studies are explicit speculative translations of an existing recorded route — not new evidence. They must be assessed by the designer.
+
+**Both modes:** Compare side by side, inspect individually, print comparison, export each SVG and source-linked Markdown, insert one proposition node, or **Place images on map** to save an ordered, source-linked group of image nodes beside the reasoning network. Browser-local budget is checked before insertion. Existing D1.9 node/wire/text/tutorial behaviours are untouched.
+
+**IMPORTANT:** Procedural diagrams and inferred occupancy configurations are illustrative only; they do not deliver full architectural design verification or guarantee presentation quality. Review source links, linework and omissions before using them in critique.
+
+#### D2.4 candidate refinement — architectural translation consistency
+
+Focus schemes use a strategy-linked programme-plan inset and identify pilot brief checks (additional seats, route, sheltered footprint and individual/group use where present in the brief). Twenty seats are indicated as potential seat loci when the brief requests them; this is **not** evidence of dimensional clearance, occupancy or access compliance. Source-led secondary spatial ideas are shown alongside the primary form. Aggregate adopts five differentiated form-making morphologies (archipelago, annulus, radial canopy, directional ribbons and an oblique accordion-fold canopy), with distinct source assignments and no false attribution to participants. The original D1.9 interaction implementations have not been refactored. All visual and saving interactions require live browser PASS/FAIL checks.

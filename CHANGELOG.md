@@ -1,3 +1,21 @@
+## D2.4 — 19 October 2026 · Focus/Aggregate architectural translation (revised deployment candidate)
+- Focus Path/Focus Map generate pathway-specific whole-pavilion alternatives; Aggregate generates 3–5 form-study propositions for visual comparison.
+- Add a programme-plan inset derived from the form strategy, with optional twenty-seat locations and a route trace when required by the source brief. A location marker is not a dimensional compliance claim.
+- Display outstanding brief checks explicitly: seat provision, clear route, stable sheltered footprint, group/individual occupation.
+- Differentiate Aggregate form families further, particularly folded vs petal roof geometry; maintain distinct source-led strategies.
+- Keep source-linked image-node comparison and review its browser storage preflight.
+- Retain D1.9 accepted metadata, text-selection, spotlight and wiring routines unchanged.
+- Status: source and SVG rendering smoke tested; acceptance depends on deployed browser checks.
+
+### Internal D2.4 development changes — not separately deployed
+
+- Distinct map responsibilities: full integrated pavilion per Focus pathway; 3–5 abstract form translations in Aggregate.
+- Expanded form vocabulary: curving screens, circular forums, roof petals, ribbons, radial rings, terraces, and per-scheme plan thumbnails.
+- Secondary sourced spatial moves are included and explicitly trace-linked within Focus pavilion outputs; never overwrite saved authored reasoning.
+- Entire comparison can be inserted onto the map as multiple source-linked, saved proposition image nodes. Existing individual export, Markdown and print remain.
+- Aggregate studies select diverse documented strategies first; supplementary speculative geometric alternatives are labelled as such.
+- D1.9 interactions not refactored. Website testing in a deployed browser still required before acceptance.
+
 ## D2.3 — Pathway-specific architectural propositions (19 October 2026)
 
 - **Correction, not decoration:** Removed the repeated generic pavilion template and brief-driven form selection. Each scheme now derives its layout strategy chiefly from the candidate branch's recorded Spatial Consequence and interpretation, with source statements and explicit assumptions.
