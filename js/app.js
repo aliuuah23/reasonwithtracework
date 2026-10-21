@@ -26,7 +26,7 @@ import { renderGraph } from './graph/graph-renderer.js?v=d2.15-visual-smart-guid
 import { applyZoom, fitGraph, focusNode, bindCanvasPan, bindWheelZoom } from './graph/graph-interactions.js';
 import { connectionCheck } from './graph/connection-rules.js?v=d1-2';
 import { explainConnectionPair } from './core/connection-explainer.js?v=d1-2';
-import { loadPathways, searchPathways } from './evidence/pathway-bank.js';
+import { loadPathways, searchPathways, rankPathwaysForBrief } from './evidence/pathway-bank.js';
 import { loadCaseStudies } from './evidence/case-studies.js?v=c1.3';
 import { loadPilotEvidence, transitionEvidence, transitionSummary } from './evidence/pilot-evidence.js';
 import { branchSummaries, compareBranches } from './compare/pathway-compare.js';
@@ -42,6 +42,8 @@ const $ = s => document.querySelector(s);
 const els = {};
 let ontology = [];
 let pathways = [];
+let pathwayBankShowAll = false; // Visibility only; never changes saved project nodes.
+let pathwayBankProjectId = null;
 let caseStudies = [];
 let pilotEvidence = {pairs:{},source:{}};
 let saveTimer = null;
@@ -537,7 +539,7 @@ function showView(view){
   });
 
   if(view==='workspace') renderWorkspace();
-  else if(view==='pathways') renderPathwayCards($('#pathwaySearch')?.value||'');
+  else if(view==='pathways') hasProject?renderPathwayCards($('#pathwaySearch')?.value||''):renderPathwayBlank();
   else if(view==='trace') hasProject?renderTraceDashboard(getState()):renderSavedTraceLibrary();
   else if(view==='discussion') hasProject?renderDiscussion():renderDiscussionBlank();
 
@@ -1301,7 +1303,8 @@ function renderPathwayBlank(){
   if(!root)return;
   const search=$('#pathwaySearch');
   if(search){search.value='';search.disabled=true;search.placeholder='Open a trace to search its pathways';search.closest('.search-field')?.classList.add('hidden');}
-  root.innerHTML=emptySubview('No active reasoning pathway yet','Open or start a trace to explore pathways connected to its design language. This bank does not prescribe a solution.');
+  const context=$('#pathwayContextNote');if(context)context.textContent='Open a project with its own brief to explore and insert illustrative reasoning routes.';
+  root.innerHTML=emptySubview('Open a design brief first','The Pathway Bank belongs to the active workspace. Open your pavilion or another project to see examples in relation to its brief.');
   wireEmptyStateActions(root);
 }
 
@@ -1332,14 +1335,39 @@ function renderDiscussionBlank(){
 }
 
 async function renderPathwayCards(query=''){
-  const search=$('#pathwaySearch'); if(search){search.disabled=false;search.placeholder='Search a concept, e.g. flexibility';search.closest('.search-field')?.classList.remove('hidden');}
-  const items=await searchPathways(query); const root=$('#pathwayGrid');
-  root.innerHTML=items.length?items.map(pathCard).join(''):`<div class="empty-state-card">${query.trim()?'No illustrative pathways match this search. Try flexibility, privacy, community, shelter or threshold.':'No illustrative pathways are available right now. Your saved traces remain unchanged.'}</div>`;
-  root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(items.find(p=>p.id===b.dataset.inspectPath)));
-  root.querySelectorAll('[data-use-path]').forEach(b=>b.onclick=()=>usePathway(items.find(p=>p.id===b.dataset.usePath)));
+  const state=getState();
+  if(!state.brief){renderPathwayBlank();return;}
+  if(pathwayBankProjectId!==state.projectId){pathwayBankProjectId=state.projectId;pathwayBankShowAll=false;const field=$('#pathwaySearch');if(field)field.value='';query='';}
+  const search=$('#pathwaySearch');
+  if(search){search.disabled=false;search.placeholder='Search examples in this project…';search.closest('.search-field')?.classList.remove('hidden');}
+  const hot=state.hotspots?.find(h=>h.id===state.selectedHotspotId);
+  const info=$('#pathwayContextNote');
+  if(info)info.textContent=`Current project: ${state.projectName||'Untitled'} · ${hot?`Selected phrase: “${hot.text}”`:'Select a phrase in Workspace before inserting a route'}. Examples are ranked from wording cues in this brief, not AI semantic retrieval or participant records.`;
+  const searchText=String(query||'').trim();
+  const matches=await searchPathways(searchText);
+  const ranked=rankPathwaysForBrief(matches,state);
+  const relevant=ranked.filter(item=>item.score>0);
+  const display=searchText||pathwayBankShowAll||!relevant.length?ranked:relevant;
+  const root=$('#pathwayGrid'); if(!root)return;
+  if(!getState().brief || getState().projectId!==state.projectId)return; // Skip stale async response after switching projects.
+  root.innerHTML=display.length
+    ? display.map(item=>pathCard(item.pathway,item.label)).join('')
+    : `<div class="empty-state-card">${searchText?'No illustrative pathways match this search. Try flexibility, privacy, community, shelter or threshold.':'No illustrative pathways are available. Your project remains unchanged.'}</div>`;
+  if(!searchText && relevant.length && relevant.length<ranked.length){
+    const more=document.createElement('div');more.style.gridColumn='1 / -1';more.style.textAlign='center';
+    const button=document.createElement('button');button.type='button';button.className='secondary-button';
+    button.textContent=pathwayBankShowAll?'Show related examples only':`Browse all six examples (${ranked.length-relevant.length} beyond brief cues)`;
+    button.addEventListener('click',()=>{pathwayBankShowAll=!pathwayBankShowAll;renderPathwayCards(search?.value||'');});
+    more.appendChild(button);root.appendChild(more);
+  }
+  root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(display.find(item=>item.pathway.id===b.dataset.inspectPath)?.pathway));
+  root.querySelectorAll('[data-use-path]').forEach(b=>b.onclick=()=>usePathway(display.find(item=>item.pathway.id===b.dataset.usePath)?.pathway));
 }
 
-function pathCard(p){ const color=t=>`var(--${t})`; return `<article class="pathway-card"><div class="pathway-card-head"><span class="pathway-source">${escapeHtml(p.source)}</span><span class="status-chip">${escapeHtml(p.status)}</span></div><h3>${escapeHtml(p.concept)}</h3><div class="pathway-mini">${p.steps.slice(0,4).map(s=>`<div class="pathway-step" style="--step-color:${color(s.type)}"><i></i><div><strong>${escapeHtml(s.type)}</strong><span>${escapeHtml(s.text)}</span></div></div>`).join('')}</div><div class="pathway-card-actions"><button class="secondary-button" data-inspect-path="${p.id}">Inspect</button><button class="primary-button compact" data-use-path="${p.id}">Use as starting point</button></div></article>`; }
+function pathCard(p,relevance='Explore another interpretation'){
+  const color=t=>`var(--${t})`;
+  return `<article class="pathway-card"><div class="pathway-card-head"><span class="pathway-source">${escapeHtml(p.source)} · ${escapeHtml(relevance)}</span><span class="status-chip">${escapeHtml(p.status)}</span></div><h3>${escapeHtml(p.concept)}</h3><div class="pathway-mini">${p.steps.slice(0,4).map(s=>`<div class="pathway-step" style="--step-color:${color(s.type)}"><i></i><div><strong>${escapeHtml(s.type)}</strong><span>${escapeHtml(s.text)}</span></div></div>`).join('')}</div><div class="pathway-card-actions"><button class="secondary-button" data-inspect-path="${p.id}">Inspect</button><button class="primary-button compact" data-use-path="${p.id}">Use as starting point</button></div></article>`;
+}
 
 function inspectPathway(p){ if(!p)return; openModal(`<h2 id="modalTitle">${escapeHtml(p.concept)}</h2><p>${escapeHtml(p.source)} · ${escapeHtml(p.status)}. This is a reasoning precedent, not a prescribed solution.</p>${p.steps.map(s=>`<div class="pathway-step" style="--step-color:var(--${s.type});margin:12px 0"><i></i><div><strong>${escapeHtml(s.type)}</strong><span>${escapeHtml(s.text)}</span></div></div>`).join('')}<div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button><button class="primary-button compact" id="modalUsePath">Use as starting point</button></div>`,{onOpen:m=>m.querySelector('#modalUsePath').onclick=()=>{closeModal();usePathway(p);}}); }
 
