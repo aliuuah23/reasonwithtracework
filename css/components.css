@@ -1306,3 +1306,71 @@ html.tutorial-tour-active{overflow:hidden}
 #imageReferenceDockButton{white-space:normal;line-height:1.3;}
 #imageReferenceInspectorButton{font-size:11px;line-height:1.2;white-space:normal;max-width:220px;}
 .inspector-panel-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+
+/* D3.1 · Framework suggestion remains opt-in. Original recorded nodes stay untouched. */
+.tw-recommend-button{border:1px solid #b7c5d9!important;background:#f0f4fb!important;color:#315276!important;font-weight:750!important;white-space:nowrap}
+.tw-recommend-button:hover,.tw-recommend-button:focus-visible{border-color:#7a91bc!important;background:#e7eff9!important}
+.tw-framework-recommendation{max-width:710px}
+.tw-method-option{border:1px solid var(--border);border-radius:12px;background:var(--surface-soft);padding:12px 14px;margin:9px 0}
+.tw-method-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tw-method-title strong{font-size:13px;color:var(--text)}
+.tw-method-title span{font-size:10px;color:#426f80;font-weight:750}
+.tw-method-option p{margin:7px 0;font-size:11px;line-height:1.5;color:var(--text)}
+.tw-method-option small{display:block;font-size:10px;line-height:1.45;color:var(--muted)}
+.tw-method-actions{margin-top:8px;display:flex;justify-content:flex-end}
+
+.tw-blank-placeholder{font-style:italic!important;color:#768694!important;opacity:.85}
+
+/* D3.1 final reconciliation: full proposition plates remain visible on ALL
+   supported viewport sizes, with scrolling only on the outer dialog. */
+.modal-backdrop:has(.prop-modal){
+  padding:clamp(5px,1.2vw,16px);
+  align-items:center;
+  justify-items:center;
+  overflow:hidden;
+}
+.modal:has(.prop-modal){
+  box-sizing:border-box;
+  width:min(1420px,100%);
+  max-width:100%;
+  max-height:calc(100dvh - 16px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  min-width:0;
+  padding:clamp(10px,1.6vw,20px);
+}
+.prop-modal,.prop-modal > *{min-width:0;max-width:100%;box-sizing:border-box}
+.prop-option-list{max-height:none;overflow:visible;scrollbar-gutter:auto}
+.prop-render{width:100%;max-width:100%;max-height:none;min-height:0;overflow:visible;}
+.prop-render svg{display:block;width:100%;height:auto;max-width:100%;min-width:0;aspect-ratio:auto;object-fit:contain;}
+.prop-thumb{width:100%;min-width:0;}
+.prop-option .prop-thumb{aspect-ratio:auto;overflow:hidden;}
+.prop-option .prop-thumb svg{width:100%;height:auto;min-width:0;object-fit:contain}
+.prop-grid,.prop-grid-compare,.prop-grid-single{min-width:0;max-width:100%}
+.prop-grid-compare{grid-template-columns:repeat(auto-fit,minmax(min(290px,100%),1fr));overflow:visible;}
+.prop-choose-label{min-width:0;max-width:100%;flex-wrap:wrap}
+.prop-choose-label select{min-width:0;max-width:100%}
+.prop-comparison-tools{min-width:0}
+.prop-aggregate-invite{margin-top:10px;padding:10px 12px;border:1px solid #b8d2d2;background:#f1f8f8;border-radius:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:11px;}
+.prop-inline-actions>*{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+@media (max-width:800px){
+ .prop-grid-compare{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));}
+ .prop-annotation-list{grid-template-columns:1fr;}
+ .prop-comparison-tools .prop-inline-actions{justify-content:flex-start;}
+ .prop-render svg{min-width:0;}
+}
+@media (max-width:650px){
+ /* The older flex-basis:250px was becoming 250px of EMPTY VERTICAL SPACE
+    when this toolbar switched to flex-direction:column. */
+ .prop-comparison-tools>div:first-child{flex:0 1 auto;width:100%;}
+}
+@media (max-width:450px){
+ .modal-backdrop:has(.prop-modal){padding:4px;}
+ .modal:has(.prop-modal){max-height:calc(100dvh - 8px);padding:10px;border-radius:11px;}
+ .prop-grid-compare{grid-template-columns:minmax(0,1fr)}
+ .prop-modal h2{overflow-wrap:anywhere}
+}
+@media (max-height:650px){
+ .modal:has(.prop-modal){max-height:calc(100dvh - 8px)}
+}

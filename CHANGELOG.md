@@ -1,3 +1,13 @@
+## D3.1 — Consolidated final deployment (21 October 2026)
+
+- Applied the agreed D3.1 scope to the verified GitHub repository; removed the automatic browser-data reset to protect existing projects.
+- Optional secure image-model backend (requires separate Worker and private billing); Freeform-first, opt-in framework suggestion, graph-sensitive Arrange and consultation-ready Markdown.
+- Retained optional Short (13-node) and Long (42-node) examples without automatically loading them.
+- Aggregate architectural propositions now use the **whole project graph**, independent of display-only filters, and return 3–5 **distinct system hypotheses** when the trace supports spatial translation. Focus users can switch directly to the Aggregate comparison. Original authored nodes and saved map coordinates remain untouched.
+- Architectural proposition thumbnails and popup views now **fit the entire SVG sheet**; the outer dialog scrolls rather than cropping the artwork.
+- Responsive dialog and workspace safeguards for narrow/short displays; historic notes remain exclusively under `docs/archive/`.
+- Testing: local fixture/unit/browser smoke checks; final external-device acceptance pending.
+
 ## D3 — Example-Ready Clean Slate and Feature Freeze (19 October 2026)
 
 - Final deployment name **D3** (no new D2.17 numbering).

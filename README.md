@@ -158,3 +158,7 @@ Focus schemes use a strategy-linked programme-plan inset and identify pilot brie
 
 ## D2.7 update
 Each map remembers its own Original/Arrange mode and canvas position when switching. Aggregate studies now include plan, sectional intent and axonometric morphology, with explicit speculative qualifications. Focus schemes remain unchanged.
+
+## Current deployment (D3.1)
+
+Deploy the full repository without deleting local projects. Check **Aggregate map → Architectural Propositions → Design Studies** for 3–5 system-proposed studies. Focus Map can switch directly to Aggregate comparison. The entire drawing fits inside the scrollable popup. Historic release files remain in `docs/archive/`; the only current root documentation is this README and `CHANGELOG.md`. Export saved projects as JSON before deployment as a backup. Secure AI image generation remains optional and is not active until a backend is configured.

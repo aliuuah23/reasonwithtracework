@@ -1,10 +1,12 @@
+import { recommendFrameworks } from './reasoning/framework-recommender.js';
+import { consultationMarkdown, consultationActions } from './reasoning/consultation-brief.js';
 import { traceImagePrompt, generatedImagePlate } from './reasoning/trace-image-prompts.js?v=d2.12';
 import { auditProject } from './core/project-audit.js';
 import { supportedOptions, aggregateFormOptions, makePropositionSpec, renderPropositionSVG, propositionMarkdown } from './reasoning/architectural-propositions.js?v=d2.11-final-d2-visual-parity';
 import { startSuggestions, nextSuggestions, compareFrameworkReadings, decisionDigest, decisionBrief } from './reasoning/framework-intelligence.js?v=d2.13-framework-prompts';
 import { createMapSnapshot, exportMapSVG, exportMapPNG, exportMapPDF } from './graph/map-export.js?v=d2.13-image-export';
 import { getState, resetState, replaceState, patchState, updateState, subscribe, logEvent } from './core/state.js';
-import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject, applyCleanSlateReleaseOnce } from './core/storage.js';
+import { saveProject, loadProject, listProjects, ensureProject, deleteProject, clearAllProjects, exportProject } from './core/storage.js';
 import { loadOntology, typeLabels } from './core/ontology.js';
 import { getFramework, provenanceOptions, inferLegacyProvenance, frameworkLegend, frameworkCategories, getFrameworkCategory, classifyFrameworkThought, canonicalTypeForFrameworkRole, frameworkRoleForNode } from './core/frameworks.js?v=d2.2';
 import { createNode, createEdge } from './core/trace-model.js';
@@ -159,9 +161,7 @@ function togglePanelVisibility(side){
 
 
 async function init(){
-  // D2.16 clean-slate deployment requested by the designer. Apply ONCE per browser,
-  // before reading saved projects, preferences or tutorial state. Never again on refresh.
-  applyCleanSlateReleaseOnce();
+  // D3.1 IMPORTANT: no automatic storage cleanup. Preserve existing maps and exports.
   cacheEls();
   // Optional libraries are nonfatal: a missing reference file must never disable navigation.
   [ontology,pathways,caseStudies,pilotEvidence] = await Promise.all([
@@ -232,7 +232,7 @@ function cacheEls(){
   Object.assign(els,{
     landing:$('#landingView'),app:$('#appView'),workspace:$('#workspaceView'),pathways:$('#pathwaysView'),trace:$('#traceView'),discussion:$('#discussionView'),
     briefLanding:$('#landingBrief'),projectNameLanding:$('#landingProjectName'),briefEditor:$('#briefEditor'),briefFileInput:$('#briefFileInput'),briefFileStatus:$('#briefFileStatus'),briefChunkPreview:$('#briefChunkPreview'),documentBriefTools:$('#documentBriefTools'),hotspotViewSelect:$('#hotspotViewSelect'),graphViewport:$('#graphViewport'),graphStage:$('#graphStage'),graphSurface:$('#graphSurface'),graphNodes:$('#graphNodes'),graphEdges:$('#graphEdges'),canvasEmpty:$('#canvasEmpty'),
-    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),reflowArrangeButton:$('#reflowArrangeButton'),frameworkSelect:$('#frameworkSelect'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect'),thoughtGenerationActivity:$('#thoughtGenerationActivity'),thoughtEvidenceKind:$('#thoughtEvidenceKind'),thoughtAttributionName:$('#thoughtAttributionName'),thoughtActivityDetails:$('#thoughtActivityDetails'),thoughtRecordTitle:$('#thoughtRecordTitle'),thoughtSourceReference:$('#thoughtSourceReference')
+    thoughtDock:$('#thoughtDock'),freeThoughtInput:$('#freeThoughtInput'),thoughtTypeSelect:$('#thoughtTypeSelect'),thoughtReason:$('#thoughtReason'),thoughtMatches:$('#thoughtMatches'),addFreeThoughtButton:$('#addFreeThoughtButton'),addLooseNoteButton:$('#addLooseNoteButton'),toggleHotspotsButton:$('#toggleHotspotsButton'),traceCheckButton:$('#traceCheckButton'),toggleNodeTypesButton:$('#toggleNodeTypesButton'),toggleWireSignalsButton:$('#toggleWireSignalsButton'),undoButton:$('#undoButton'),findNodeButton:$('#findNodeButton'),focusPathButton:$('#focusPathButton'),focusMapModeButton:$('#focusMapModeButton'),aggregateMapModeButton:$('#aggregateMapModeButton'),aggregateControls:$('#aggregateControls'),aggregateHotspotFilter:$('#aggregateHotspotFilter'),aggregateChunkFilter:$('#aggregateChunkFilter'),aggregateTypeFilter:$('#aggregateTypeFilter'),aggregateStatusFilter:$('#aggregateStatusFilter'),resetAggregateFiltersButton:$('#resetAggregateFiltersButton'),arrangeAggregateButton:$('#arrangeAggregateButton'),originalAggregateButton:$('#originalAggregateButton'),reflowArrangeButton:$('#reflowArrangeButton'),frameworkSelect:$('#frameworkSelect'),suggestFrameworkButton:$('#suggestFrameworkButton'),frameworkLockButton:$('#frameworkLockButton'),workspaceTutorialButton:$('#workspaceTutorialButton'),thoughtReadingLabel:$('#thoughtReadingLabel'),thoughtProvenanceSelect:$('#thoughtProvenanceSelect'),thoughtGenerationActivity:$('#thoughtGenerationActivity'),thoughtEvidenceKind:$('#thoughtEvidenceKind'),thoughtAttributionName:$('#thoughtAttributionName'),thoughtActivityDetails:$('#thoughtActivityDetails'),thoughtRecordTitle:$('#thoughtRecordTitle'),thoughtSourceReference:$('#thoughtSourceReference')
   });
 }
 
@@ -265,6 +265,7 @@ function bindGlobalEvents(){
   $('#branchButton').onclick=forkActive;
   $('#compareButton').onclick=openCompare;
   $('#reasoningToolsButton').onclick=()=>openReasoningTools();
+  $('#suggestFrameworkButton')?.addEventListener('click',openFrameworkRecommendation);
   $('#architecturalPropositionButton').onclick=()=>openArchitecturalPropositions();
   // Image creation belongs alongside the node-composition controls, not the
   // global architectural studies ribbon. Both actions work in every framework.
@@ -325,7 +326,7 @@ function bindGlobalEvents(){
   els.thoughtTypeSelect.addEventListener('change',()=>{ els.thoughtTypeSelect.dataset.manual='1'; updateThoughtSuggestion(); });
   if(els.thoughtProvenanceSelect) els.thoughtProvenanceSelect.addEventListener('change',updateThoughtSuggestion);
   els.addFreeThoughtButton.onclick=addFreeThought;
-  els.addLooseNoteButton.onclick=addLooseNote;
+  els.addLooseNoteButton.onclick=()=>els.freeThoughtInput.value.trim()?addLooseNote():addBlankNode();
   if(els.undoButton) els.undoButton.onclick=undoLast;
   if(els.findNodeButton) els.findNodeButton.onclick=openNodeSearch;
   if(els.focusPathButton) els.focusPathButton.onclick=togglePathFocus;
@@ -475,6 +476,9 @@ async function startFromBrief(raw,{mode=landingBriefMode,fileName=pendingBriefFi
     activeBriefChunkId:sourceChunks[0]?.id||null,
     sourceFileName:fileName||'',
     hotspots,
+    // Only NEW traces begin without an imposed taxonomy. Previously saved maps are unchanged.
+    frameworkId:'freeform',
+    frameworkLocked:false,
     projectName:projectName.trim()||projectNameFromBrief(brief)
   });
   logEvent('Brief analysed',`${hotspots.length} interpretive hotspots surfaced${sourceChunks.length>1?` across ${sourceChunks.length} sections`:''}`);
@@ -1447,7 +1451,7 @@ function openReasoningTools(initialTab=null){
           windowRef.document.write(`<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>TRACEWORK — Reasoning Summary</title><style>${style}</style></head><body><button class="print-button" onclick="window.print()">Print or Save PDF</button>${brief.html}</body></html>`);
           windowRef.document.close();windowRef.focus();
         };
-        content.querySelector('#d2DownloadDigest').onclick=()=>{const blob=new Blob([digest.markdown],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='TRACEWORK-Decision-Digest.md';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);};
+        content.querySelector('#d2DownloadDigest').onclick=()=>{const blob=new Blob([consultationMarkdown(state,digest.markdown,{nodes:state.nodes||[],edges:state.edges||[]})],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='TRACEWORK-Decision-Digest.md';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);};
       }
       bindTabs();draw();
     }
@@ -1491,7 +1495,11 @@ async function pngForVisual(svg,{compact=false}={}){
   try{
     const img=new Image();
     await new Promise((yes,no)=>{img.onload=yes;img.onerror=()=>no(Error('Proposition could not be rendered.'));img.src=url;});
-    const canvas=document.createElement('canvas');canvas.width=compact?560:840;canvas.height=compact?375:591;
+    // Preserve the original proportions of Focus and taller Aggregate plates.
+    const canvas=document.createElement('canvas');
+    const width=compact?560:840;
+    const ratio=(img.naturalHeight&&img.naturalWidth)?img.naturalHeight/img.naturalWidth:(790/1180);
+    canvas.width=width;canvas.height=Math.max(1,Math.round(width*ratio));
     const ctx=canvas.getContext('2d');if(!ctx)throw Error('No canvas context.');
     ctx.fillStyle='#f5f7f7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
     let data=canvas.toDataURL('image/jpeg',.76);
@@ -1552,7 +1560,7 @@ async function placePropositionBoard(choices,modeName){
       const node=createNode({type:'note',label:spec.title,branchId:src?.branchId||ctx.state.activeBranchId,
         x:point.x+(i%3)*395,y:point.y+Math.floor(i/3)*390,
         meta:{artifactKind:'architectural-proposition',sourceMode:ctx.mode,sourceNodeIds:sourceIds,
-          imagePng,visualSvg:svg,propositionSpec:spec,markdownDigest:propositionMarkdown(spec),
+          imagePng,visualSvg:svg,propositionSpec:spec,markdownDigest:propositionMarkdown(spec)+consultationActions(spec),
           provenance:'system',generationActivity:'generated',evidenceKind:'suggestion',
           hotspotId:ctx.mode==='aggregate'?src?.meta?.hotspotId||ctx.state.selectedHotspotId:ctx.state.selectedHotspotId,
           outputCreatedAt:new Date().toISOString(),comparisonCollection:collectionId}});
@@ -1601,8 +1609,8 @@ function openPropositionPreview(spec,svg,{saved=false}={}){
     m.querySelector('#propRender').innerHTML=svg;
     m.querySelector('#propSaveSvg').onclick=()=>fileDownload(svg,'TRACEWORK-Architectural-Proposition.svg','image/svg+xml;charset=utf-8');
     m.querySelector('#propPrint').onclick=()=>propositionPrintSheet(spec,svg);
-    m.querySelector('#propMarkdown').onclick=()=>fileDownload(propositionMarkdown(spec),'TRACEWORK-Proposition-Rationale.md','text/markdown');
-    const insert=m.querySelector('#propInsert');if(insert)insert.onclick=()=>insertOutputNode('architectural-proposition',{spec,svg,markdown:propositionMarkdown(spec)});
+    m.querySelector('#propMarkdown').onclick=()=>fileDownload(propositionMarkdown(spec)+consultationActions(spec),'TRACEWORK-Proposition-Rationale.md','text/markdown');
+    const insert=m.querySelector('#propInsert');if(insert)insert.onclick=()=>insertOutputNode('architectural-proposition',{spec,svg,markdown:propositionMarkdown(spec)+consultationActions(spec)});
   }});
 }
 function propositionComparisonSheet(choices,scopeName){
@@ -1677,28 +1685,33 @@ function openImageReferenceUploader({initialFile=null,linkedSourceId=null,replac
    };
  }});
 }
-function openArchitecturalPropositions(){
+function openArchitecturalPropositions({startTab='digest'}={}){
   if(!getState().brief){toast('Open a project first.');return;}
   const ctx=propositionContext(),modeName=ctx.mode==='focus-path'?'Focus Path':ctx.mode==='focus-map'?'Focus Map':'Aggregate Map';
-  const count=ctx.visible.nodes.filter(n=>!n.meta?.artifactKind).length;
-  if(!count){toast('Select and develop a reasoning trace before generating an architectural proposition.');return;}
   const showAggregate=ctx.mode==='aggregate';
+  // Aggregate translates the WHOLE project. Presentation-only hotspot/chunk/status
+  // filters must not silently turn a multi-path project into one isolated form.
+  const propositionEvidence=showAggregate?aggregateTrace(ctx.state,{ignoreFilters:true}):ctx.visible;
+  const count=propositionEvidence.nodes.filter(n=>!n.meta?.artifactKind).length;
+  if(!count){toast('Select and develop a reasoning trace before generating an architectural proposition.');return;}
   const all=showAggregate
-    ?aggregateFormOptions(ctx.state,ctx.visible,{min:3,max:5})
-    :supportedOptions(ctx.state,ctx.visible,36,{selectedRootId:ctx.mode==='focus-path'?focusPathRootId:null});
+    ?aggregateFormOptions(ctx.state,propositionEvidence,{min:3,max:5})
+    :supportedOptions(ctx.state,propositionEvidence,36,{selectedRootId:ctx.mode==='focus-path'?focusPathRootId:null});
   let layout='all',showCount=showAggregate?Math.min(5,all.length):all.length,selected=0;
   const scopeExplain=ctx.mode==='focus-path'
     ?'Focus Path: choose one recorded reasoning chain and develop a coordinated spatial scheme from its documented moves. A shared Input does not merge different designs.'
     :ctx.mode==='focus-map'
     ?'Focus Map: each reasoning pathway develops into a complete design study with relevant spatial decisions brought together. Compare the alternatives directly or place them side by side on the map.'
     :'Aggregate Map: explore 3–5 spatial propositions drawn from project-wide reasoning. Each is an interpretive form study rather than a verified design. Alternatives and assumptions are clearly labelled.';
-  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-inline-actions" style="margin:8px 0"><button type="button" class="secondary-button compact" id="configureImageModel">Connect image model (optional)</button><span class="prop-disclosure">Offline studies are procedural; unique AI images require a separately configured model service.</span></div><div class="prop-view-switch" role="tablist" aria-label="Architectural propositions output"><button type="button" class="prop-view-tab active" data-prop-tab="digest" role="tab" aria-selected="true">Reasoning Summary</button><button type="button" class="prop-view-tab" data-prop-tab="visual" role="tab" aria-selected="false">Design Studies</button></div><div id="propOutput" class="prop-option-list" role="tabpanel" aria-live="polite"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
+  openModal(`<div class="prop-modal"><h2 id="modalTitle">Architectural Propositions · ${modeName}</h2><p class="prop-disclosure">${escapeHtml(scopeExplain)}</p><div class="prop-inline-actions" style="margin:8px 0"><button type="button" class="secondary-button compact" id="configureImageModel">Connect image model (optional)</button><span class="prop-disclosure">Offline studies are procedural; unique AI images require a separately configured model service.</span></div>${!showAggregate && ctx.state.nodes.filter(n=>n.type==='consequence'&&n.status!=='rejected').length>1?`<div class="prop-aggregate-invite"><span>Currently showing ${escapeHtml(modeName)} pathways.</span><button type="button" class="secondary-button compact" id="propOpenAggregate">Compare 3–5 Aggregate forms →</button></div>`:''}<div class="prop-view-switch" role="tablist" aria-label="Architectural propositions output"><button type="button" class="prop-view-tab active" data-prop-tab="digest" role="tab" aria-selected="true">Reasoning Summary</button><button type="button" class="prop-view-tab" data-prop-tab="visual" role="tab" aria-selected="false">Design Studies</button></div><div id="propOutput" class="prop-option-list" role="tabpanel" aria-live="polite"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Close</button></div></div>`,{onOpen:m=>{
     const output=m.querySelector('#propOutput');let choices=[];
+    const jumpToAggregate=m.querySelector('#propOpenAggregate');
+    if(jumpToAggregate)jumpToAggregate.onclick=()=>{closeModal();setWorkspaceMapMode('aggregate');openArchitecturalPropositions({startTab:'visual'});};
     const configure=m.querySelector('#configureImageModel');
     configure.onclick=()=>{
-      const endpoint=window.prompt('Enter the secured model service URL (not an API key). Leave blank to use offline diagrams.',sessionStorage.getItem('tracework.model.endpoint')||'');
+      const endpoint=window.prompt('Enter your deployed HTTPS Cloudflare Worker URL ending /generate. Do NOT enter an OpenAI API key. Leave blank for offline drawings.',sessionStorage.getItem('tracework.model.endpoint')||'');
       if(endpoint===null)return;
-      if(endpoint.trim()&&!/^https:\/\//i.test(endpoint.trim())){toast('Use an HTTPS endpoint for the model service.');return;}
+      if(endpoint.trim()&&!/^https:\/\/[^\s]+\/generate\/?$/i.test(endpoint.trim())){toast('Enter an HTTPS Worker endpoint ending /generate. Never paste an API key.');return;}
       if(endpoint.trim()){
         const token=window.prompt('Enter the personal access token configured on your model backend. It stays in this browser session, not your project JSON.','');
         if(token===null)return;
@@ -1707,7 +1720,7 @@ function openArchitecturalPropositions(){
       }else{sessionStorage.removeItem('tracework.model.endpoint');sessionStorage.removeItem('tracework.model.token');toast('Offline diagram mode enabled.');}
     };
     const showMarkdown=()=>{
-      const markdown=scopedDigest(ctx);
+      const markdown=consultationMarkdown(ctx.state,scopedDigest(ctx),ctx.visible);
       output.innerHTML=`<section class="prop-digest-preview"><div class="prop-digest-heading"><h3>${escapeHtml(modeName)} · Reasoning Summary</h3><span>Based on the current recorded trace</span></div><div class="prop-markdown">${escapeHtml(markdown)}</div><div class="prop-inline-actions"><button type="button" class="secondary-button compact" id="propMdSave">Download Markdown</button><button type="button" class="primary-button compact" id="propMdInsert">Place summary on map</button></div></section>`;
       output.querySelector('#propMdSave').onclick=()=>fileDownload(markdown,`TRACEWORK-${ctx.mode}-Summary.md`,'text/markdown');
       output.querySelector('#propMdInsert').onclick=()=>insertOutputNode('reasoning-digest',{markdown,title:`${modeName} · Reasoning Summary`});
@@ -1748,8 +1761,8 @@ function openArchitecturalPropositions(){
       const chooser=output.querySelector('#propChoosePath');if(chooser)chooser.onchange=()=>showDetail(Number(chooser.value));
       output.querySelector('#propSaveSingleSvg').onclick=()=>fileDownload(choices[i].svg,`TRACEWORK-${spec.strategy}-Proposition.svg`,'image/svg+xml;charset=utf-8');
       output.querySelector('#propPrintSingle').onclick=()=>propositionPrintSheet(spec,choices[i].svg);
-      output.querySelector('#propMdSingle').onclick=()=>fileDownload(propositionMarkdown(spec),`TRACEWORK-${spec.strategy}-Rationale.md`,'text/markdown');
-      output.querySelector('#propInsertSingle').onclick=()=>insertOutputNode('architectural-proposition',{spec,svg:choices[i].svg,markdown:propositionMarkdown(spec)});
+      output.querySelector('#propMdSingle').onclick=()=>fileDownload(propositionMarkdown(spec)+consultationActions(spec),`TRACEWORK-${spec.strategy}-Rationale.md`,'text/markdown');
+      output.querySelector('#propInsertSingle').onclick=()=>insertOutputNode('architectural-proposition',{spec,svg:choices[i].svg,markdown:propositionMarkdown(spec)+consultationActions(spec)});
     };
     const renderComparison=()=>{
       const view=choices.slice(0,showCount);
@@ -1764,16 +1777,16 @@ function openArchitecturalPropositions(){
       if(layout==='single'&&view.length>1){output.querySelector('#propPrevSingle').onclick=()=>{selected=(selected-1+view.length)%view.length;renderComparison();};output.querySelector('#propNextSingle').onclick=()=>{selected=(selected+1)%view.length;renderComparison();};}
       output.querySelectorAll('[data-visual-index]').forEach(el=>{
         el.innerHTML=choices[Number(el.dataset.visualIndex)].svg;
-        // Card preview: crop the source diagram rather than shrinking an entire
-        // annotated A3-style sheet to illegibility. Full annotations remain in detail.
+        // Keep the ENTIRE plate in previews. Previous viewBox cropping concealed
+        // almost half the diagram, especially on smaller laptop displays.
         const drawing=el.querySelector('svg');
-        if(drawing){drawing.setAttribute('viewBox','20 125 735 575');drawing.setAttribute('aria-label','Design study thumbnail — open for the full annotated sheet');}
+        if(drawing){drawing.setAttribute('preserveAspectRatio','xMidYMid meet');drawing.setAttribute('aria-label','Complete conceptual design study; open for the full-size sheet');}
       });
       output.querySelectorAll('[data-prop-index]').forEach(button=>button.onclick=()=>showDetail(Number(button.dataset.propIndex)));
     };
     const showVisual=()=>{
       if(!all.length){output.innerHTML='<p class="prop-disclosure">No documented spatial consequence is available yet. Record a spatial move to produce a source-linked design study.</p>';return;}
-      if(!choices.length)choices=all.map((opt,i)=>{const spec=makePropositionSpec({state:ctx.state,scoped:ctx.visible,mode:ctx.mode,option:opt,ordinal:i+1});return {spec,svg:renderPropositionSVG(spec)};});
+      if(!choices.length)choices=all.map((opt,i)=>{const spec=makePropositionSpec({state:ctx.state,scoped:propositionEvidence,mode:ctx.mode,option:opt,ordinal:i+1});return {spec,svg:renderPropositionSVG(spec)};});
       renderComparison();
     };
     const switchView=view=>{
@@ -1785,7 +1798,7 @@ function openArchitecturalPropositions(){
       if(view==='digest')showMarkdown();else showVisual();
     };
     m.querySelectorAll('[data-prop-tab]').forEach(button=>button.onclick=()=>switchView(button.dataset.propTab));
-    switchView('digest');
+    switchView(startTab==='visual'?'visual':'digest');
   }});
 }
 
@@ -2276,7 +2289,8 @@ function updateThoughtSuggestion(){
   const hasText=Boolean(text);
   document.getElementById('thoughtDock')?.classList.toggle('has-thought-text',hasText);
   els.addFreeThoughtButton.disabled=!hasText;
-  els.addLooseNoteButton.disabled=!hasText;
+  els.addLooseNoteButton.disabled=false;
+  els.addLooseNoteButton.textContent=hasText?'Add as note':'＋ Blank node';
 
   if(framework.id==='freeform') els.addFreeThoughtButton.textContent=els.thoughtTypeSelect.dataset.manual==='1'?'Add with Chosen Role →':'Add to Field (Unclassified) →';
   if(!hasText){
@@ -2372,6 +2386,25 @@ function addFreeThought(){
   logEvent('Free reasoning added',`${visibleRole} · ${text}`);
   els.freeThoughtInput.value=''; els.thoughtTypeSelect.dataset.manual=''; if(els.thoughtProvenanceSelect)els.thoughtProvenanceSelect.value='designer';if(els.thoughtGenerationActivity)els.thoughtGenerationActivity.value='unspecified';if(els.thoughtEvidenceKind)els.thoughtEvidenceKind.value='unspecified';if(els.thoughtAttributionName)els.thoughtAttributionName.value='';for(const el of [els.thoughtActivityDetails,els.thoughtRecordTitle,els.thoughtSourceReference])if(el)el.value=''; updateThoughtSuggestion(); renderWorkspace();
   toast(`Added as ${visibleRole}${commandFrameworkId==='tracework'?'':` · ${getFramework(commandFrameworkId).shortLabel}`}.`);
+}
+
+function addBlankNode(){
+  const state=getState();if(!state.brief)return;
+  focusPathRootId=null;checkpoint('add deliberately blank node');
+  const active=state.nodes.find(n=>n.id===state.activeNodeId);
+  const selectedHotspotId=workspaceMapMode==='aggregate'?(active?.meta?.hotspotId||state.selectedHotspotId||null):state.selectedHotspotId;
+  const scoped=workspaceMapMode==='aggregate'?aggregateTrace(state,{ignoreFilters:true}):scopedTrace(state);
+  const point=visibleCanvasPlacement(scoped.nodes.length+2);
+  let created;
+  updateState(s=>{
+    created=createNode({type:'note',label:'',branchId:`blank-${Date.now()}`,x:point.x,y:point.y,
+      meta:{hotspotId:selectedHotspotId,deliberateBlank:true,provenance:'designer',generationActivity:'authored'}});
+    s.nodes.push(created);s.activeNodeId=created.id;
+  });
+  selectedNodeIds.clear();selectedNodeIds.add(created.id);
+  lastAddedNodeId=created.id;
+  renderWorkspace();
+  toast('Blank node added. Double-click it to write or leave it unresolved.');
 }
 
 function addLooseNote(){
@@ -3071,6 +3104,7 @@ function updateFrameworkControls(state){
       ? 'Optional TRACEWORK structure'
       : `${framework.shortLabel} reads this as`;
   }
+  if(els.suggestFrameworkButton) els.suggestFrameworkButton.title='Compare suitable frameworks without changing your recorded nodes, connections or Original layout';
   if(els.toggleNodeTypesButton){
     if(framework.id==='freeform') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide inferred types':'Reveal inferred types';
     else if(framework.id==='tracework') els.toggleNodeTypesButton.textContent=showNodeTypes?'Hide framework roles':'Show framework roles';
@@ -3101,6 +3135,20 @@ function updateFrameworkControls(state){
     }
   }
   renderLegend(frameworkLegend(framework.id));
+}
+
+function openFrameworkRecommendation(){
+  const state=getState();if(!state.brief){toast('Create or open a trace first.');return;}
+  const suggestions=recommendFrameworks(state);
+  const markup=suggestions.map((item,i)=>`<article class="tw-method-option"><div class="tw-method-title"><strong>${i+1}. ${escapeHtml(item.label)}</strong><span>${escapeHtml(item.fit)}</span></div><p>${escapeHtml(item.why)}</p><small>${escapeHtml(item.signals.join(' · ')||'Suggested from the brief; expand the map for a stronger recommendation.')}</small><div class="tw-method-actions"><button class="secondary-button compact" data-method-preview="${escapeHtml(item.id)}" type="button">Use this framework</button></div></article>`).join('');
+  openModal(`<div class="tw-framework-recommendation"><h2 id="modalTitle">Suggest a framework</h2><p class="prop-disclosure">These are transparent, rule-based suggestions from your actual brief and recorded thoughts, not a verified diagnosis or an AI model's judgement. You may remain Freeform.</p>${markup}<p class="prop-disclosure">Applying a framework changes its analytical reading and optional Arrange view. It does not retype, rewrite, move or delete your Original nodes.</p><div class="modal-actions"><button class="secondary-button" data-close-modal>Stay as I am</button></div></div>`,{onOpen:m=>{
+    m.querySelectorAll('[data-method-preview]').forEach(button=>button.onclick=()=>{
+      const id=button.dataset.methodPreview;
+      if(getState().frameworkLocked){toast('Unlock the current framework before accepting a suggestion.');return;}
+      closeModal();setFrameworkMode(id);
+      toast('Framework applied as a reading. Original node contents and locations are unchanged.');
+    });
+  }});
 }
 
 function setFrameworkMode(id='tracework'){
@@ -3268,7 +3316,61 @@ function currentAggregateArrangement(state){
 }
 
 
-function deoverlapAggregateLayout(nodes,positions){
+function reasoningComponentOrder(state){
+  const nodes=state.nodes||[], ids=new Map(nodes.map((n,i)=>[n.id,i])), parent=nodes.map((_,i)=>i);
+  const root=i=>{while(parent[i]!==i){parent[i]=parent[parent[i]];i=parent[i];}return i;};
+  const join=(a,b)=>{const ra=root(a),rb=root(b);if(ra!==rb)parent[rb]=ra;};
+  const outgoing=new Map(nodes.map(n=>[n.id,[]]));
+  for(const edge of state.edges||[]){
+    if(edge.status==='rejected'||edge.meta?.artifact)continue;
+    const a=ids.get(edge.source),b=ids.get(edge.target);if(a===undefined||b===undefined)continue;
+    join(a,b);outgoing.get(edge.source).push(edge.target);
+  }
+  const groups=new Map();nodes.forEach((n,i)=>{const key=root(i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(n);});
+  const groupList=[...groups.values()].sort((a,b)=>{
+    const first=g=>Math.min(...g.map(n=>Date.parse(n.createdAt)||0));
+    return first(a)-first(b)||String(a[0]?.id).localeCompare(String(b[0]?.id));
+  });
+  const groupRank=new Map();groupList.forEach((g,j)=>g.forEach(n=>groupRank.set(n.id,j)));
+  // Iterative relaxation works even with circular reasoning; bounded at node count.
+  const depth=new Map(nodes.map(n=>[n.id,0]));
+  for(let i=0;i<Math.min(nodes.length,45);i++){
+    let changed=false;
+    for(const n of nodes){for(const dest of outgoing.get(n.id)||[]){
+      const candidate=Math.min(nodes.length,depth.get(n.id)+1);
+      if(candidate>depth.get(dest)){depth.set(dest,candidate);changed=true;}
+    }}
+    if(!changed)break;
+  }
+  return {groupRank,depth};
+}
+function refineFrameworkPositions(state,frameworkId,positions){
+  const out=new Map(positions), nodes=state.nodes||[],nodeById=new Map(nodes.map(n=>[n.id,n]));
+  const saved=id=>Boolean(nodeById.get(id)?.meta?.aggregateArrangedPositions?.[frameworkId]);
+  // Shorten long crossing diagonals while preserving framework role columns/islands.
+  // Other endpoints remain authored. Only generated Arrange coordinates are refined.
+  const incoming=new Map(nodes.map(n=>[n.id,[]]));
+  (state.edges||[]).forEach(e=>{
+    if(e.status==='rejected'||e.meta?.artifact||!incoming.has(e.target)||!out.has(e.source))return;
+    incoming.get(e.target).push(e.source);
+  });
+  const factor=frameworkId==='freeform'?.35:(getFramework(frameworkId).arrangement==='sequence'?.52:.18);
+  for(let turn=0;turn<2;turn++){
+    for(const n of nodes){
+      if(saved(n.id))continue;
+      const refs=incoming.get(n.id)||[];if(!refs.length)continue;
+      const anchors=refs.map(id=>out.get(id)).filter(Boolean);
+      if(!anchors.length)continue;
+      const p=out.get(n.id);if(!p)continue;
+      const ay=anchors.reduce((sum,q)=>sum+q.y,0)/anchors.length;
+      // Clamp to keep semantic grouping visible; collisions resolved below.
+      out.set(n.id,{...p,y:Math.max(24,p.y+Math.max(-195,Math.min(195,(ay-p.y)*factor)))});
+    }
+  }
+  return deoverlapAggregateLayout(nodes,out,frameworkId);
+}
+
+function deoverlapAggregateLayout(nodes,positions,frameworkId='tracework'){
   // Framework layouts are semantic guides, not packing diagrams. Keep generous
   // clearance between cards so long labels never land on top of neighbours.
   const placed=(nodes||[]).map((n,index)=>{
@@ -3277,7 +3379,9 @@ function deoverlapAggregateLayout(nodes,positions){
     const isVisual=n.meta?.artifactKind==='architectural-proposition';
     const isDigest=n.meta?.artifactKind==='reasoning-digest';
     const h=isVisual?435:isDigest?260:Math.min(225,112+(lines*18)+(n.meta?.provenance&&n.meta.provenance!=='designer'?14:0));
-    return {id:n.id,index,x:p.x,y:p.y,w:isVisual?350:isDigest?285:230,h};
+    const manual=n.meta?.nodeSizes?.['aggregate-arranged:'+frameworkId]||n.meta?.nodeSizes?.original;
+    const naturalWidth=isVisual?350:isDigest?285:230;
+    return {id:n.id,index,x:p.x,y:p.y,w:Number(manual?.width)||naturalWidth,h:Number(manual?.height)||h};
   }).sort((a,b)=>a.y-b.y||a.x-b.x||a.index-b.index);
   const gapX=64,gapY=58;
   for(let pass=0;pass<24;pass++){
@@ -3299,12 +3403,19 @@ function deoverlapAggregateLayout(nodes,positions){
     if(!moved)break;
   }
   const out=new Map(positions);
-  placed.forEach(p=>out.set(p.id,{x:p.x,y:p.y}));
+  // Network/cyclic layouts can extend left of zero when category clusters
+  // fan out. Shift the presentation only so every node stays accessible.
+  const lowestX=Math.min(96,...placed.map(p=>p.x));
+  const lowestY=Math.min(96,...placed.map(p=>p.y));
+  const shiftX=Math.max(0,96-lowestX),shiftY=Math.max(0,96-lowestY);
+  placed.forEach(p=>out.set(p.id,{x:p.x+shiftX,y:p.y+shiftY}));
   return out;
 }
 
 function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracework'){
   const nodes=state.nodes||[];
+  const {groupRank,depth}=reasoningComponentOrder(state);
+  const graphRank=n=>groupRank.get(n.id)??99999;
   // Generate a fresh framework layout only when Arrange Map is explicitly requested.
   const savedPosition=n=>{
     const pos=n.meta?.aggregateArrangedPositions?.[frameworkId];
@@ -3316,7 +3427,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     const hotspotIndex=new Map((state.hotspots||[]).map((h,i)=>[h.id,i]));
     const ordered=[...nodes].sort((a,b)=>{
       const ah=hotspotIndex.get(a.meta?.hotspotId)??9999,bh=hotspotIndex.get(b.meta?.hotspotId)??9999;
-      return ah-bh || String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || String(a.id).localeCompare(String(b.id));
+      return graphRank(a)-graphRank(b)|| (depth.get(a.id)||0)-(depth.get(b.id)||0)||ah-bh || String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || String(a.id).localeCompare(String(b.id));
     });
     const columns=Math.max(4,Math.min(7,Math.ceil(Math.sqrt(Math.max(1,ordered.length)*1.25))));
     const hash=value=>{ let h=0; for(const ch of String(value||''))h=((h<<5)-h+ch.charCodeAt(0))|0; return Math.abs(h); };
@@ -3328,7 +3439,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const jitterX=(hash(n.id)%31)-15,jitterY=(hash(`${n.id}-free-y`)%29)-14;
       positions.set(n.id,{x:90+serpentine*420+jitterX,y:80+row*270+jitterY});
     });
-    return deoverlapAggregateLayout(nodes,positions);
+    return refineFrameworkPositions(state,frameworkId,positions);
   }
 
   const framework=getFramework(frameworkId);
@@ -3342,7 +3453,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
     const cols=Math.max(2,Math.ceil(Math.sqrt(Math.max(1,categories.length))));
     const centers=new Map(categories.map((c,i)=>[c.id,{x:170+(i%cols)*760,y:130+Math.floor(i/cols)*690}]));
     const counts=new Map();
-    nodes.forEach(n=>{
+    [...nodes].sort((a,b)=>graphRank(a)-graphRank(b)||(depth.get(a.id)||0)-(depth.get(b.id)||0)).forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'&&!n.meta?.artifactKind){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
@@ -3357,7 +3468,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const jitterX=(hash(n.id)%25)-12,jitterY=(hash(`${n.id}-network-y`)%23)-11;
       positions.set(n.id,{x:center.x+(localCol-1)*420+jitterX,y:center.y+localRow*265+jitterY});
     });
-    return deoverlapAggregateLayout(nodes,positions);
+    return refineFrameworkPositions(state,frameworkId,positions);
   }
 
   if(framework.arrangement==='cycle') {
@@ -3368,7 +3479,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const angle=(-Math.PI/2)+(Math.PI*2*i/Math.max(1,categories.length));
       return [c.id,{x:cx+Math.cos(angle)*rx,y:cy+Math.sin(angle)*ry}];
     }));
-    nodes.forEach(n=>{
+    [...nodes].sort((a,b)=>graphRank(a)-graphRank(b)||(depth.get(a.id)||0)-(depth.get(b.id)||0)).forEach(n=>{
       const saved=savedPosition(n); if(saved){positions.set(n.id,saved);return;}
       if(n.type==='note'&&!n.meta?.artifactKind){
         const nth=counts.get('__note__')||0; counts.set('__note__',nth+1);
@@ -3382,7 +3493,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       const ring=Math.floor(nth/4),slot=nth%4;
       positions.set(n.id,{x:center.x+(slot%2)*420-210,y:center.y+Math.floor(slot/2)*225+ring*380-110});
     });
-    return deoverlapAggregateLayout(nodes,positions);
+    return refineFrameworkPositions(state,frameworkId,positions);
   }
 
   // Ordered/framework layouts: each role gets a readable column, while hotspot
@@ -3399,7 +3510,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
   [...byRole.entries()].forEach(([role,group],index)=>{
     group.sort((a,b)=>{
       const ah=hotspotIndex.get(a.meta?.hotspotId)??9999,bh=hotspotIndex.get(b.meta?.hotspotId)??9999;
-      return ah-bh||String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id));
+      return graphRank(a)-graphRank(b)||ah-bh||(depth.get(a.id)||0)-(depth.get(b.id)||0)||String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id));
     });
     let cursorY=96,lastHotspot=null;
     group.forEach(n=>{
@@ -3413,7 +3524,7 @@ function frameworkAggregateLayout(state,frameworkId=state.frameworkId||'tracewor
       cursorY+=height+72;
     });
   });
-  return deoverlapAggregateLayout(nodes,positions);
+  return refineFrameworkPositions(state,frameworkId,positions);
 }
 
 function aggregateTrace(state,{ignoreFilters=false}={}){

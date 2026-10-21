@@ -683,3 +683,62 @@
   #workspaceView .canvas-panel .thought-actions{justify-content:flex-start!important;}
   #workspaceView .canvas-panel .thought-actions button{font-size:10px!important;}
 }
+
+/* D3.1 · Half-width workspace; keep source and guidance accessible while
+   giving the editor room and avoiding collision of optional method controls. */
+@media (min-width:821px) and (max-width:1180px){
+  #workspaceView .canvas-title-row{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important}
+  #workspaceView .canvas-heading-group{display:flex;flex-wrap:wrap;align-items:center;gap:6px!important}
+  #workspaceView .canvas-control-group{display:flex;flex-wrap:wrap;justify-content:flex-start!important;align-items:center;gap:5px!important}
+  #workspaceView .framework-control-wrap{flex:0 1 auto!important;max-width:100%;flex-wrap:wrap}
+  #workspaceView .canvas-state-actions{flex:1 1 auto;gap:5px!important;justify-content:flex-start}
+  #workspaceView .toolbar-actions{display:flex;flex-wrap:wrap;gap:5px!important;width:100%}
+  #workspaceView .toolbar-actions>.tool-button{flex:0 0 auto}
+  #workspaceView .tw-recommend-button{font-size:10px!important;padding:6px 9px!important}
+}
+@media(max-width:1050px){
+  #workspaceView .tw-recommend-button{font-size:9px!important}
+  #workspaceView .framework-control select{max-width:146px}
+}
+@container (max-width:1000px){
+  #workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified:not(.hidden){
+    grid-template-rows:42px auto auto minmax(0,1fr)!important;
+    height:auto!important;min-height:110px!important;max-height:195px!important;
+    align-content:start!important;
+  }
+  #workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-entry>textarea{grid-row:1!important}
+  #workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-actions{grid-row:2!important;grid-column:1!important;flex-wrap:wrap;justify-content:flex-start!important}
+  #workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-advanced-metadata{grid-row:3!important;grid-column:1!important}
+}
+@container (max-width:540px){
+  #workspaceView .canvas-panel .thought-actions{justify-content:flex-start!important}
+  #workspaceView .canvas-panel .thought-actions button{white-space:normal!important;flex:0 1 auto!important;min-width:0!important;max-width:100%!important}
+}
+/* Restore genuine low-structure quiet mode against older responsive !important rules. */
+#workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-reading,
+#workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-reason,
+#workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-matches,
+#workspaceView .canvas-panel .thought-dock.d2-freeform-unclassified .thought-clarifier{display:none!important}
+
+/* D3.1 final: usable navigation and panels across unusually narrow/short desktops.
+   This does not change stored graph coordinates or existing project layouts. */
+@media (max-width:1250px){
+ .workspace > *,.canvas-toolbar,.canvas-title-row,.canvas-control-group,.toolbar-actions,.thought-dock{min-width:0;max-width:100%;}
+ .canvas-control-group,.toolbar-actions{flex-wrap:wrap}
+ .canvas-toolbar button,.thought-actions button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+}
+@media (max-width:1050px){
+ .topbar,.topnav{min-width:0;}
+ .landing,.landing-copy,.start-card,.project-shelf{max-width:100%;}
+ .source-panel,.inspector-panel{min-width:0;}
+}
+@media (max-width:560px){
+ .landing h1{font-size:clamp(38px,12vw,50px)}
+ .workspace,.canvas-panel,.source-panel{min-width:0;max-width:100%}
+ .thought-dock,.thought-entry,.thought-actions{min-width:0;max-width:100%;}
+ .thought-actions{flex-wrap:wrap;}
+ .project-card{min-width:0;flex-wrap:wrap;}
+}
+@media (max-height:650px) and (min-width:561px){
+ .inspector-panel{max-height:calc(100dvh - var(--topbar) - 12px);overflow-y:auto}
+}
