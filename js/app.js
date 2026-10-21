@@ -537,7 +537,7 @@ function showView(view){
   });
 
   if(view==='workspace') renderWorkspace();
-  else if(view==='pathways') hasProject?renderPathwayCards($('#pathwaySearch')?.value||''):renderPathwayBlank();
+  else if(view==='pathways') renderPathwayCards($('#pathwaySearch')?.value||'');
   else if(view==='trace') hasProject?renderTraceDashboard(getState()):renderSavedTraceLibrary();
   else if(view==='discussion') hasProject?renderDiscussion():renderDiscussionBlank();
 
@@ -1334,7 +1334,7 @@ function renderDiscussionBlank(){
 async function renderPathwayCards(query=''){
   const search=$('#pathwaySearch'); if(search){search.disabled=false;search.placeholder='Search a concept, e.g. flexibility';search.closest('.search-field')?.classList.remove('hidden');}
   const items=await searchPathways(query); const root=$('#pathwayGrid');
-  root.innerHTML=items.length?items.map(pathCard).join(''):'<div class="empty-state-card">No sample pathways are preloaded. Begin a trace to develop your own reasoning routes.</div>';
+  root.innerHTML=items.length?items.map(pathCard).join(''):`<div class="empty-state-card">${query.trim()?'No illustrative pathways match this search. Try flexibility, privacy, community, shelter or threshold.':'No illustrative pathways are available right now. Your saved traces remain unchanged.'}</div>`;
   root.querySelectorAll('[data-inspect-path]').forEach(b=>b.onclick=()=>inspectPathway(items.find(p=>p.id===b.dataset.inspectPath)));
   root.querySelectorAll('[data-use-path]').forEach(b=>b.onclick=()=>usePathway(items.find(p=>p.id===b.dataset.usePath)));
 }
